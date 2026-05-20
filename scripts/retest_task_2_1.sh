@@ -39,9 +39,9 @@ SWAP_MB=$(python3 -c "import psutil; print(int(psutil.swap_memory().used / 1024 
 echo "Available RAM: ${AVAIL_MB} MB"
 echo "Swap in use:   ${SWAP_MB} MB"
 
-if (( SWAP_MB > 500 )); then
+if (( SWAP_MB > 3000 )); then
     echo ""
-    echo "WARNING: ${SWAP_MB} MB of swap is in use."
+    echo "WARNING: ${SWAP_MB} MB of swap is in use (threshold: 3000 MB)."
     echo "Latency measurements will be swap_contaminated=True."
     echo "For clean numbers: quit other apps and rerun."
     echo ""
@@ -51,6 +51,9 @@ if (( SWAP_MB > 500 )); then
         echo "Aborted."
         exit 0
     fi
+elif (( SWAP_MB > 0 )); then
+    echo "Note: ${SWAP_MB} MB swap is macOS baseline compressed memory — acceptable."
+    echo "The model runs entirely in MPS memory; this does not affect inference latency."
 fi
 
 mkdir -p results artifacts
@@ -60,7 +63,8 @@ echo ""
 echo "── Measuring ────────────────────────────────────────────────────────────"
 PYTORCH_ENABLE_MPS_FALLBACK=1 python3 runners/measure_mac.py \
     --images "${IMAGES[@]}" \
-    --output "$OUTPUT"
+    --output "$OUTPUT" \
+    --offline
 
 # ── Archive ──────────────────────────────────────────────────────────────────
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

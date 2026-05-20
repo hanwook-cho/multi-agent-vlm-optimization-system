@@ -263,6 +263,10 @@ def main() -> None:
         "--max-new-tokens", type=int, default=MAX_NEW_TOKENS,
         help=f"Max tokens to generate per image (default: {MAX_NEW_TOKENS}).",
     )
+    parser.add_argument(
+        "--offline", action="store_true",
+        help="Load model from local HF cache only; skip network check.",
+    )
     args = parser.parse_args()
 
     image_paths = [Path(p) for p in args.images]
@@ -307,13 +311,16 @@ def main() -> None:
     # ------------------------------------------------------------------
     print(f"\nLoading {MODEL_ID} at FP16 on MPS …")
     load_start = time.perf_counter()
+    load_kwargs = dict(torch_dtype=torch.float16, low_cpu_mem_usage=True)
+    if args.offline:
+        load_kwargs["local_files_only"] = True
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        MODEL_ID,
-        torch_dtype=torch.float16,
-        low_cpu_mem_usage=True,
+        MODEL_ID, **load_kwargs
     ).to(device)
     model.eval()
-    processor = AutoProcessor.from_pretrained(MODEL_ID)
+    processor = AutoProcessor.from_pretrained(
+        MODEL_ID, local_files_only=args.offline
+    )
     load_elapsed = time.perf_counter() - load_start
     print(f"Model loaded in {load_elapsed:.1f}s")
     print(f"On-disk size: {_on_disk_size_mb(MODEL_ID):.0f} MB")
@@ -371,7 +378,7 @@ def main() -> None:
     print(f"\n── Summary ──────────────────────────────────────")
     print(f"  TTFT (median):         {ttft_median:.0f} ms" if ttft_median else "  TTFT: N/A")
     print(f"  Decode (median):       {tps_median:.1f} tok/s" if tps_median else "  Decode: N/A")
-    print(f"  Peak memory (RSS):     {peak_memory_mb_overall:.0f} MB")
+    print(f"  Peak memory (MPS):     {peak_memory_mb_overall:.0f} MB")
     print(f"  On-disk size:          {on_disk_mb:.0f} MB")
 
     # ------------------------------------------------------------------

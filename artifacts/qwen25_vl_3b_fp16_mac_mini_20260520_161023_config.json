@@ -1,0 +1,19 @@
+{
+  "model_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+  "compression": {
+    "weight_dtype": "fp16",
+    "activation_dtype": null,
+    "group_size": null,
+    "kv_cache_dtype": null,
+    "sparsity": null
+  },
+  "input_resolution": null,
+  "vision_token_budget": null,
+  "runtime_backend": "pytorch_mps",
+  "decode_strategy": "greedy",
+  "decode_top_k": null,
+  "speculative_draft_model_id": null,
+  "dataset_hash": "c7224137b9e0acb029a7947677246f8a12cce34478db2c79bf0f765aa32c6271",
+  "target_device_id": "mac_mini_m4_16gb",
+  "notes": "Task 2.1 baseline — unoptimized FP16, MPS backend, Mac mini M4 16 GB"
+}
