@@ -1,0 +1,17 @@
+device_id: mac_mini_m4_16gb
+chip_family: apple_m4
+ram_gb: 16
+accelerators:
+  - gpu  # MPS — Mac does not expose ANE for general-purpose inference
+supported_runtimes:
+  - mlx
+  - pytorch_mps
+  - onnx_cpu
+preferred_runtime: mlx
+quirks:
+  - "MPS bandwidth ~120 GB/s (M4 base chip); small-VLM inference is bandwidth-bound at this scale"
+  - "Memory shared between CPU and GPU (unified); 16 GB sets the practical model-size ceiling at ~12 GB loaded"
+  - "Activity Monitor memory reporting differs from psutil; document which is used in each measurement"
+  - "Mac mini is the measurement workstation for evaluating other devices; it is also the iOS dev host"
+measurement_harness: mac_python_bridge_v1
+role: measurement_and_training
