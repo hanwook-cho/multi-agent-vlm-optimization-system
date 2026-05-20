@@ -5,7 +5,7 @@
 **Status.** Draft v2 (updated to reflect Goals v3: expanded baseline set including SmolVLM-500M, MiniCPM-V 4.6, Qwen2.5-VL-3B; Phase 4 reusability proof in scope; time-compression framing).
 **Last updated.** May 11, 2026.
 **Companion documents.** Goals v3 (§5 Phase 0 exit criteria, §6 conduct rules), HLD (architecture), Prior Art (related work).
-**Phase 0 goal.** Stand up project infrastructure and lock in measured reference baselines for four small-edge VLMs (LFM2.5-VL-450M, FastVLM-0.5B, SmolVLM-500M, MiniCPM-V 4.6) on iPhone 16 Pro and Raspberry Pi 5 (4 GB), plus measure Qwen2.5-VL-3B as the Phase 2 starting point on Mac mini (M4, 16 GB).
+**Phase 0 goal.** Stand up project infrastructure and lock in measured reference baselines for four small-edge VLMs (LFM2.5-VL-450M, FastVLM-0.5B, SmolVLM-500M, MiniCPM-V 4.6) on iPhone 16 Pro and Raspberry Pi 5 (4 GB), plus measure Qwen2.5-VL-3B as the Phase 2 starting point on Mac mini (M4, 16 GB) initially, with measurements to be repeated on the M5 Pro 32 GB when it becomes available.
 **Duration estimate.** 4-5 weeks solo, full-time-equivalent.
 
 ---
@@ -28,9 +28,9 @@ The plan assumes you work focused hours on the project. If you split attention w
 
 ## 2. Phase 0 at a glance
 
-**Week 1: Repo skeleton and DeviceDescriptor scaffolding.** Get the foundation right because everything else builds on it. Private repository (public at end of Phase 1 — see ADR-0008), license, docs ported in, all contract schemas defined, three DeviceDescriptors written (iPhone, Pi 5, Mac mini).
+**Week 1: Repo skeleton and DeviceDescriptor scaffolding.** Get the foundation right because everything else builds on it. Private repository (public at end of Phase 1 — see ADR-0008), license, docs ported in, all contract schemas defined, four DeviceDescriptors written (iPhone, Pi 5, Mac mini M4 16 GB, M5 Pro 32 GB).
 
-**Week 2: Mac-only baselines + VLMEvalKit integration.** Measure Qwen2.5-VL-3B on Mac mini (the Phase 2 starting point). Stand up VLMEvalKit and run quality evaluations of all five reference models on benchmark slices. *Why this comes before iPhone/Pi: the Mac mini is already in hand, no provisioning friction, and validating data-plumbing on Mac before pushing to iPhone/Pi means the slower-to-iterate devices have working measurement code by the time you touch them.*
+**Week 2: Mac-only baselines + VLMEvalKit integration.** Measure Qwen2.5-VL-3B on Mac mini (the Phase 2 starting point; M5 Pro 32 GB measurements follow when available). Stand up VLMEvalKit and run quality evaluations of all five reference models on benchmark slices. *Why this comes before iPhone/Pi: the Mac mini is already in hand, no provisioning friction, and validating data-plumbing on Mac before pushing to iPhone/Pi means the slower-to-iterate devices have working measurement code by the time you touch them.*
 
 **Week 3: iPhone reference baselines (4 models).** Stand up LFM2.5-VL-450M, FastVLM-0.5B, SmolVLM-500M, and MiniCPM-V 4.6 on iPhone 16 Pro. This is the riskiest week — Apple developer provisioning has bitten more solo projects than anyone wants to admit. The data-plumbing from Week 2 should now be debugged, so iPhone work focuses on iOS-specific issues.
 
@@ -110,11 +110,11 @@ Schema content per HLD §6 and §6.2:
 
 ### Task 1.4: Write three DeviceDescriptors
 
-**What:** YAML files describing the three devices used by the project: iPhone 16 Pro, Raspberry Pi 5 (4 GB), and the Mac mini (M4, 16 GB, used for measurement and training).
+**What:** YAML files describing all devices used by the project: iPhone 16 Pro, Raspberry Pi 5 (4 GB), Mac mini (M4, 16 GB, available now), and the M5 Pro 32 GB (planned, not yet available).
 
-**Why:** Goals exit criterion 0.7 (DeviceDescriptor schema), HLD §2.4 (devices as parameters). The act of writing real descriptors validates that the schema is workable. The Mac mini descriptor matters because Mac measurements happen in Week 2 (per the reordered plan) and need the same metric-logging schema as the deployment targets.
+**Why:** Goals exit criterion 0.7 (DeviceDescriptor schema), HLD §2.4 (devices as parameters). The act of writing real descriptors validates that the schema is workable. Both Mac descriptors are written now so the MetricsReport schema is exercised and ready; measurements on the M5 Pro simply won't be logged until the machine is in hand.
 
-**How:** Create `configs/devices/iphone_16_pro.yaml`, `configs/devices/raspberry_pi_5_4gb.yaml`, and `configs/devices/mac_mini_m4_16gb.yaml`.
+**How:** Create `configs/devices/iphone_16_pro.yaml`, `configs/devices/raspberry_pi_5_4gb.yaml`, `configs/devices/mac_mini_m4_16gb.yaml`, and `configs/devices/compute_mac_m5pro_32gb.yaml`.
 
 For iPhone 16 Pro:
 ```yaml
@@ -147,7 +147,7 @@ quirks:
 measurement_harness: pi_python_bridge_v1
 ```
 
-For Mac mini (M4, 16 GB):
+For Mac mini (M4, 16 GB) — available now, used for all initial Mac measurements:
 ```yaml
 device_id: mac_mini_m4_16gb
 chip_family: apple_m4
@@ -164,7 +164,25 @@ quirks:
 measurement_harness: mac_python_bridge_v1
 ```
 
-**Risk and time honesty:** Half a day. Easy task. The value is in writing realistic quirks — these are the operational reality of the device and need to be in the descriptor so the Deployment Dispatcher and measurement harness can respect them. The Mac mini descriptor adds a small new dimension: `role`, which distinguishes deployment targets from measurement/training workstations. This will matter in Phase 2 when the system needs to know "this device is for *running* models, not for *deploying to*."
+For M5 Pro 32 GB — not yet available; descriptor written now, measurements logged when machine is in hand:
+```yaml
+device_id: compute_mac_m5pro_32gb
+chip_family: apple_m5_pro
+ram_gb: 32
+accelerators: [gpu]   # MPS — Mac doesn't expose ANE for general use
+supported_runtimes: [mlx, pytorch_mps, onnx_cpu]
+preferred_runtime: mlx
+role: measurement_and_training
+quirks:
+  - "MPS bandwidth ~275-300 GB/s; small-VLM training is bandwidth-bound at this scale"
+  - "Memory shared between CPU and GPU (unified); training + LLM hosting compete if both on same Mac"
+  - "Activity Monitor's memory reporting differs from psutil's; document which you use"
+  - "Mac is the measurement workstation for evaluating other devices; it is also the iOS dev host"
+  - "Not yet available; measurements pending — mac_mini_m4_16gb used in the interim"
+measurement_harness: mac_python_bridge_v1
+```
+
+**Risk and time honesty:** Half a day. Easy task. The value is in writing realistic quirks — these are the operational reality of the device and need to be in the descriptor so the Deployment Dispatcher and measurement harness can respect them. The Mac descriptors introduce `role`, which distinguishes deployment targets from measurement/training workstations. Writing both Mac descriptors now means no schema work is needed when the M5 Pro arrives — only measurement runs.
 
 **Done when:** All three descriptors exist, validate against the DeviceDescriptor schema, and the quirks fields contain honest device-specific notes (not generic boilerplate).
 
@@ -228,25 +246,25 @@ If you're not here by end of Week 1, do not paper over it. Honestly assess what 
 
 ## 4. Week 2 — Mac-only baselines and VLMEvalKit
 
-### Task 2.1: Qwen2.5-VL-3B on Mac mini
+### Task 2.1: Qwen2.5-VL-3B on Mac mini (initial), M5 Pro 32 GB (when available)
 
-**What:** Run Qwen2.5-VL-3B on the Mac mini (M4, 16 GB). Measure inference latency, peak memory, on-disk size, and quality outputs. Document non-fit on Pi 5 4 GB as a confirmed expectation.
+**What:** Run Qwen2.5-VL-3B on the Mac mini (M4, 16 GB) now. When the M5 Pro 32 GB becomes available, repeat the same measurement run and log a second `MetricsReport`. Document non-fit on Pi 5 4 GB as a confirmed expectation.
 
-**Why:** Goals exit criterion 0.4. Qwen2.5-VL-3B is the Phase 2 starting point — the "general-purpose, not-edge-optimized" model the system must compress down to a 450M-class edge model. Measuring it now establishes the unoptimized "before" picture against which Phase 2's "after" will be compared. This makes the time-compression claim concrete: starting from this measured baseline, the system produced a competitive edge model in X weeks.
+**Why:** Goals exit criterion 0.4. Qwen2.5-VL-3B is the Phase 2 starting point — the "general-purpose, not-edge-optimized" model the system must compress down to a 450M-class edge model. Measuring it now establishes the unoptimized "before" picture against which Phase 2's "after" will be compared. The M5 Pro measurements matter because training in Phase 2 will run on the M5 Pro; having both baselines makes the hardware difference visible and keeps the comparison honest.
 
 **How:**
 
 1. Pull Qwen2.5-VL-3B-Instruct from Hugging Face (`Qwen/Qwen2.5-VL-3B-Instruct`).
-2. Run via PyTorch + Transformers on the Mac mini (MPS backend). Loading at FP16 should fit in ~7 GB; the 16 GB unified memory gives comfortable headroom for activations and KV cache.
+2. Run via PyTorch + Transformers (MPS backend). Loading at FP16 should fit in ~7 GB; the 16 GB unified memory of the Mac mini gives comfortable headroom for activations and KV cache.
 3. Choose 5 sample photos from a public source (Flickr30k, COCO, or Open Images — these will become part of the Stage A eval set in Week 4). Run inference on them; capture latency (per-token decode speed), peak memory (via `psutil.Process().memory_info()`), on-disk size.
-4. Log to `MetricsReport` with `device_id: mac_mini_m4_16gb` (the Mac mini DeviceDescriptor was written in Task 1.4).
+4. Log to `MetricsReport` with `device_id: mac_mini_m4_16gb`. When the M5 Pro is available, repeat identically and log a second `MetricsReport` with `device_id: compute_mac_m5pro_32gb`.
 5. Confirm non-fit on Pi 5 by *not even attempting*. Document the math: 3B FP16 ≈ 6 GB weights + activations + KV cache > Pi 5 4 GB. This is expected and confirms the size-reduction problem the system needs to solve.
 
-**Risk and time honesty:** 1-2 days. The model is large enough that single inference runs take noticeable time on MPS. The M4's ~120 GB/s memory bandwidth (vs. M5 Pro's ~275 GB/s) means decode throughput will be lower than an M-series Pro chip; this is fine — we're measuring the unoptimized starting point on purpose, not optimizing it. Quality scores on the benchmark slices come in Task 2.2 via VLMEvalKit; quality scores on the project's own Stage A eval set come in Week 4 after the eval set is assembled.
+**Risk and time honesty:** 1-2 days for the Mac mini run. The M4's ~120 GB/s memory bandwidth (vs. M5 Pro's ~275 GB/s) means decode throughput will be lower; this is expected and noted. We're measuring the unoptimized starting point on purpose. Quality scores on benchmark slices come in Task 2.2 via VLMEvalKit; Stage A eval set quality scores come in Week 4.
 
-Document the measurement methodology and the Mac mini DeviceDescriptor's quirks (MPS bandwidth, memory ceiling, thermal characteristics) in `docs/decisions/0001-mac-measurement-methodology.md` (this is the first ADR — it sets the pattern for the iPhone and Pi methodology ADRs that follow). **Critically, this methodology is the foundation for all downstream measurement work**; getting it right on the Mac mini in Week 2 means the Week 3 iPhone work and Week 4 Pi work inherit a working measurement pattern.
+Document the measurement methodology in `docs/decisions/0001-mac-measurement-methodology.md` (first ADR — sets the pattern for the iPhone and Pi methodology ADRs that follow). The same methodology doc covers both Mac devices. **Critically, this methodology is the foundation for all downstream measurement work**; getting it right on the Mac mini in Week 2 means the Week 3 iPhone work and Week 4 Pi work inherit a working measurement pattern.
 
-**Done when:** Qwen2.5-VL-3B has measured baseline numbers on Mac mini, logged as `MetricsReport`. Pi non-fit is documented (no attempt needed — the math is the documentation).
+**Done when:** Qwen2.5-VL-3B has measured baseline numbers on Mac mini, logged as `MetricsReport`. Pi non-fit is documented. (M5 Pro `MetricsReport` is logged when that machine is available — it does not block Phase 0 completion.)
 
 ---
 

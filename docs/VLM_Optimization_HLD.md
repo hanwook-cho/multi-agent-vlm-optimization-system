@@ -44,7 +44,7 @@ This problem has intrinsic structural properties that any solution must respect:
 
 **P5. Most candidates are bad.** The vast majority of configurations sampled from the search space will be strictly dominated by existing points on the Pareto frontier. Spending real-device measurement budget on obviously-bad candidates is wasteful. Cheap filters must precede expensive measurement.
 
-**P6. Training is expensive and asymmetric.** Fine-tuning a 450M VLM takes hours on a Mac mini (M4, 16 GB). Training-required improvements ("try fine-tuning with this new technique") cost much more than training-free improvements ("try this quantization scheme on existing weights"). The search must distinguish them.
+**P6. Training is expensive and asymmetric.** Fine-tuning a 450M VLM takes hours on the Compute Mac (M4 16 GB initially; M5 Pro 32 GB when available). Training-required improvements ("try fine-tuning with this new technique") cost much more than training-free improvements ("try this quantization scheme on existing weights"). The search must distinguish them.
 
 **P7. The optimization is iterative and stateful.** Each round of experiments produces results that should inform the next round. A system that runs independent batches and forgets is dramatically less efficient than one that maintains and updates beliefs about what works.
 
@@ -288,7 +288,7 @@ There is no complex orchestration. The system is fundamentally a job queue with 
 
 Two Macs of asymmetric spec (as established earlier):
 
-- **Compute Mac** (Mac mini, M4, 16 GB): runs the Experiment Runner, Evaluation Harness, training jobs, reference inference. This is where MPS bandwidth matters.
+- **Compute Mac** (Mac mini M4 16 GB initially; M5 Pro 32 GB when available): runs the Experiment Runner, Evaluation Harness, training jobs, reference inference. This is where MPS bandwidth matters. Both machines share the `measurement_and_training` role and use the same measurement harness; `device_id` in each `MetricsReport` distinguishes which machine produced it.
 - **Agent Mac** (M4 16 GB): hosts the Search Strategist Agent's local LLM, the Pareto Tracker, the Threshold Monitor, the Approval Queue, the metrics database, the dashboard. This is the human-facing machine.
 
 Plus the target devices: an iPhone (15 Pro or 16 Pro) and a Raspberry Pi 5, both on the same local network, both running thin measurement harnesses that report metrics back to the Compute Mac.

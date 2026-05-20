@@ -134,7 +134,7 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 | 0.1 | LFM2.5-VL-450M runs on iPhone 16 Pro (via Liquid's LEAP SDK / Apollo app) and Pi 5 4 GB (via GGUF + llama.cpp). Metrics logged. |
 | 0.2 | FastVLM-0.5B runs on iPhone 16 Pro via apple/ml-fastvlm demo. Metrics logged. Pi 5 non-viability documented. |
 | 0.3 | SmolVLM-500M and MiniCPM-V 4.6 run on iPhone 16 Pro and Pi 5 4 GB. Metrics logged. (Where one doesn't fit on Pi, that's documented.) |
-| 0.4 | Qwen2.5-VL-3B runs on the Mac mini (M4, 16 GB). Metrics logged. Non-fit on Pi 5 4 GB documented as "expected and confirmed." |
+| 0.4 | Qwen2.5-VL-3B runs on the Mac mini (M4, 16 GB). Metrics logged. Non-fit on Pi 5 4 GB documented as "expected and confirmed." M5 Pro 32 GB measurement logged when that machine becomes available (does not block Phase 0 completion). |
 | 0.5 | A frozen public-photo evaluation set exists: ≥ 200 photos from Flickr30k/COCO/Open Images, ≥ 100 captions, ≥ 100 VQA pairs, hash-pinned. |
 | 0.6 | Reference models evaluated against the eval set and a small slice of RealWorldQA, MMBench dev-en, POPE via VLMEvalKit. |
 | 0.7 | Repository contains JSON schemas for all agent/service contracts (per HLD §6), plus `ExperimentConfig`, `MetricsReport`, `AgentDecision`, `DeviceDescriptor`, `HypothesisRecord`. |
