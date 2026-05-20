@@ -1,0 +1,15 @@
+{
+  "device_id": "iphone_16_pro",
+  "chip_family": "apple_a18_pro",
+  "ram_gb": 8,
+  "accelerators": ["ane", "gpu"],
+  "supported_runtimes": ["mlx", "coreml"],
+  "preferred_runtime": "mlx",
+  "quirks": [
+    "MLX op coverage incomplete for some quantization patterns; CoreML fallback may be needed",
+    "ANE compilation can fail silently; verify with Instruments profiler",
+    "Thermal throttling kicks in after ~5 minutes of sustained inference; measure with cooling pauses"
+  ],
+  "measurement_harness": "ios_swift_bridge_v1",
+  "role": "deployment_target"
+}

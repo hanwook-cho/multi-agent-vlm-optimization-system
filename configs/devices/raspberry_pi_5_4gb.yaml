@@ -1,0 +1,16 @@
+device_id: raspberry_pi_5_4gb
+chip_family: broadcom_bcm2712
+ram_gb: 4
+accelerators:
+  - cpu
+supported_runtimes:
+  - llamacpp_gguf
+  - onnx_cpu
+preferred_runtime: llamacpp_gguf
+quirks:
+  - "Only ~3.5 GB usable RAM after OS; tight for VLM inference"
+  - "No GPU/NPU acceleration; CPU-only via ARM NEON SIMD"
+  - "Active cooling strongly recommended; thermal throttling on default cooling within 2 minutes of sustained load"
+  - "Memory pressure can push to swap, which makes latency measurements meaningless; measure free memory before each run"
+measurement_harness: pi_python_bridge_v1
+role: deployment_target

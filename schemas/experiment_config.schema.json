@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExperimentConfig",
+  "description": "A fully-specified experiment for the Experiment Runner to execute. Defines what model to use, how to compress it, how to run inference, which eval set to score against, and which device to target. The config is content-addressable: its SHA-256 hash is the experiment_id used in MetricsReport.",
+  "type": "object",
+  "required": [
+    "model_id",
+    "compression",
+    "runtime_backend",
+    "decode_strategy",
+    "dataset_hash",
+    "target_device_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "model_id": {
+      "type": "string",
+      "description": "HuggingFace model identifier or absolute local path (e.g. Qwen/Qwen2.5-VL-3B-Instruct).",
+      "minLength": 1
+    },
+    "compression": {
+      "description": "How the model weights and activations are compressed before inference.",
+      "$ref": "#/$defs/CompressionSpec"
+    },
+    "input_resolution": {
+      "type": ["integer", "null"],
+      "description": "Image side length in pixels fed to the vision encoder (e.g. 336, 448). Null uses the model's default resolution.",
+      "minimum": 64,
+      "maximum": 4096,
+      "default": null
+    },
+    "vision_token_budget": {
+      "type": ["integer", "null"],
+      "description": "Maximum number of vision tokens the model is allowed to produce from the image. Null uses the model's default.",
+      "minimum": 1,
+      "default": null
+    },
+    "runtime_backend": {
+      "type": "string",
+      "description": "Inference runtime to use. Must be listed in the target device's supported_runtimes (DeviceDescriptor). See accelerators/supported_runtimes enums — closed by design; add new values only when a new device forces it.",
+      "enum": ["mlx", "coreml", "llamacpp_gguf", "onnx_cpu", "pytorch_mps"]
+    },
+    "decode_strategy": {
+      "type": "string",
+      "description": "Token sampling strategy for the language model head.",
+      "enum": ["greedy", "top_k", "speculative"]
+    },
+    "decode_top_k": {
+      "type": ["integer", "null"],
+      "description": "k value for top-k sampling. Required when decode_strategy is top_k; null otherwise.",
+      "minimum": 1,
+      "default": null
+    },
+    "speculative_draft_model_id": {
+      "type": ["string", "null"],
+      "description": "HuggingFace model ID or local path of the draft model for speculative decoding. Required when decode_strategy is speculative; null otherwise.",
+      "default": null
+    },
+    "dataset_hash": {
+      "type": "string",
+      "description": "SHA-256 of the eval set manifest (datasets/stage_a_proxy/manifest.json). Pins which eval set version this experiment is scored against.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "target_device_id": {
+      "type": "string",
+      "description": "Foreign key to DeviceDescriptor.device_id. Identifies the device the Experiment Runner should dispatch this config to.",
+      "minLength": 1
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Free-form human annotation. Not used by any service; present for experiment ledger readability.",
+      "default": null
+    }
+  },
+  "$defs": {
+    "CompressionSpec": {
+      "title": "CompressionSpec",
+      "description": "Compression scheme applied to model weights and activations. weight_dtype is the only required field. All other fields are null when not applicable to the chosen scheme.",
+      "type": "object",
+      "required": ["weight_dtype"],
+      "additionalProperties": false,
+      "properties": {
+        "weight_dtype": {
+          "type": "string",
+          "description": "Numeric format for stored weights.",
+          "enum": ["fp32", "fp16", "int8", "int4"]
+        },
+        "activation_dtype": {
+          "type": ["string", "null"],
+          "description": "Numeric format for activations during inference. dynamic = per-tensor dynamic quantization at runtime. Null for weight-only schemes (e.g. INT4 weight-only).",
+          "enum": ["fp16", "int8", "dynamic", null],
+          "default": null
+        },
+        "group_size": {
+          "type": ["integer", "null"],
+          "description": "Quantization group size for group-wise weight quantization (e.g. 32, 64, 128). Null when not using group-wise quantization.",
+          "minimum": 1,
+          "default": null
+        },
+        "kv_cache_dtype": {
+          "type": ["string", "null"],
+          "description": "Numeric format for the KV cache during inference. Null uses the runtime's default (typically fp16).",
+          "enum": ["fp16", "int8", "int4", null],
+          "default": null
+        },
+        "sparsity": {
+          "type": ["number", "null"],
+          "description": "Fraction of weights zeroed by structured pruning (0.0 = dense, 0.5 = 50% sparse). Null when no pruning is applied.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": null
+        }
+      }
+    }
+  }
+}

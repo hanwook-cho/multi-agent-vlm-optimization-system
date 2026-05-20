@@ -4,7 +4,7 @@ An autonomous agent system that compresses the time required to produce a compet
 
 ## Status
 
-**Phase 0 in progress** (foundations and reference baselines). The project is structured as five phases over ~6-7 months solo full-time-equivalent. See `docs/Goals.md` §5 for the phase structure.
+**Phase 0 in progress** (foundations and reference baselines). The project is structured as five phases over ~6-7 months solo full-time-equivalent. See `docs/VLM_Optimization_Goals.md` §5 for the phase structure.
 
 The repository is currently **private during Phase 0-1** and will go public at the end of Phase 1 alongside a working Mode A optimization loop. See `docs/decisions/0008-public-repo-timing.md` once written.
 
@@ -22,10 +22,10 @@ The system, given a vision-language task and a target edge device (iPhone 16 Pro
 
 ## Documentation
 
-- **`docs/Goals.md`** — ultimate goal, success criteria, phase structure, conduct rules.
-- **`docs/HLD.md`** — architectural design (two agents + seven services, Mode A / Mode B, two-Mac topology).
-- **`docs/PriorArt.md`** — position relative to AutoML/NAS, LLM-driven AutoML, AI-Scientist, and production edge inference.
-- **`docs/DetailedPlan_Phase0.md`** — week-by-week Phase 0 execution plan.
+- **`docs/VLM_Optimization_Goals.md`** — ultimate goal, success criteria, phase structure, conduct rules.
+- **`docs/VLM_Optimization_HLD.md`** — architectural design (two agents + seven services, Mode A / Mode B, two-Mac topology).
+- **`docs/VLM_Optimization_PriorArt.md`** — position relative to AutoML/NAS, LLM-driven AutoML, AI-Scientist, and production edge inference.
+- **`docs/VLM_Optimization_DetailedPlan_Phase0.md`** — week-by-week Phase 0 execution plan.
 
 ## Quick start
 

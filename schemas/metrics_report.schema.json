@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MetricsReport",
+  "description": "Measured results from a completed (or failed) experiment run. Links back to the ExperimentConfig via experiment_id (SHA-256 of the config). All latency/memory/quality fields are null when status is not 'completed'.",
+  "type": "object",
+  "required": [
+    "experiment_id",
+    "device_id",
+    "status",
+    "started_at",
+    "completed_at",
+    "hardware_fingerprint",
+    "quality_scores"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "experiment_id": {
+      "type": "string",
+      "description": "SHA-256 of the ExperimentConfig that produced this report (ExperimentConfig.content_hash()). Foreign key to the experiment ledger.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "device_id": {
+      "type": "string",
+      "description": "Foreign key to DeviceDescriptor.device_id. Identifies which device produced these measurements.",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "description": "Outcome of the experiment run. 'oom' = out-of-memory before producing any output.",
+      "enum": ["completed", "failed", "timeout", "oom"]
+    },
+    "error_message": {
+      "type": ["string", "null"],
+      "description": "Error detail when status is not 'completed'. Null on success.",
+      "default": null
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with timezone when the experiment run began."
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with timezone when the experiment run ended (success or failure)."
+    },
+    "hardware_fingerprint": {
+      "description": "Observed runtime state of the device at measurement time. Distinguishes from DeviceDescriptor (static capabilities) — this is the dynamic snapshot.",
+      "$ref": "#/$defs/HardwareFingerprint"
+    },
+    "ttft_ms": {
+      "type": ["number", "null"],
+      "description": "Time to first token in milliseconds. Null when status is not 'completed'.",
+      "minimum": 0.0,
+      "default": null
+    },
+    "decode_tokens_per_sec": {
+      "type": ["number", "null"],
+      "description": "Steady-state decode throughput in tokens per second (measured after the first token). Null when status is not 'completed'.",
+      "minimum": 0.0,
+      "default": null
+    },
+    "peak_memory_mb": {
+      "type": ["number", "null"],
+      "description": "Peak RAM usage in megabytes during inference. Null when status is not 'completed'.",
+      "minimum": 0.0,
+      "default": null
+    },
+    "on_disk_size_mb": {
+      "type": ["number", "null"],
+      "description": "Total size of model files on disk in megabytes (weights + projector + any auxiliary files). Null when status is not 'completed'.",
+      "minimum": 0.0,
+      "default": null
+    },
+    "energy_j": {
+      "type": ["number", "null"],
+      "description": "Energy consumed during the benchmark run in joules. Null when not measured or when status is not 'completed'.",
+      "minimum": 0.0,
+      "default": null
+    },
+    "quality_scores": {
+      "type": "array",
+      "description": "Per-benchmark quality measurements. Empty list when status is not 'completed'.",
+      "items": {
+        "$ref": "#/$defs/BenchmarkScore"
+      }
+    }
+  },
+  "$defs": {
+    "HardwareFingerprint": {
+      "title": "HardwareFingerprint",
+      "description": "Observed runtime state of the device during measurement. Captures factors that can affect latency and memory readings: free RAM, thermal condition, OS version. Stored alongside every MetricsReport for reproducibility auditing.",
+      "type": "object",
+      "required": ["os_version", "available_ram_mb"],
+      "additionalProperties": false,
+      "properties": {
+        "os_version": {
+          "type": "string",
+          "description": "OS version string at measurement time (e.g. 'iOS 18.3.1', 'Raspbian GNU/Linux 12', 'macOS 15.4').",
+          "minLength": 1
+        },
+        "available_ram_mb": {
+          "type": "number",
+          "description": "Free RAM in megabytes immediately before the inference run. Values below ~500 MB on Pi 5 should be flagged — the measurement may be contaminated by swap.",
+          "minimum": 0.0
+        },
+        "thermal_state": {
+          "type": ["string", "null"],
+          "description": "Device thermal condition at measurement time. Free string; device-specific values (e.g. Apple: 'nominal'/'fair'/'serious'/'critical'; Pi: 'normal'/'throttled'). Null when not measurable.",
+          "default": null
+        },
+        "swap_used_mb": {
+          "type": ["number", "null"],
+          "description": "Swap in use in MB at measurement time. None means swap was not measured. Non-zero means latency figures in the parent MetricsReport are unreliable. Downstream consumers (Pareto Tracker) should treat reports with non-zero swap as latency-suspect. Primarily relevant for Pi 5 4 GB.",
+          "minimum": 0.0,
+          "default": null
+        }
+      }
+    },
+    "BenchmarkScore": {
+      "title": "BenchmarkScore",
+      "description": "A single metric from a single benchmark evaluation. One MetricsReport may contain multiple BenchmarkScore entries (different benchmarks, different metrics within a benchmark).",
+      "type": "object",
+      "required": ["benchmark", "metric", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "benchmark": {
+          "type": "string",
+          "description": "Benchmark name as reported by VLMEvalKit or the custom eval harness (e.g. 'RealWorldQA', 'MMBench_dev_en', 'POPE', 'stage_a_caption', 'stage_a_vqa').",
+          "minLength": 1
+        },
+        "metric": {
+          "type": "string",
+          "description": "Metric name within the benchmark (e.g. 'accuracy', 'f1', 'cider', 'recall').",
+          "minLength": 1
+        },
+        "value": {
+          "type": "number",
+          "description": "Numeric metric value. Scale is benchmark-specific (accuracy is 0–1, CIDEr is typically 0–~5, etc.)."
+        }
+      }
+    }
+  }
+}

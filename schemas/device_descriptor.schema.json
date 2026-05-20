@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DeviceDescriptor",
+  "description": "Describes a hardware device: its capabilities, supported inference runtimes, and known operational quirks. Used by the Deployment Dispatcher to choose the right export pipeline and by the measurement harnesses to log hardware context alongside metrics.",
+  "type": "object",
+  "required": [
+    "device_id",
+    "chip_family",
+    "ram_gb",
+    "accelerators",
+    "supported_runtimes",
+    "preferred_runtime",
+    "quirks",
+    "measurement_harness"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "description": "Unique identifier for this device configuration. Used as a foreign key in ExperimentConfig and MetricsReport.",
+      "minLength": 1
+    },
+    "chip_family": {
+      "type": "string",
+      "description": "Hardware chip family identifier (e.g. apple_a18_pro, broadcom_bcm2712, apple_m5_pro).",
+      "minLength": 1
+    },
+    "ram_gb": {
+      "type": "integer",
+      "description": "Total physical RAM in gigabytes.",
+      "minimum": 1
+    },
+    "accelerators": {
+      "type": "array",
+      "description": "Hardware acceleration units available on this device.",
+      "items": {
+        "type": "string",
+        "enum": ["ane", "gpu", "cpu"]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "supported_runtimes": {
+      "type": "array",
+      "description": "Inference runtimes that can run on this device. The Deployment Dispatcher uses this to pick the export pipeline.",
+      "items": {
+        "type": "string",
+        "enum": ["mlx", "coreml", "llamacpp_gguf", "onnx_cpu", "pytorch_mps"]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "preferred_runtime": {
+      "type": "string",
+      "description": "The runtime the Deployment Dispatcher should use unless overridden. Must be one of supported_runtimes.",
+      "enum": ["mlx", "coreml", "llamacpp_gguf", "onnx_cpu", "pytorch_mps"]
+    },
+    "quirks": {
+      "type": "array",
+      "description": "Free-form operational notes: known failure modes, measurement gotchas, thermal characteristics. Written for the developer and for harness logic that may check for specific quirk strings.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "measurement_harness": {
+      "type": "string",
+      "description": "Name of the measurement harness implementation used on this device (e.g. ios_swift_bridge_v1, pi_python_bridge_v1).",
+      "minLength": 1
+    },
+    "role": {
+      "type": "string",
+      "description": "Whether this device is a deployment target (iPhone, Pi) or the measurement-and-training workstation (Compute Mac). Deployment Dispatcher skips non-deployment-target devices.",
+      "enum": ["deployment_target", "measurement_and_training"],
+      "default": "deployment_target"
+    }
+  }
+}

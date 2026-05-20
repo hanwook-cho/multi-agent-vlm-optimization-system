@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# pytest
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Artifacts — result bundles, exported models, device builds.
+# Contents are large and locally produced; not committed.
+# See artifacts/README.md for what belongs here.
+artifacts/*
+!artifacts/README.md
+
+# Dataset photos — only the manifest and our own captions/VQA pairs are committed.
+# Users fetch the actual photos from the source datasets (Flickr30k, COCO, Open Images).
+datasets/stage_a_proxy/photos/
+
+# Model weight files — never commit these
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Secrets and local config
+.env
+*.local

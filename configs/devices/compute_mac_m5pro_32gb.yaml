@@ -1,0 +1,17 @@
+device_id: compute_mac_m5pro_32gb
+chip_family: apple_m5_pro
+ram_gb: 32
+accelerators:
+  - gpu  # MPS — Mac does not expose ANE for general-purpose inference
+supported_runtimes:
+  - mlx
+  - pytorch_mps
+  - onnx_cpu
+preferred_runtime: mlx
+quirks:
+  - "MPS bandwidth ~275-300 GB/s; small-VLM training is bandwidth-bound at this scale"
+  - "Memory shared between CPU and GPU (unified); training + LLM hosting compete if both on same Mac"
+  - "Activity Monitor memory reporting differs from psutil; document which is used in each measurement"
+  - "Mac is the measurement workstation for evaluating other devices; it is also the iOS dev host"
+measurement_harness: mac_python_bridge_v1
+role: measurement_and_training

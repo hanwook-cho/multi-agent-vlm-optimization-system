@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentDecision",
+  "description": "Structured log entry for a single decision made by an LLM-driven agent. Every agent action that changes system state or enters the approval queue is logged here. Provides the audit trail for reproducibility, hallucination review, and the human-approval workflow.\n\nTwo agents produce AgentDecision records: the Search Strategist (decision_types: propose_experiments, triage_failure, write_pareto_rationale) and the Research Analyst (decision_type: ingest_paper). A decision_type must match its agent_name.",
+  "type": "object",
+  "required": [
+    "agent_name",
+    "decision_type",
+    "input_hash",
+    "output_hash",
+    "rationale",
+    "timestamp",
+    "llm_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "agent_name": {
+      "type": "string",
+      "description": "Which agent produced this decision.",
+      "enum": ["search_strategist", "research_analyst"]
+    },
+    "decision_type": {
+      "type": "string",
+      "description": "What kind of decision this is. Must be consistent with agent_name: search_strategist owns propose_experiments/triage_failure/write_pareto_rationale; research_analyst owns ingest_paper.",
+      "enum": ["propose_experiments", "triage_failure", "write_pareto_rationale", "ingest_paper"]
+    },
+    "input_hash": {
+      "type": "string",
+      "description": "SHA-256 of the canonical JSON of the agent's input package (Pareto frontier snapshot, search state, paper reference, etc.). Enables reproducibility auditing — same input + same llm_id should produce the same or comparable output.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "output_hash": {
+      "type": "string",
+      "description": "SHA-256 of the canonical JSON of the agent's output (proposed ExperimentConfig list, triage result, rationale text, HypothesisRecord). Links this decision record to its produced artifact.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Free-form explanation from the LLM for this decision. The primary human-readable record of the agent's reasoning. Written for a developer reading the decision log, not for machine parsing.",
+      "minLength": 1
+    },
+    "confidence_flags": {
+      "type": "object",
+      "description": "Per-field uncertainty flags from the agent. Keys are field or concept names the agent is uncertain about; values are the confidence level. Absence of a key means the agent did not flag uncertainty for that field. An empty object means no uncertainty was flagged.",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["low", "medium", "high"]
+      },
+      "default": {}
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp with timezone when the agent produced this decision."
+    },
+    "llm_id": {
+      "type": "string",
+      "description": "Identifier for the LLM that produced this decision (e.g. 'Qwen3-Coder-7B-Q4', 'claude-sonnet-4-5'). Distinct from ExperimentConfig.model_id, which identifies the VLM under evaluation. Records which model was reasoning, not which model was being tested.",
+      "minLength": 1
+    },
+    "duration_ms": {
+      "type": ["integer", "null"],
+      "description": "Wall-clock time in milliseconds from input submission to output receipt. Useful for LLM latency tracking and budget accounting.",
+      "minimum": 0,
+      "default": null
+    }
+  }
+}

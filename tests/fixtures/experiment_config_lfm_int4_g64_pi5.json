@@ -1,0 +1,19 @@
+{
+  "model_id": "liquid-ai/lfm2-vl-450m",
+  "compression": {
+    "weight_dtype": "int4",
+    "activation_dtype": null,
+    "group_size": 64,
+    "kv_cache_dtype": "int8",
+    "sparsity": null
+  },
+  "input_resolution": 336,
+  "vision_token_budget": 128,
+  "runtime_backend": "llamacpp_gguf",
+  "decode_strategy": "greedy",
+  "decode_top_k": null,
+  "speculative_draft_model_id": null,
+  "dataset_hash": "e3adc60b76b266502fc78e95829f0850f059323a1b2d183a67fb10a982eadf20",
+  "target_device_id": "raspberry_pi_5_4gb",
+  "notes": "INT4 weight-only, group_size=64, INT8 KV cache — primary Mode A compression candidate for Pi 5"
+}

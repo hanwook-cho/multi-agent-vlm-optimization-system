@@ -844,4 +844,87 @@ These should be resolved before you start Week 1, since they affect concrete tas
 
 ---
 
+## 12. Phase 0 verification
+
+Verification is the discipline that catches the gap between "looks correct" and "is correct." For Phase 0, the verification effort is small (most work is configuration and measurement, not complex code), but the *habit* established here matters for Phases 1-3 where verification carries real weight.
+
+**Two principles:**
+
+1. **Verify at the boundary of each unit of work**, not just at phase exit. A schema's round-trip test runs before moving to the next schema. A device's measurement is sanity-checked against published claims before moving to the next device. Bugs caught early cost minutes; bugs caught at phase exit cost days.
+
+2. **Verification produces an artifact.** Every verification check writes its result somewhere persistent — a test passing in CI, a row in `docs/verifications/phase_0.md`, a screenshot in the dashboard's history. "I checked it" without an artifact doesn't count, because three weeks from now you won't remember which version you checked.
+
+### 12.1 Automated verification
+
+These run on every commit (eventually via CI; manually via `pytest` for now):
+
+| Check | What it verifies | When |
+|---|---|---|
+| `pytest tests/test_schemas.py` | Each JSON Schema validates its example fixtures; each Pydantic model round-trips JSON cleanly | After every schema change |
+| `python -c "from schemas import *"` | All schema modules import without errors | After every schema change |
+| `python -c "import yaml; [yaml.safe_load(open(f)) for f in glob('configs/devices/*.yaml')]"` | All DeviceDescriptor YAMLs parse | After Task 1.4 and any later device-config change |
+| `jsonschema -i tests/fixtures/<name>.json schemas/<schema>.schema.json` | Each fixture validates against its schema (CLI sanity check beyond Pydantic) | After every schema or fixture change |
+
+Add a `Makefile` target `make verify-phase-0-auto` that runs all four. Should take seconds.
+
+### 12.2 Manual verification (signed off in `docs/verifications/phase_0.md`)
+
+These can't be automated and require human judgment. Record each in `docs/verifications/phase_0.md` with date, check name, result (pass/fail), and brief notes:
+
+**Week 2 (Mac):**
+- [ ] Qwen2.5-VL-3B loads on Compute Mac, produces non-empty output for 5 sample photos
+- [ ] Qwen2.5-VL-3B memory measurement stable across 3 runs (variance < 20%)
+- [ ] VLMEvalKit produces quality scores for all 5 reference models on 3 benchmark slices, scores logged in metrics DB
+- [ ] VLMEvalKit scores for FastVLM-0.5B and LFM2.5-VL-450M within ~20% of published claims on overlapping benchmarks
+
+**Week 3 (iPhone):**
+- [ ] Apple Developer provisioning works; blank app deploys to iPhone 16 Pro
+- [ ] LFM2.5-VL-450M produces sensible captions for 5 sample photos on iPhone (caption quality is human-judged, not numerically scored)
+- [ ] LFM2.5-VL-450M TTFT within ~20% of published claim on iPhone (or documented explanation if not)
+- [ ] FastVLM-0.5B TTFT under ~120ms on iPhone (Apple's published claim)
+- [ ] SmolVLM-500M produces sensible captions on iPhone
+- [ ] MiniCPM-V 4.6 produces sensible captions on iPhone, OR non-fit explicitly documented
+- [ ] All iPhone measurements logged in metrics DB with consistent device_id and harness version
+
+**Week 4 (Pi):**
+- [ ] LFM2.5-VL-450M produces sensible captions on Pi 5
+- [ ] Pi 5 measurements confirmed to not hit swap (`free -h` checks pre and post)
+- [ ] SmolVLM-500M produces sensible captions on Pi 5 (or non-fit documented)
+- [ ] FastVLM-on-Pi non-viability empirically confirmed (or surprising-fit documented in ADR)
+- [ ] Stage A eval set: 200 photos exist, 100 captions exist, 100 VQA pairs exist, manifest hash recorded
+
+**Week 5 (close):**
+- [ ] Dashboard renders without errors, all 4 tabs populated, all 5 reference markers visible
+- [ ] `THIRD_PARTY.md` covers every third-party model, dataset, and runtime used
+- [ ] All 9 ADRs exist at expected paths
+- [ ] Phase 0 blog post draft exists, ~1500 words, honestly framed (not over-promising)
+- [ ] Retrospective written, honestly addressing what slipped and why
+
+### 12.3 Verification artifact
+
+Create `docs/verifications/phase_0.md` with the manual checklist above as the template. As each check passes, fill in date and brief notes. The completed document is the verification artifact for Phase 0. Commit it.
+
+Example entry format:
+```markdown
+### Qwen2.5-VL-3B loads on Compute Mac
+**Date:** 2026-05-19
+**Result:** Pass
+**Notes:** Loaded at FP16, ~7.1 GB resident. First inference 12.3s
+(cold start). Steady-state decode ~8.4 tok/s. Output for sample photo
+"beach_sunset.jpg" was a coherent 2-sentence description.
+```
+
+### 12.4 What verification does NOT include in Phase 0
+
+For clarity, these are deliberately *not* part of Phase 0 verification:
+
+- **Performance benchmarking against the success criteria.** Phase 0 establishes reference baselines; it doesn't optimize against them. That's Phase 1+.
+- **End-to-end agent loop tests.** No agents exist yet. The Search Strategist Agent is built in Phase 1.
+- **Cross-device deployment validation.** Each device is verified independently in Phase 0; the system that orchestrates across them comes in Phase 1.
+- **CI/CD setup.** Manual `pytest` is sufficient for Phase 0's scale. CI can be added in Phase 1 if commit volume justifies it.
+
+The Phase 1 plan will define its own §12 verification with the appropriate depth for what gets built there.
+
+---
+
 *Next document, after Phase 0 completes: "VLM_Optimization_DetailedPlan_Phase1.md."*

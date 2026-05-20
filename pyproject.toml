@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vlm-opt"
+version = "0.1.0"
+description = "Multi-agent system for autonomous VLM optimization for on-device deployment"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+# Training and inference — large, install separately when needed.
+# Phase 1+ only; Phase 0 schema/baseline work does not require these.
+train = [
+    "torch>=2.1",
+    "transformers>=4.40",
+]
+# Evaluation harness — also requires train extras.
+eval = [
+    "torch>=2.1",
+    "transformers>=4.40",
+    "vlmeval>=0.1",          # VLMEvalKit: pip install vlmeval
+]
+# Everything including train and eval.
+all = [
+    "vlm-opt[train,eval]",
+]
+# Development and test tools.
+dev = [
+    "pytest>=7.0",
+    "jsonschema>=4.18",
+    "pyyaml>=6.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*", "docs*", "configs*", "datasets*", "artifacts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

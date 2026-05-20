@@ -1,0 +1,51 @@
+{
+  "title": "Dynamic Vision Token Pruning via Attention Entropy",
+  "source_citation": {
+    "title": "EfficientVLM: Inference-Time Vision Token Reduction via Attention-Guided Pruning",
+    "authors": ["Wei Zhang", "Soo-Yung Kim", "Priya Agarwal"],
+    "venue": "ICLR 2025",
+    "year": 2025,
+    "arxiv_id": "2412.09876",
+    "github_url": "https://github.com/example/efficientvlm",
+    "url": "https://arxiv.org/abs/2412.09876"
+  },
+  "claimed_effect": "At inference time, vision tokens whose attention entropy falls below a learned threshold are dropped before the LLM layers. This reduces the number of tokens processed by the language model by 30-50% with less than 2% accuracy drop on VQAv2 and MMBench. The threshold is calibrated per-model on a small held-out set and requires no retraining.",
+  "verbatim_excerpts": [
+    {
+      "text": "We compute the entropy of the attention distribution over vision tokens at the final vision encoder layer. Tokens whose entropy falls below threshold τ are discarded before the cross-attention or concatenation step that passes visual features to the LLM.",
+      "location": "Section 3.1, p. 4"
+    },
+    {
+      "text": "Across all evaluated models, dropping 40% of vision tokens by entropy pruning reduces VQAv2 accuracy by 1.8 ± 0.3% and MMBench by 1.5 ± 0.4% (mean ± std over 3 seeds). At 30% pruning, quality drop is below 1% on both benchmarks.",
+      "location": "Table 2, p. 7"
+    },
+    {
+      "text": "The threshold τ is calibrated on 256 held-out examples using a bisection search targeting the desired pruning rate. Calibration takes under 2 minutes on a single GPU and does not require gradient computation.",
+      "location": "Section 3.3, p. 5"
+    }
+  ],
+  "original_hyperparameters": "Pruning rate: 30-50% (sweep). Threshold calibration: 256 held-out examples, bisection search, target pruning rate as objective. Evaluated at: VQAv2 (val), MMBench (dev-en), 3 random seeds each.",
+  "reported_results": "VQAv2: 1.8% accuracy drop at 40% pruning (3 seeds, std 0.3%). MMBench: 1.5% drop at 40% pruning (std 0.4%). At 30% pruning: <1% drop on both. Inference speedup: 1.3-1.6x on A100, varies by sequence length. Paper does not report results on edge devices.",
+  "applicability_check": {
+    "requirements": [
+      "Access to attention maps from the final vision encoder layer (before the LLM connection point)",
+      "A held-out calibration set of ~256 examples",
+      "Vision encoder must produce per-token attention weights (standard for transformer encoders)"
+    ],
+    "verdict": "uncertain",
+    "notes": "Our vision encoder (Qwen2.5-VL uses a ViT-based encoder) produces per-token attention weights, so the mechanism is available. The connection point between encoder and LLM is accessible via the model's forward pass. Uncertainty: the paper evaluated on models with 256-1024 vision tokens; our target budget is 64-128 tokens. At 64 tokens, a 40% pruning rate leaves only 38 tokens — unclear whether this degrades quality more severely than the paper's results suggest. Applicability to llama.cpp GGUF runtime is also uncertain: hooking into the forward pass requires access to intermediate activations, which may not be exposed in compiled GGUF models."
+  },
+  "known_failure_modes": [
+    "Quality drop increases non-linearly at pruning rates above 50%; paper does not characterize behavior beyond 50%",
+    "Calibration set distribution shift: if held-out examples are not representative of deployment distribution, threshold may be miscalibrated",
+    "Not evaluated on captioning tasks (CIDEr/BLEU) — authors note attention entropy may behave differently for generative vs. discriminative tasks"
+  ],
+  "implementation_difficulty": "minor_code_change",
+  "proposed_codebase_insertion_point": "runners/mlx_runner.py or runners/llamacpp_runner.py — hook into the vision encoder forward pass after the final encoder layer, before token concatenation with the LLM input",
+  "confidence_flags": {
+    "claimed_effect": "high",
+    "applicability_check": "low",
+    "original_hyperparameters": "high",
+    "reported_results": "medium"
+  }
+}

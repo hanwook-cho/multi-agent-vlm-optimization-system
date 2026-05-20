@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HypothesisRecord",
+  "description": "Research Analyst Agent output — an implementation kit describing a technique extracted from a paper or repository. Designed for a developer to read and act on directly, not as a terse research lead. Every claim is grounded in verbatim_excerpts so the human can cross-check the extraction against the source. Confidence flags surface the agent's uncertainty field-by-field rather than hiding it.",
+  "type": "object",
+  "required": [
+    "title",
+    "source_citation",
+    "claimed_effect",
+    "verbatim_excerpts",
+    "reported_results",
+    "applicability_check",
+    "known_failure_modes",
+    "implementation_difficulty",
+    "confidence_flags"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short technique name, suitable as a heading (e.g. 'Dynamic Vision Token Pruning via Attention Entropy').",
+      "minLength": 1
+    },
+    "source_citation": {
+      "description": "Bibliographic reference for the paper or repository this technique comes from.",
+      "$ref": "#/$defs/SourceCitation"
+    },
+    "claimed_effect": {
+      "type": "string",
+      "description": "What the paper says the technique does, in 2-3 sentences. Written in the paper's own terms, not interpreted. Grounded in verbatim_excerpts.",
+      "minLength": 1
+    },
+    "verbatim_excerpts": {
+      "type": "array",
+      "description": "Direct quotes from the paper describing the technique. At least one required. The human uses these to cross-check the agent's extraction against the source without re-reading the full paper.",
+      "items": {
+        "$ref": "#/$defs/VerbatimExcerpt"
+      },
+      "minItems": 1
+    },
+    "original_hyperparameters": {
+      "type": ["string", "null"],
+      "description": "The paper's reported configuration as free-form text (e.g. a transcribed table, a list of values). Null when the paper does not report specific hyperparameters.",
+      "default": null
+    },
+    "reported_results": {
+      "type": "string",
+      "description": "The paper's claimed numbers, including the evaluation setup that produced them. Free-form text. Copied or paraphrased from the paper; not independently verified.",
+      "minLength": 1
+    },
+    "applicability_check": {
+      "description": "Structured assessment of whether this technique applies to our setup. Answers: does this work with our model size, data, hardware, and quantization?",
+      "$ref": "#/$defs/ApplicabilityCheck"
+    },
+    "known_failure_modes": {
+      "type": "array",
+      "description": "Limitations and failure modes the paper itself discloses, typically from the discussion or limitations section. Empty list if the paper discloses none.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "implementation_difficulty": {
+      "type": "string",
+      "description": "Estimated effort to implement this technique in the project codebase. Determines Tier 1 (auto-runnable) vs Tier 2 (requires human implementation) routing. See HLD §6.3.",
+      "enum": ["config_change", "minor_code_change", "new_module", "major_refactor"]
+    },
+    "proposed_codebase_insertion_point": {
+      "type": ["string", "null"],
+      "description": "Which file or class in the codebase this technique would extend (e.g. 'runners/mlx_runner.py, VisionEncoder.forward'). A starting point for the human implementor, not final code. Null when the agent cannot determine a specific insertion point.",
+      "default": null
+    },
+    "confidence_flags": {
+      "type": "object",
+      "description": "Per-field uncertainty flags from the Research Analyst Agent. Keys are field names or concept names within this record; values are the agent's confidence level. An empty object means no uncertainty was flagged. Flags on claimed_effect, applicability_check, and original_hyperparameters are the most common.",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["low", "medium", "high"]
+      }
+    }
+  },
+  "$defs": {
+    "SourceCitation": {
+      "title": "SourceCitation",
+      "description": "Bibliographic reference. At least one of url, arxiv_id, or github_url must be present to enable the citation verifier (HLD §6.4).",
+      "type": "object",
+      "required": ["title", "authors", "year"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Full paper or repository title as it appears in the source.",
+          "minLength": 1
+        },
+        "authors": {
+          "type": "array",
+          "description": "Author list in the order they appear in the paper.",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1
+        },
+        "venue": {
+          "type": ["string", "null"],
+          "description": "Conference, journal, or workshop name (e.g. 'ICLR 2025', 'NeurIPS 2024'). Null for preprints with no published venue.",
+          "default": null
+        },
+        "year": {
+          "type": "integer",
+          "description": "Publication or preprint year.",
+          "minimum": 2000
+        },
+        "arxiv_id": {
+          "type": ["string", "null"],
+          "description": "arXiv identifier (e.g. '2301.12345'). Enables direct arXiv API citation verification.",
+          "pattern": "^\\d{4}\\.\\d{4,7}$",
+          "default": null
+        },
+        "github_url": {
+          "type": ["string", "null"],
+          "description": "GitHub repository URL, if the technique has an official implementation.",
+          "default": null
+        },
+        "url": {
+          "type": ["string", "null"],
+          "description": "Canonical URL for the paper (arXiv abstract page, ACL Anthology, conference proceedings). The citation verifier fetches this URL to confirm the paper exists. Required if arxiv_id and github_url are both null.",
+          "default": null
+        }
+      }
+    },
+    "VerbatimExcerpt": {
+      "title": "VerbatimExcerpt",
+      "description": "A direct quote from the paper, with an optional location reference.",
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The verbatim quoted passage. Must be an exact quote, not a paraphrase.",
+          "minLength": 1
+        },
+        "location": {
+          "type": ["string", "null"],
+          "description": "Where in the paper this excerpt appears (e.g. 'Section 3.2, p. 5', 'Algorithm 1, line 4', 'Table 2'). Helps the human find the passage quickly.",
+          "default": null
+        }
+      }
+    },
+    "ApplicabilityCheck": {
+      "title": "ApplicabilityCheck",
+      "description": "Structured assessment of whether this technique is applicable to the project's setup. The verdict is the agent's overall conclusion; requirements and notes provide the reasoning.",
+      "type": "object",
+      "required": ["requirements", "verdict", "notes"],
+      "additionalProperties": false,
+      "properties": {
+        "requirements": {
+          "type": "array",
+          "description": "Explicit requirements the technique imposes (e.g. 'requires access to intermediate attention maps', 'requires model with ≥256 vision tokens', 'requires CUDA for custom CUDA kernels'). Extracted from the paper.",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "verdict": {
+          "type": "string",
+          "description": "Overall applicability verdict. 'applicable': requirements are met by our setup. 'not_applicable': a hard requirement is not met. 'uncertain': applicability depends on factors not yet known.",
+          "enum": ["applicable", "not_applicable", "uncertain"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Reasoning behind the verdict. Explains which requirements are met, which are borderline, and what would change the verdict.",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

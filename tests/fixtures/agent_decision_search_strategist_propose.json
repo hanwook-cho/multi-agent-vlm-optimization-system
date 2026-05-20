@@ -1,0 +1,15 @@
+{
+  "agent_name": "search_strategist",
+  "decision_type": "propose_experiments",
+  "input_hash": "e3adc60b76b266502fc78e95829f0850f059323a1b2d183a67fb10a982eadf20",
+  "output_hash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "rationale": "Runs 12-15 all landed within 2% of run 11 on the Pi 5 Pareto frontier; further group_size reduction appears to have hit diminishing returns at group_size=32. Shifting focus to vision_token_budget: trying budgets [64, 96, 128] at INT4 g64 on Pi 5. The SmolVLM ablation in their ICLR 2025 paper suggests 96 tokens is a reliable floor for photo captioning before quality drops noticeably — I'm treating that as a soft lower bound but flagging the applicability since their setup used a different encoder.",
+  "confidence_flags": {
+    "region_selection": "high",
+    "quality_floor_at_96_tokens": "medium",
+    "smolvlm_applicability_to_lfm": "low"
+  },
+  "timestamp": "2026-05-20T14:23:00+00:00",
+  "llm_id": "Qwen3-Coder-7B-Q4",
+  "duration_ms": 4200
+}
