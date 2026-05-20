@@ -22,11 +22,15 @@ env/
 .vscode/
 *.swp
 
-# Artifacts — result bundles, exported models, device builds.
-# Contents are large and locally produced; not committed.
-# See artifacts/README.md for what belongs here.
+# Artifacts — archived MetricsReport JSON files and experiment configs are committed.
+# Large binaries (model weights, exported CoreML bundles) are excluded.
+# See artifacts/README.md for the distinction.
 artifacts/*
 !artifacts/README.md
+!artifacts/*.json
+
+# Scratch results directory — working outputs, not committed.
+results/
 
 # Dataset photos — only the manifest and our own captions/VQA pairs are committed.
 # Users fetch the actual photos from the source datasets (Flickr30k, COCO, Open Images).
