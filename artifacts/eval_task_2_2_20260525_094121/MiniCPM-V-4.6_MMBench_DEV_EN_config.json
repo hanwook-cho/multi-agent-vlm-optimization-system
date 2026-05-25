@@ -13,7 +13,7 @@
   "decode_strategy": "greedy",
   "decode_top_k": null,
   "speculative_draft_model_id": null,
-  "dataset_hash": "32dec6ca51972969a0828a34480bc05f725b05c163411e9a3759f5d3c57d9d22",
+  "dataset_hash": "c8d5a45d98c9618ab8c947f27d66d1a48a5bf130c74a390df34b6287358ef0a9",
   "target_device_id": "mac_mini_m4_16gb",
-  "notes": "Task 2.2 quality eval — MMBench_DEV_EN 20-example slice"
+  "notes": "Task 2.2 quality eval — MMBench_DEV_EN 100-example slice"
 }

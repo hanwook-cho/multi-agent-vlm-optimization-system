@@ -1,15 +1,15 @@
 {
-  "experiment_id": "e077b1d16012a2dd904f778214b39338f59f76d3b1120adae651498527c5ccb4",
+  "experiment_id": "a162c7c928abb0b2da6cb8d253726284de218e6101d8b8c3a1bc0fb3024b2a5c",
   "device_id": "mac_mini_m4_16gb",
   "status": "completed",
   "error_message": null,
-  "started_at": "2026-05-25T17:03:28.438750Z",
-  "completed_at": "2026-05-25T17:04:34.077414Z",
+  "started_at": "2026-05-25T17:11:48.847371Z",
+  "completed_at": "2026-05-25T17:17:03.324683Z",
   "hardware_fingerprint": {
     "os_version": "macOS 26.5",
-    "available_ram_mb": 4906.046875,
+    "available_ram_mb": 4299.96875,
     "thermal_state": null,
-    "swap_used_mb": 1532.1875
+    "swap_used_mb": 1500.1875
   },
   "ttft_ms": null,
   "decode_tokens_per_sec": null,
@@ -20,7 +20,7 @@
     {
       "benchmark": "RealWorldQA",
       "metric": "Overall",
-      "value": 0.55
+      "value": 0.65
     }
   ]
 }

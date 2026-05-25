@@ -395,7 +395,7 @@ For **SmolVLM-500M**:
 5. Same measurement instrumentation: TTFT, decode tokens/sec, peak memory, on-disk size.
 
 For **MiniCPM-V 4.6**:
-1. Pull the GGUF weights from `openbmb/MiniCPM-V-4_6-gguf` (or the latest official OpenBMB release).
+1. Pull the GGUF weights from `openbmb/MiniCPM-V-4.6-gguf` (or the latest official OpenBMB release).
 2. OpenBMB publishes iOS adaptation code under the MiniCPM-V repo's `demo/` directory — use that as the starting point.
 3. Same measurement methodology.
 

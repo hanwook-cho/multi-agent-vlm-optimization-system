@@ -13,7 +13,7 @@
   "decode_strategy": "greedy",
   "decode_top_k": null,
   "speculative_draft_model_id": null,
-  "dataset_hash": "9cfbaaab688df1c3f9fc1198dcc26b0de5a321a57c60e6ba87c3fc80afbf03bd",
+  "dataset_hash": "6d506216aa5bad159f167e2535293b4e5ec8e1073b64449d30b66b460ebf6da0",
   "target_device_id": "mac_mini_m4_16gb",
-  "notes": "Task 2.2 quality eval — RealWorldQA 20-example slice"
+  "notes": "Task 2.2 quality eval — RealWorldQA 100-example slice"
 }
