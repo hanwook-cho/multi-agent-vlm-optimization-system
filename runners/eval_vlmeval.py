@@ -72,9 +72,9 @@ MODEL_REGISTRY: dict[str, dict] = {
         "dtype": WeightDtype.FP16,
         "runtime": Runtime.PYTORCH_MPS,
     },
-    "MiniCPM-V-4_5": {
-        "hf_id": "openbmb/MiniCPM-V-4_5",
-        "family": "minicpm",
+    "MiniCPM-V-4.6": {
+        "hf_id": "openbmb/MiniCPM-V-4.6",
+        "family": "minicpm46",
         "dtype": WeightDtype.FP16,
         "runtime": Runtime.PYTORCH_MPS,
     },
@@ -203,7 +203,7 @@ class SmolVLMModel:
 
 
 class MiniCPMVModel:
-    """MiniCPM-V-4_5 on MPS (trust_remote_code).
+    """MiniCPM-V (4.6 / 4.5) on MPS (trust_remote_code).
 
     transformers 5.x _finalize_model_loading calls self.all_tied_weights_keys which is
     set as an instance attribute in PreTrainedModel.__init__.  MiniCPMV's custom
@@ -211,7 +211,7 @@ class MiniCPMVModel:
     Patch PreTrainedModel._move_missing_keys_from_meta_to_device to handle this case.
     """
 
-    model_key = "MiniCPM-V-4_5"
+    model_key = "MiniCPM-V-4.6"
 
     def __init__(self, hf_id: str) -> None:
         from transformers import AutoModel, AutoTokenizer, PreTrainedModel
@@ -415,10 +415,59 @@ class FastVLMModel:
         torch.mps.empty_cache()
 
 
+class MiniCPMV46Model:
+    """MiniCPM-V-4.6 (1.3B) on MPS — native transformers 5.x model.
+
+    Uses MiniCPMV4_6ForConditionalGeneration + MiniCPMV4_6Processor.
+    No trust_remote_code needed; standard generate() API.
+    Chat template adds <think>...</think> preamble via add_generation_prompt=True;
+    generated text starts immediately after so out[0][n_in:] is the answer.
+    """
+
+    model_key = "MiniCPM-V-4.6"
+
+    def __init__(self, hf_id: str) -> None:
+        from transformers import MiniCPMV4_6ForConditionalGeneration, AutoProcessor
+        from huggingface_hub import snapshot_download
+        device = _mps_device()
+        print(f"  Loading {hf_id} …")
+        local_path = snapshot_download(hf_id, local_files_only=True)
+        self.model = MiniCPMV4_6ForConditionalGeneration.from_pretrained(
+            local_path, dtype=torch.float16, low_cpu_mem_usage=True,
+        ).to(device).eval()
+        self.processor = AutoProcessor.from_pretrained(local_path)
+        self.device = device
+
+    def infer(self, image_path: str, question: str, is_mcq: bool) -> str:
+        image = Image.open(image_path).convert("RGB")
+        suffix = MCQ_PROMPT_SUFFIX if is_mcq else POPE_PROMPT_SUFFIX
+        msgs = [{"role": "user", "content": [
+            {"type": "image"},
+            {"type": "text", "text": question + suffix},
+        ]}]
+        text = self.processor.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+        inputs = self.processor(images=[image], text=text, return_tensors="pt").to(self.device)
+        n_in = inputs["input_ids"].shape[1]
+        with torch.inference_mode():
+            out = self.model.generate(**inputs, max_new_tokens=32, do_sample=False)
+        decoded = self.processor.tokenizer.decode(out[0][n_in:], skip_special_tokens=True).strip()
+        # Return first non-empty line so POPE/MCQ scorers see a clean token
+        for line in decoded.splitlines():
+            line = line.strip()
+            if line:
+                return line
+        return decoded
+
+    def unload(self) -> None:
+        del self.model
+        torch.mps.empty_cache()
+
+
 _FAMILY_TO_CLASS = {
     "qwen2_5_vl": Qwen25VLModel,
     "smolvlm": SmolVLMModel,
     "minicpm": MiniCPMVModel,
+    "minicpm46": MiniCPMV46Model,
     "lfm2vl": LFM2VLModel,
     "fastvlm": FastVLMModel,
 }

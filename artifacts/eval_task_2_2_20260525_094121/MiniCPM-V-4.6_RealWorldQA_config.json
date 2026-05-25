@@ -1,0 +1,19 @@
+{
+  "model_id": "openbmb/MiniCPM-V-4.6",
+  "compression": {
+    "weight_dtype": "fp16",
+    "activation_dtype": null,
+    "group_size": null,
+    "kv_cache_dtype": null,
+    "sparsity": null
+  },
+  "input_resolution": null,
+  "vision_token_budget": null,
+  "runtime_backend": "pytorch_mps",
+  "decode_strategy": "greedy",
+  "decode_top_k": null,
+  "speculative_draft_model_id": null,
+  "dataset_hash": "9cfbaaab688df1c3f9fc1198dcc26b0de5a321a57c60e6ba87c3fc80afbf03bd",
+  "target_device_id": "mac_mini_m4_16gb",
+  "notes": "Task 2.2 quality eval — RealWorldQA 20-example slice"
+}
