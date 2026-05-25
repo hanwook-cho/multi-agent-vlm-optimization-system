@@ -405,7 +405,9 @@ class FastVLMModel:
                 images=pixel_values,
                 max_new_tokens=32,
                 do_sample=False,
-                repetition_penalty=1.2,
+                # repetition_penalty only for MCQ: for POPE the suffix contains
+                # "Yes" and "No" which the penalty would suppress in the output.
+                repetition_penalty=1.2 if is_mcq else 1.0,
             )
         # FastVLM's generate() uses inputs_embeds internally (LLaVA path), so out[0]
         # contains only the generated tokens — do NOT slice off input length.
