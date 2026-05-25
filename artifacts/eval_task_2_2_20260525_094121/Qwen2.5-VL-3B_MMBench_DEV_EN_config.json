@@ -1,0 +1,19 @@
+{
+  "model_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+  "compression": {
+    "weight_dtype": "fp16",
+    "activation_dtype": null,
+    "group_size": null,
+    "kv_cache_dtype": null,
+    "sparsity": null
+  },
+  "input_resolution": null,
+  "vision_token_budget": null,
+  "runtime_backend": "pytorch_mps",
+  "decode_strategy": "greedy",
+  "decode_top_k": null,
+  "speculative_draft_model_id": null,
+  "dataset_hash": "c8d5a45d98c9618ab8c947f27d66d1a48a5bf130c74a390df34b6287358ef0a9",
+  "target_device_id": "mac_mini_m4_16gb",
+  "notes": "Task 2.2 quality eval — MMBench_DEV_EN 100-example slice"
+}

@@ -163,15 +163,19 @@ class Qwen25VLModel:
 
 
 class SmolVLMModel:
-    """SmolVLM-500M-Instruct on MPS."""
+    """SmolVLM-500M-Instruct on MPS.
+
+    transformers 5.x dropped AutoModelForVision2Seq; use SmolVLMForConditionalGeneration
+    directly.  AutoProcessor resolves to Idefics3Processor (same interface).
+    """
 
     model_key = "SmolVLM-500M"
 
     def __init__(self, hf_id: str) -> None:
-        from transformers import AutoModelForVision2Seq, AutoProcessor
+        from transformers import SmolVLMForConditionalGeneration, AutoProcessor
         device = _mps_device()
         print(f"  Loading {hf_id} …")
-        self.model = AutoModelForVision2Seq.from_pretrained(
+        self.model = SmolVLMForConditionalGeneration.from_pretrained(
             hf_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,
         ).to(device).eval()
         self.processor = AutoProcessor.from_pretrained(hf_id)
@@ -199,20 +203,79 @@ class SmolVLMModel:
 
 
 class MiniCPMVModel:
-    """MiniCPM-V-4_5 on MPS (trust_remote_code)."""
+    """MiniCPM-V-4_5 on MPS (trust_remote_code).
+
+    transformers 5.x _finalize_model_loading calls self.all_tied_weights_keys which is
+    set as an instance attribute in PreTrainedModel.__init__.  MiniCPMV's custom
+    __init__ doesn't call super().__init__ in all paths, so the attribute is missing.
+    Patch PreTrainedModel._move_missing_keys_from_meta_to_device to handle this case.
+    """
 
     model_key = "MiniCPM-V-4_5"
 
     def __init__(self, hf_id: str) -> None:
-        from transformers import AutoModel, AutoTokenizer
+        from transformers import AutoModel, AutoTokenizer, PreTrainedModel
         device = _mps_device()
         print(f"  Loading {hf_id} …")
-        self.model = AutoModel.from_pretrained(
-            hf_id, trust_remote_code=True,
-            torch_dtype=torch.float16, low_cpu_mem_usage=True,
-        ).to(device).eval()
+
+        # Patch for transformers 5.x compatibility: ensure all_tied_weights_keys exists
+        _orig_move = PreTrainedModel._move_missing_keys_from_meta_to_device
+
+        def _patched_move(self_model, missing_and_mismatched, *args, **kwargs):
+            if not hasattr(self_model, "all_tied_weights_keys"):
+                self_model.all_tied_weights_keys = {}
+            return _orig_move(self_model, missing_and_mismatched, *args, **kwargs)
+
+        PreTrainedModel._move_missing_keys_from_meta_to_device = _patched_move
+        try:
+            self.model = AutoModel.from_pretrained(
+                hf_id, trust_remote_code=True,
+                torch_dtype=torch.float16, low_cpu_mem_usage=True,
+            ).to(device).eval()
+        finally:
+            PreTrainedModel._move_missing_keys_from_meta_to_device = _orig_move
+
         self.tokenizer = AutoTokenizer.from_pretrained(hf_id, trust_remote_code=True)
         self.device = device
+
+        # model.chat() creates self.processor internally via AutoProcessor if none is set.
+        # That processor's tokenizer is a DIFFERENT (unpatched) instance.  Pre-build the
+        # processor here, patch its tokenizer, and assign to self.model.processor so
+        # chat() picks it up directly.
+        from transformers import AutoProcessor
+        processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True)
+
+        # Patch for transformers 5.x: TokenizersBackend no longer exposes these attributes
+        # via __getattr__; set as instance attributes so __dict__ lookup finds them first.
+        #
+        # MiniCPM-V image boundary tokens (from preprocessor_config.json):
+        #   im_start_token  = "<image>"   → id 151669
+        #   im_end_token    = "</image>"  → id 151670
+        #   slice_start     = "<slice>"   → id 151679
+        #   slice_end       = "</slice>"  → id 151680
+        #   bos_id          = bos_token_id (= <|im_start|> = 151644 in Qwen2 tokenizer)
+        _MINICPM_TOKEN_PATCHES = [
+            ("im_start_id",    "<image>"),
+            ("im_end_id",      "</image>"),
+            ("slice_start_id", "<slice>"),
+            ("slice_end_id",   "</slice>"),
+            ("bos_id",         None),   # special: set to bos_token_id
+        ]
+
+        def _patch_tokenizer(tok: object) -> None:
+            for name, token_str in _MINICPM_TOKEN_PATCHES:
+                if not hasattr(tok, name):
+                    if token_str is None:
+                        tid = tok.bos_token_id
+                    else:
+                        tid = tok.convert_tokens_to_ids(token_str)
+                        if tid == tok.unk_token_id:
+                            tid = tok.bos_token_id  # safe fallback
+                    setattr(tok, name, tid)
+
+        _patch_tokenizer(processor.tokenizer)  # for input encoding (processor path)
+        _patch_tokenizer(self.tokenizer)        # for output decoding (_decode_text path)
+        self.model.processor = processor
 
     def infer(self, image_path: str, question: str, is_mcq: bool) -> str:
         image = Image.open(image_path).convert("RGB")
@@ -278,29 +341,74 @@ class LFM2VLModel:
 
 
 class FastVLMModel:
-    """Apple FastVLM-0.5B — loaded generically; skipped if weights unavailable."""
+    """Apple FastVLM-0.5B — LLaVA-QWen2 architecture with MobileCLIP vision tower.
+
+    apple/FastVLM-0.5B uses trust_remote_code with llava_qwen.py (model_type=llava_qwen2).
+    AutoProcessor fails if preprocessor_config.json is absent from the HF hub cache; we
+    resolve the snapshot directory locally and load from that path instead.
+    """
 
     model_key = "FastVLM-0.5B"
 
     def __init__(self, hf_id: str) -> None:
-        from transformers import AutoModelForCausalLM, AutoProcessor
+        from transformers import AutoModelForCausalLM, AutoTokenizer, CLIPImageProcessor
+        from huggingface_hub import snapshot_download
         device = _mps_device()
         print(f"  Loading {hf_id} …")
+        # Resolve local snapshot path (avoids preprocessor_config.json hub-lookup issue)
+        local_path = snapshot_download(hf_id, local_files_only=True)
         self.model = AutoModelForCausalLM.from_pretrained(
-            hf_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,
+            local_path, torch_dtype=torch.float16, low_cpu_mem_usage=True,
             trust_remote_code=True,
         ).to(device).eval()
-        self.processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(local_path, trust_remote_code=True)
+        # Build CLIPImageProcessor with MobileCLIP-L parameters (image_size=1024,
+        # mean=0.0, std=1.0 as defined in llava_qwen.py MobileClipVisionTower).
+        self.image_processor = CLIPImageProcessor(
+            crop_size={"height": 1024, "width": 1024},
+            image_mean=[0.0, 0.0, 0.0],
+            image_std=[1.0, 1.0, 1.0],
+            size={"shortest_edge": 1024},
+        )
+        self._image_token_index = -200   # IMAGE_TOKEN_INDEX from llava_qwen.py
+        self._image_token = "<image>"
         self.device = device
+
+    def _tokenizer_image_token(self, prompt: str) -> torch.Tensor:
+        """Tokenize prompt inserting IMAGE_TOKEN_INDEX (-200) where <image> appears."""
+        chunks = prompt.split(self._image_token)
+        ids: list[int] = []
+        for i, chunk in enumerate(chunks):
+            if i > 0:
+                ids.append(self._image_token_index)
+            ids.extend(self.tokenizer(chunk, add_special_tokens=(i == 0)).input_ids)
+        return torch.tensor([ids], dtype=torch.long)
 
     def infer(self, image_path: str, question: str, is_mcq: bool) -> str:
         image = Image.open(image_path).convert("RGB")
-        prompt = question + (MCQ_PROMPT_SUFFIX if is_mcq else POPE_PROMPT_SUFFIX)
-        inputs = self.processor(images=[image], text=prompt, return_tensors="pt").to(self.device)
+        suffix = MCQ_PROMPT_SUFFIX if is_mcq else POPE_PROMPT_SUFFIX
+        # Build prompt with image token at the start (LLaVA convention)
+        prompt = (
+            self.tokenizer.apply_chat_template(
+                [{"role": "user", "content": f"{self._image_token}\n{question}{suffix}"}],
+                tokenize=False, add_generation_prompt=True,
+            )
+            if hasattr(self.tokenizer, "apply_chat_template") and self.tokenizer.chat_template
+            else f"{self._image_token}\n{question}{suffix}"
+        )
+        input_ids = self._tokenizer_image_token(prompt).to(self.device)
+        pixel_values = self.image_processor(images=[image], return_tensors="pt"
+                                            )["pixel_values"].to(dtype=torch.float16, device=self.device)
         with torch.inference_mode():
-            out = self.model.generate(**inputs, max_new_tokens=32, do_sample=False)
-        n_in = inputs["input_ids"].shape[1]
-        return self.processor.decode(out[0][n_in:], skip_special_tokens=True).strip()
+            out = self.model.generate(
+                inputs=input_ids,
+                images=pixel_values,
+                max_new_tokens=32,
+                do_sample=False,
+            )
+        # FastVLM's generate() uses inputs_embeds internally (LLaVA path), so out[0]
+        # contains only the generated tokens — do NOT slice off input length.
+        return self.tokenizer.decode(out[0], skip_special_tokens=True).strip()
 
     def unload(self) -> None:
         del self.model
@@ -339,8 +447,11 @@ def get_image_path(ds, row: pd.Series, dataset_name: str) -> str:
     if "image_path" in row and pd.notna(row["image_path"]):
         return str(row["image_path"])
     # base64 image stored in TSV — dump to LMUData images dir
-    path = ds.dump_image(row, dataset_name)
-    return str(path)
+    # dump_image() returns a list of paths; take the first element
+    paths = ds.dump_image(row)
+    if isinstance(paths, list):
+        return str(paths[0])
+    return str(paths)
 
 
 def build_mcq_question(row: pd.Series) -> tuple[str, bool]:
@@ -493,6 +604,8 @@ def run_eval(
             # Build result DataFrame for VLMEvalKit scoring
             result_df = df.copy()
             result_df["prediction"] = predictions
+            # Drop base64 image column — it bloats the Excel file beyond xlsx limits
+            result_df = result_df.drop(columns=["image"], errors="ignore")
 
             # Score
             tag = f"{model_key.replace('/', '_')}_{bench_name}"
@@ -505,6 +618,9 @@ def run_eval(
                 for k, v in scores.items()
             ]
             status = ExperimentStatus.COMPLETED if failed < n_samples else ExperimentStatus.FAILED
+            # quality_scores must be empty when status != completed (schema constraint)
+            if status != ExperimentStatus.COMPLETED:
+                quality_scores = []
             report = MetricsReport(
                 experiment_id=experiment_id,
                 device_id=DEVICE_ID,

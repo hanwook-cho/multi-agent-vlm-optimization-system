@@ -28,6 +28,9 @@ env/
 artifacts/*
 !artifacts/README.md
 !artifacts/*.json
+!artifacts/eval_task_*/
+artifacts/eval_task_*/*
+!artifacts/eval_task_*/*.json
 
 # Scratch results directory — working outputs, not committed.
 results/

@@ -1,0 +1,41 @@
+{
+  "experiment_id": "f95c90750fbfec844e6a854cdc594865042854a6cbb6efc0d3c75284dac219c0",
+  "device_id": "mac_mini_m4_16gb",
+  "status": "completed",
+  "error_message": null,
+  "started_at": "2026-05-21T16:42:33.812908Z",
+  "completed_at": "2026-05-21T16:46:02.143906Z",
+  "hardware_fingerprint": {
+    "os_version": "macOS 26.5",
+    "available_ram_mb": 2412.015625,
+    "thermal_state": null,
+    "swap_used_mb": 4752.3125
+  },
+  "ttft_ms": null,
+  "decode_tokens_per_sec": null,
+  "peak_memory_mb": null,
+  "on_disk_size_mb": null,
+  "energy_j": null,
+  "quality_scores": [
+    {
+      "benchmark": "POPE",
+      "metric": "Overall",
+      "value": 96.55172413793103
+    },
+    {
+      "benchmark": "POPE",
+      "metric": "acc",
+      "value": 96.66666666666667
+    },
+    {
+      "benchmark": "POPE",
+      "metric": "precision",
+      "value": 100.0
+    },
+    {
+      "benchmark": "POPE",
+      "metric": "recall",
+      "value": 93.33333333333333
+    }
+  ]
+}
