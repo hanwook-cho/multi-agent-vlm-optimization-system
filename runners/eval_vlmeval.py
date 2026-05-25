@@ -405,10 +405,20 @@ class FastVLMModel:
                 images=pixel_values,
                 max_new_tokens=32,
                 do_sample=False,
+                repetition_penalty=1.2,
             )
         # FastVLM's generate() uses inputs_embeds internally (LLaVA path), so out[0]
         # contains only the generated tokens — do NOT slice off input length.
-        return self.tokenizer.decode(out[0], skip_special_tokens=True).strip()
+        decoded = self.tokenizer.decode(out[0], skip_special_tokens=True).strip()
+        # Return first non-empty line so POPE/MCQ scorers see a clean token.
+        # FastVLM tends to output the answer letter first then verbose text;
+        # can_infer_option requires the letter near the END of the string, so
+        # trimming to the first line is essential for correct scoring.
+        for line in decoded.splitlines():
+            line = line.strip()
+            if line:
+                return line
+        return decoded
 
     def unload(self) -> None:
         del self.model
