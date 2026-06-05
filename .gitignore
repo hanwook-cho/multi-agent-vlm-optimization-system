@@ -37,6 +37,14 @@ artifacts/clip_scores/*
 !artifacts/clip_preds/
 artifacts/clip_preds/*
 !artifacts/clip_preds/*.json
+!artifacts/experiment_ledger/
+artifacts/experiment_ledger/*
+!artifacts/experiment_ledger/*.json
+artifacts/experiment_ledger/*_preds.json
+artifacts/experiment_ledger/*_FAILED.json
+!artifacts/device_ready/
+artifacts/device_ready/*
+!artifacts/device_ready/*.json
 
 # Scratch results directory — working outputs, not committed.
 results/

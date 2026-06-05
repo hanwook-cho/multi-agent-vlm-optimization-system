@@ -1,0 +1,16 @@
+{
+  "experiment_id": "7f6459c7074edfe5856b966a52b32b8f0c817ebb39a5d87f27fce0ee90c55d25",
+  "created_at": "2026-06-05T22:51:21.264904+00:00",
+  "model_id": "LiquidAI/LFM2-VL-450M",
+  "compression": {
+    "weight_dtype": "fp16",
+    "activation_dtype": null,
+    "group_size": null,
+    "kv_cache_dtype": null,
+    "sparsity": null
+  },
+  "runtime_backend": "pytorch_mps",
+  "target_device_id": "iphone16pro-001",
+  "notes": "Phase 1 Task 1.3 end-to-end validation",
+  "instructions": "Deploy the model to the target device and run the VLMHarness measurement protocol (5 warm-up + 5 measured runs). Export the MetricsReport JSON and call ExperimentRunner.import_iphone_results(experiment_id, path)."
+}
