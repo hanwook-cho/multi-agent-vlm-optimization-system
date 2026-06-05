@@ -57,6 +57,7 @@ static void silentLogCallback(ggml_log_level level, const char * text, void * us
     llama_model   * _model;
     llama_context * _ctx;
     mtmd_context  * _mtmd;
+    NSString      * _chatTemplate;  // "chatml" | "smolvlm"
 }
 
 - (void)dealloc {
@@ -67,9 +68,11 @@ static void silentLogCallback(ggml_log_level level, const char * text, void * us
 
 - (nullable instancetype)initWithModelPath:(NSString *)modelPath
                                mmprojPath:(NSString *)mmprojPath
+                             chatTemplate:(NSString *)chatTemplate
                                     error:(NSError *__autoreleasing *)error {
     self = [super init];
     if (!self) return nil;
+    _chatTemplate = chatTemplate ?: @"chatml";
 
     // Silence noisy logs
     llama_log_set(silentLogCallback, nullptr);
@@ -131,15 +134,29 @@ static void silentLogCallback(ggml_log_level level, const char * text, void * us
     bool hasImage = (imagePath != nil && imagePath.length > 0);
 
     // Build chat-formatted prompt matching the model's template
-    // LFM2-VL uses ChatML format: <|im_start|>user\n<img>\nQuestion<|im_end|>\n<|im_start|>assistant\n
-    if (hasImage) {
-        fullPrompt = std::string("<|im_start|>system\nYou are a helpful assistant<|im_end|>\n"
-                                 "<|im_start|>user\n") + marker + "\n"
-                   + std::string(prompt.UTF8String) + "<|im_end|>\n<|im_start|>assistant\n";
+    bool isSmolVLM = [_chatTemplate isEqualToString:@"smolvlm"];
+    if (isSmolVLM) {
+        // SmolVLM / Idefics3 template:
+        //   User:<image>\nprompt<end_of_utterance>\nAssistant:
+        if (hasImage) {
+            fullPrompt = std::string("User:") + marker + "\n"
+                       + std::string(prompt.UTF8String) + "<end_of_utterance>\nAssistant:";
+        } else {
+            fullPrompt = std::string("User: ")
+                       + std::string(prompt.UTF8String) + "<end_of_utterance>\nAssistant:";
+        }
     } else {
-        fullPrompt = std::string("<|im_start|>system\nYou are a helpful assistant<|im_end|>\n"
-                                 "<|im_start|>user\n")
-                   + std::string(prompt.UTF8String) + "<|im_end|>\n<|im_start|>assistant\n";
+        // ChatML template (LFM2-VL, MiniCPM-V 4.6):
+        //   <|im_start|>user\n<image>\nprompt<|im_end|>\n<|im_start|>assistant\n
+        if (hasImage) {
+            fullPrompt = std::string("<|im_start|>system\nYou are a helpful assistant<|im_end|>\n"
+                                     "<|im_start|>user\n") + marker + "\n"
+                       + std::string(prompt.UTF8String) + "<|im_end|>\n<|im_start|>assistant\n";
+        } else {
+            fullPrompt = std::string("<|im_start|>system\nYou are a helpful assistant<|im_end|>\n"
+                                     "<|im_start|>user\n")
+                       + std::string(prompt.UTF8String) + "<|im_end|>\n<|im_start|>assistant\n";
+        }
     }
 
     // --- load image as bitmap ---
@@ -178,8 +195,9 @@ static void silentLogCallback(ggml_log_level level, const char * text, void * us
         return nil;
     }
 
-    // --- reset KV cache ---
+    // --- reset KV cache + perf counters ---
     llama_memory_clear(llama_get_memory(_ctx), false);
+    llama_perf_context_reset(_ctx);   // ← ensures per-inference stats, not cumulative
     llama_pos n_past = 0;
 
     // --- encode + prefill all chunks ---
@@ -245,9 +263,20 @@ static void silentLogCallback(ggml_log_level level, const char * text, void * us
 
     auto t_end = std::chrono::high_resolution_clock::now();
     double totalMs = std::chrono::duration<double, std::milli>(t_end - t_start).count();
-    // Decode TPS = tokens generated / time from first token to end (excludes TTFT/prefill)
-    double decodeSec = (totalMs - ttftMs) / 1000.0;
-    double tps = (nTokens > 1 && decodeSec > 0) ? (double)(nTokens - 1) / decodeSec : 0.0;
+
+    // Decode TPS — use llama.cpp's authoritative internal perf counters.
+    // perf.n_eval = actual tokens decoded by the kernel (not a word/char estimate).
+    // perf.t_eval_ms = cumulative Metal+CPU time for those decode steps.
+    // This is immune to short-output inflation and consistent across output lengths.
+    const struct llama_perf_context_data perf = llama_perf_context(_ctx);
+    double tps;
+    if (perf.n_eval > 0 && perf.t_eval_ms > 0.0) {
+        tps = (double)perf.n_eval / (perf.t_eval_ms / 1000.0);
+    } else {
+        // Fallback: wall-clock estimate (legacy path, same as Phase 0 behaviour)
+        double decodeSec = (totalMs - ttftMs) / 1000.0;
+        tps = (nTokens > 1 && decodeSec > 0) ? (double)(nTokens - 1) / decodeSec : 0.0;
+    }
 
     double peakMemMB = (double)(MAX(peakMem, memBefore) - memBefore) / (1024.0 * 1024.0);
     // Always report at least the model's working set
@@ -257,7 +286,8 @@ static void silentLogCallback(ggml_log_level level, const char * text, void * us
     result.text                  = [NSString stringWithUTF8String:outputText.c_str()];
     result.ttftMs                = ttftMs;
     result.decodeTokensPerSec    = tps;
-    result.totalTokens           = (NSUInteger)nTokens;
+    // Prefer llama.cpp's authoritative token count; fall back to our loop counter
+    result.totalTokens           = (perf.n_eval > 0) ? (NSUInteger)perf.n_eval : (NSUInteger)nTokens;
     result.peakMemoryMB          = (double)peakMem / (1024.0 * 1024.0);
     return result;
 }
