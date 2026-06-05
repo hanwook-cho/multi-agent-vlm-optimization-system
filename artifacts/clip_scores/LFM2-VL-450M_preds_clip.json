@@ -1,0 +1,34 @@
+{
+  "model_key": "LFM2-VL-450M",
+  "clip_model": "openai/clip-vit-large-patch14",
+  "mean_clip_score": 27.5973,
+  "std_clip_score": 3.4907,
+  "n": 5,
+  "per_image": [
+    {
+      "image": "img1.jpg",
+      "text": "The image shows two cats sleeping on a pink blanket. One cat is gray with black stripes, and the other is brown with black stripes. They're both curled up on their sides, with their heads resting on the blanket. There are two remote controls visible - one white and one blue. The cats appear to be very comfortable and relaxed in their cozy spot.",
+      "clip_score": 31.8623
+    },
+    {
+      "image": "img2.jpg",
+      "text": "This image depicts a bustling kitchen scene with a woman as the central figure. She's wearing a white apron over a long-sleeved shirt and black pants, standing in front of a stove. The woman has curly brown hair and is facing away from the camera, looking over her shoulder.\n\nThe kitchen is filled with various cooking utensils and ingredients. There's a wooden table in the foreground covered with a pie crust, a rolling pin, and a bowl of pie. The table is surrounded by hanging pots and pans, and a hanging pot rack is visible above.\n\nThe walls are adorned with hanging pots and pans",
+      "clip_score": 27.219
+    },
+    {
+      "image": "img3.jpg",
+      "text": "This image depicts a cozy and well-organized kitchen. The space is bright and airy, with a white ceiling and walls that create a clean, modern look. The kitchen features wooden cabinets and a white countertop, which adds warmth to the overall design.\n\nThe focal point of the kitchen is a round wooden table in the center, surrounded by chairs. On the table, there's a vibrant display of fresh fruit, including bananas, oranges, and apples, adding a pop of color to the space.\n\nThe kitchen is equipped with essential appliances, including a white stove, sink, and refrigerator. A white refrigerator stands out",
+      "clip_score": 22.1974
+    },
+    {
+      "image": "img4.jpg",
+      "text": "This image captures a bustling street scene in New York City. The focal point is a woman in a green dress walking away from the camera, carrying a shopping cart. She's passing by a man in a white t-shirt and black pants who's standing near a blue building with a sign that reads \"RC Dollar.\"\n\nThe scene is set against a backdrop of typical New York City elements. There's a man in a blue shirt and jeans walking towards the camera, and a yellow umbrella visible in the background. The street is busy with various people going about their day, including a man in a black baseball cap and blue shirt.",
+      "clip_score": 28.1258
+    },
+    {
+      "image": "img5.jpg",
+      "text": "This image captures a dynamic scene at a skate park. The focal point is a skateboarder performing a trick on a ramp, with his skateboard flipping in the air. The skateboarder is wearing a maroon jacket and black pants, and his body is angled as he executes the trick.\n\nThe skate park itself is quite vibrant, with graffiti-covered walls and buildings in the background. There's a sign for \"Hostages\" visible in the upper left corner of the image.\n\nIn the foreground, there's another person on a bicycle, seemingly watching the skateboard",
+      "clip_score": 28.5819
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "model_key": "SmolVLM-500M",
+  "clip_model": "openai/clip-vit-large-patch14",
+  "mean_clip_score": 24.1089,
+  "std_clip_score": 2.5539,
+  "n": 5,
+  "per_image": [
+    {
+      "image": "img1.jpg",
+      "text": "In this image I can see two cats sleeping on a pink color blanket. In the background I can see a remote on the left side.",
+      "clip_score": 27.0157
+    },
+    {
+      "image": "img2.jpg",
+      "text": "A woman in a kitchen with many pots and pans hanging on the wall and one of them being a pitchfork.",
+      "clip_score": 24.2988
+    },
+    {
+      "image": "img3.jpg",
+      "text": "The image depicts a kitchen area with a focus on the dining table and the countertop. The kitchen is well-lit with natural light from the large window on the right side of the image. The window has a white frame and is open, allowing natural light to flood the space. The countertop is made of a light-colored material, possibly granite or quartz, and it is clean and well-maintained.\n\nThe kitchen cabinets are made of wood and are of medium to large size. They are painted in a light color, which contrasts with the white countertop and the natural light from the window. The cabinets have a",
+      "clip_score": 20.5854
+    },
+    {
+      "image": "img4.jpg",
+      "text": "The image depicts a scene on a city sidewalk, likely in a commercial area. The focal point of the image is a blue container with a sign that reads \"RCD DOTR\" in red lettering. The container is positioned on the sidewalk, and a person is standing in front of it. The person is wearing a blue t-shirt and has a beard. They are holding a cell phone and appear to be looking at something on the phone.\n\nTo the left of the container, there is a woman in a green tank top and black shorts. She is walking and appears to be looking at something on the ground.",
+      "clip_score": 22.7256
+    },
+    {
+      "image": "img5.jpg",
+      "text": "In an urban setting, two young men are in mid-air, performing a trick on a kick scooter. The man on the left is wearing a pink shirt and black pants, while the man on the right is wearing a maroon shirt and black pants. The kick scooter is pink and black, and the man in the pink shirt is in a high position, with his right foot off the ground. The man in the maroon shirt is in a lower position, with his left foot on the ground and his right foot in the air. Both men are wearing helmets, and the man in the pink shirt has a headband",
+      "clip_score": 25.9189
+    }
+  ]
+}

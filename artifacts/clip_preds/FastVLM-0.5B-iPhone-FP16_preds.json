@@ -1,0 +1,27 @@
+{
+  "model_key": "FastVLM-0.5B-iPhone-FP16",
+  "prompt": "Describe the image in English.",
+  "device": "iphone_16_pro",
+  "predictions": [
+    {
+      "image": "img1.jpg",
+      "text": "Two cats are sleeping on a red blanket, with one cat wearing a green collar and the other a striped pattern."
+    },
+    {
+      "image": "img2.jpg",
+      "text": "The image depicts a rustic kitchen scene with a person standing at a table, surrounded by various cooking utensils and ingredients. The kitchen is well-equipped with pots, pans, and a rolling pin on the table, and there are pots hanging from the ceiling. The person is wearing a white apron and appears to be engaged in cooking or baking activities. The overall atmosphere suggests a traditional or historical kitchen setting."
+    },
+    {
+      "image": "img3.jpg",
+      "text": "The image depicts a modern kitchen with wooden cabinets, a white stove, and a bowl of fruit on the dining table."
+    },
+    {
+      "image": "img4.jpg",
+      "text": "The image depicts a man standing next to a shopping cart on a city sidewalk, with a traffic light showing a red hand signal. In the background, there is a blue wall with various signs, including one for \"RCDoL Construction\" and another for \"Hyatt Development Corporation.\" The man appears to be homeless, as he is holding a cup and has a bag of clothes on the cart. The scene suggests an urban environment with a mix of commercial and residential elements."
+    },
+    {
+      "image": "img5.jpg",
+      "text": "The image captures a dynamic scene at a skatepark, where two individuals are engaged in skateboarding and biking activities. The skatepark is adorned with vibrant graffiti on the walls, adding a colorful backdrop to the scene. In the background, a building with a sign reading \"HOSTAGES\" is visible, suggesting the location might be a popular spot for such activities. The overcast sky indicates that the weather is cloudy, which might affect the skateboarding session. The overall atmosphere is energetic and youthful, reflecting the spirit of skateboarding culture."
+    }
+  ]
+}
