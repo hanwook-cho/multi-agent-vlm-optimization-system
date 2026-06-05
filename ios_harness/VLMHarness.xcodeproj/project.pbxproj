@@ -10,6 +10,16 @@
 		250DCE982430449DA021A852 /* VLMHarnessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A26CE23AB924272A0AF92FF /* VLMHarnessApp.swift */; };
 		31798D948C1F4B87AD2339B6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DAAE8D1FDA4A27A39D45B2 /* ContentView.swift */; };
 		69CFE482C6EA47898F835D51 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D2F7A2574B044F9A5685914 /* Assets.xcassets */; };
+		AA00F001000000000000000A /* libggml.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R001000000000000000A /* libggml.a */; };
+		AA00F002000000000000000A /* libllama.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R002000000000000000A /* libllama.a */; };
+		AA00F003000000000000000A /* libmtmd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R003000000000000000A /* libmtmd.a */; };
+		AA00F007000000000000000A /* libggml-base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R009000000000000000A /* libggml-base.a */; };
+		AA00F008000000000000000A /* libggml-cpu.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R010000000000000000A /* libggml-cpu.a */; };
+		AA00F009000000000000000A /* libggml-blas.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R011000000000000000A /* libggml-blas.a */; };
+		AA00F010000000000000000A /* libggml-metal.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R012000000000000000A /* libggml-metal.a */; };
+		AA00F004000000000000000A /* LlamaVLMRunner.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA00R005000000000000000A /* LlamaVLMRunner.mm */; };
+		AA00F005000000000000000A /* MeasurementSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00R006000000000000000A /* MeasurementSession.swift */; };
+		AA00F006000000000000000A /* ReportExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00R007000000000000000A /* ReportExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -17,6 +27,18 @@
 		65DAAE8D1FDA4A27A39D45B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9D2F7A2574B044F9A5685914 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9DE36DF40E4B45A1911278C1 /* VLMHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VLMHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA00R001000000000000000A /* libggml.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libggml.a; path = "libs/libggml.a"; sourceTree = SOURCE_ROOT; };
+		AA00R002000000000000000A /* libllama.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libllama.a; path = "libs/libllama.a"; sourceTree = SOURCE_ROOT; };
+		AA00R003000000000000000A /* libmtmd.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmtmd.a; path = "libs/libmtmd.a"; sourceTree = SOURCE_ROOT; };
+		AA00R009000000000000000A /* libggml-base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-base.a"; path = "libs/libggml-base.a"; sourceTree = SOURCE_ROOT; };
+		AA00R010000000000000000A /* libggml-cpu.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-cpu.a"; path = "libs/libggml-cpu.a"; sourceTree = SOURCE_ROOT; };
+		AA00R011000000000000000A /* libggml-blas.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-blas.a"; path = "libs/libggml-blas.a"; sourceTree = SOURCE_ROOT; };
+		AA00R012000000000000000A /* libggml-metal.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-metal.a"; path = "libs/libggml-metal.a"; sourceTree = SOURCE_ROOT; };
+		AA00R004000000000000000A /* LlamaVLMRunner.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LlamaVLMRunner.h; sourceTree = "<group>"; };
+		AA00R005000000000000000A /* LlamaVLMRunner.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LlamaVLMRunner.mm; sourceTree = "<group>"; };
+		AA00R006000000000000000A /* MeasurementSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementSession.swift; sourceTree = "<group>"; };
+		AA00R007000000000000000A /* ReportExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportExporter.swift; sourceTree = "<group>"; };
+		AA00R008000000000000000A /* VLMHarness-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "VLMHarness-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -24,6 +46,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA00F003000000000000000A /* libmtmd.a in Frameworks */,
+				AA00F002000000000000000A /* libllama.a in Frameworks */,
+				AA00F001000000000000000A /* libggml.a in Frameworks */,
+				AA00F007000000000000000A /* libggml-base.a in Frameworks */,
+				AA00F008000000000000000A /* libggml-cpu.a in Frameworks */,
+				AA00F009000000000000000A /* libggml-blas.a in Frameworks */,
+				AA00F010000000000000000A /* libggml-metal.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -34,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				C3B3118176FE4F969B90491F /* VLMHarness */,
+				AA00G002000000000000000A /* libs */,
 				5EEC229B513B402684799D4D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,11 +76,38 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AA00G001000000000000000A /* Inference */ = {
+			isa = PBXGroup;
+			children = (
+				AA00R004000000000000000A /* LlamaVLMRunner.h */,
+				AA00R005000000000000000A /* LlamaVLMRunner.mm */,
+				AA00R008000000000000000A /* VLMHarness-Bridging-Header.h */,
+			);
+			path = Inference;
+			sourceTree = "<group>";
+		};
+		AA00G002000000000000000A /* libs */ = {
+			isa = PBXGroup;
+			children = (
+				AA00R003000000000000000A /* libmtmd.a */,
+				AA00R002000000000000000A /* libllama.a */,
+				AA00R001000000000000000A /* libggml.a */,
+				AA00R009000000000000000A /* libggml-base.a */,
+				AA00R010000000000000000A /* libggml-cpu.a */,
+				AA00R011000000000000000A /* libggml-blas.a */,
+				AA00R012000000000000000A /* libggml-metal.a */,
+			);
+			name = libs;
+			sourceTree = "<group>";
+		};
 		C3B3118176FE4F969B90491F /* VLMHarness */ = {
 			isa = PBXGroup;
 			children = (
 				4A26CE23AB924272A0AF92FF /* VLMHarnessApp.swift */,
 				65DAAE8D1FDA4A27A39D45B2 /* ContentView.swift */,
+				AA00R006000000000000000A /* MeasurementSession.swift */,
+				AA00R007000000000000000A /* ReportExporter.swift */,
+				AA00G001000000000000000A /* Inference */,
 				9D2F7A2574B044F9A5685914 /* Assets.xcassets */,
 			);
 			path = VLMHarness;
@@ -127,6 +184,9 @@
 			files = (
 				31798D948C1F4B87AD2339B6 /* ContentView.swift in Sources */,
 				250DCE982430449DA021A852 /* VLMHarnessApp.swift in Sources */,
+				AA00F004000000000000000A /* LlamaVLMRunner.mm in Sources */,
+				AA00F005000000000000000A /* MeasurementSession.swift in Sources */,
+				AA00F006000000000000000A /* ReportExporter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,6 +204,12 @@
 				DEVELOPMENT_TEAM = 9LVH98N9BS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/llama.cpp/include",
+					"$(SRCROOT)/../vendor/llama.cpp/ggml/include",
+					"$(SRCROOT)/../vendor/llama.cpp/tools/mtmd",
+				);
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -153,10 +219,23 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/libs",
+				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+					"-framework Accelerate",
+					"-framework Metal",
+					"-framework CoreML",
+					"-framework Foundation",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.hwcho99.VLMHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "VLMHarness/Inference/VLMHarness-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -290,6 +369,12 @@
 				DEVELOPMENT_TEAM = 9LVH98N9BS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/llama.cpp/include",
+					"$(SRCROOT)/../vendor/llama.cpp/ggml/include",
+					"$(SRCROOT)/../vendor/llama.cpp/tools/mtmd",
+				);
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -299,10 +384,23 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/libs",
+				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+					"-framework Accelerate",
+					"-framework Metal",
+					"-framework CoreML",
+					"-framework Foundation",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.hwcho99.VLMHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "VLMHarness/Inference/VLMHarness-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -330,6 +428,7 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
 	};
 	rootObject = A458E7652D854FB7B166AD3B /* Project object */;
 }
