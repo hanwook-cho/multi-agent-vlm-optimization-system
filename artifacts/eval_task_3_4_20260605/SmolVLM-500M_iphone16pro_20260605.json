@@ -1,0 +1,43 @@
+{
+  "device_id" : "iphone_16_pro",
+  "experiment_id" : "SmolVLM-500M_iphone16pro_20260605",
+  "model_hf_id" : "HuggingFaceTB\/SmolVLM-500M-Instruct",
+  "model_key" : "SmolVLM-500M",
+  "notes" : "iPhone 16 Pro reference baseline, Phase 0 Task 3.2",
+  "performance_metrics" : {
+    "decode_tokens_per_sec_mean" : 48.603522050158574,
+    "on_disk_size_mb" : 392.94769287109375,
+    "peak_memory_mb_mean" : 367.1358932495117,
+    "raw_peak_mem_mb" : [
+      370.98589324951172,
+      371.09526824951172,
+      367.14214324951172,
+      361.47026824951172,
+      364.98589324951172
+    ],
+    "raw_tps" : [
+      49.788938695755697,
+      47.808267100511621,
+      49.094321783861666,
+      47.697317366593246,
+      48.628765304070654
+    ],
+    "raw_ttft_ms" : [
+      20.297167000000002,
+      20.184000000000001,
+      20.281957999999999,
+      20.167542000000001,
+      19.832041
+    ],
+    "ttft_ms_mean" : 20.152541599999999,
+    "ttft_ms_stddev" : 0.18814913529245911
+  },
+  "quality_scores" : {
+
+  },
+  "quantization" : "Q4_K_M",
+  "schema_version" : "1.0.0",
+  "status" : "completed",
+  "timestamp_end" : "2026-06-05T20:51:43Z",
+  "timestamp_start" : "2026-06-05T20:51:43Z"
+}

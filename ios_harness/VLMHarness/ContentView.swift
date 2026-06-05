@@ -1,11 +1,48 @@
 import SwiftUI
 
 // ---------------------------------------------------------------------------
-// Model registry — update paths after copying files to the device
+// Model registry
 // ---------------------------------------------------------------------------
 
-private let kModelPath  = Bundle.main.path(forResource: "LFM2-VL-450M-Q4_0", ofType: "gguf") ?? ""
-private let kMmprojPath = Bundle.main.path(forResource: "mmproj-LFM2-VL-450M-Q8_0", ofType: "gguf") ?? ""
+struct ModelEntry: Identifiable {
+    let id: String          // display key
+    let ggufName: String    // Bundle resource name (no extension)
+    let mmprojName: String
+    let chatTemplate: String
+    let hfId: String
+    let quantization: String
+
+    var modelPath:  String { Bundle.main.path(forResource: ggufName,  ofType: "gguf") ?? "" }
+    var mmprojPath: String { Bundle.main.path(forResource: mmprojName, ofType: "gguf") ?? "" }
+    var isAvailable: Bool  { !modelPath.isEmpty && !mmprojPath.isEmpty }
+}
+
+private let kModels: [ModelEntry] = [
+    ModelEntry(
+        id:           "LFM2-VL-450M",
+        ggufName:     "LFM2-VL-450M-Q4_0",
+        mmprojName:   "mmproj-LFM2-VL-450M-Q8_0",
+        chatTemplate: "chatml",
+        hfId:         "LiquidAI/LFM2-VL-450M",
+        quantization: "Q4_0"
+    ),
+    ModelEntry(
+        id:           "SmolVLM-500M",
+        ggufName:     "SmolVLM-500M-Instruct.Q4_K_M",
+        mmprojName:   "mmproj-SmolVLM-500M-Instruct-Q8_0",
+        chatTemplate: "smolvlm",
+        hfId:         "HuggingFaceTB/SmolVLM-500M-Instruct",
+        quantization: "Q4_K_M"
+    ),
+    ModelEntry(
+        id:           "MiniCPM-V-4.6",
+        ggufName:     "MiniCPM-V-4.6-Q4_K_M",
+        mmprojName:   "mmproj-MiniCPM-V-4.6-Q8_0",
+        chatTemplate: "chatml",
+        hfId:         "openbmb/MiniCPM-V-4.6",
+        quantization: "Q4_K_M"
+    ),
+]
 
 // Sample images bundled in the app for consistent cross-run testing
 private var sampleImagePaths: [String] {
@@ -18,12 +55,16 @@ private var sampleImagePaths: [String] {
 
 struct ContentView: View {
     @StateObject private var session = MeasurementSession()
+    @State private var selectedModelIndex = 0
     @State private var reportURL: URL?
     @State private var showShareSheet = false
+
+    private var selectedModel: ModelEntry { kModels[selectedModelIndex] }
 
     var body: some View {
         NavigationView {
             VStack(spacing: 16) {
+                modelPickerSection
                 headerSection
                 if !session.log.isEmpty { logSection }
                 if let stats = session.lastStats { statsSection(stats) }
@@ -44,13 +85,35 @@ struct ContentView: View {
 
     // MARK: – Sub-views
 
+    private var modelPickerSection: some View {
+        Picker("Model", selection: $selectedModelIndex) {
+            ForEach(kModels.indices, id: \.self) { i in
+                Text(kModels[i].id).tag(i)
+            }
+        }
+        .pickerStyle(.segmented)
+        .onChange(of: selectedModelIndex) { _, _ in
+            // Reset results when switching models
+            session.lastStats = nil
+            session.lastOutputSample = ""
+            session.log = []
+            reportURL = nil
+        }
+    }
+
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("LFM2-VL-450M · Q4_0", systemImage: "cpu")
+            Label("\(selectedModel.id) · \(selectedModel.quantization)",
+                  systemImage: "cpu")
                 .font(.headline)
-            Text("iPhone 16 Pro  ·  Phase 0 Task 3.2")
+            Text("iPhone 16 Pro  ·  Phase 0 Task 3.4")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if !selectedModel.isAvailable {
+                Text("⚠️ GGUF files not found in bundle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -126,7 +189,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(session.isRunning || kModelPath.isEmpty)
+            .disabled(session.isRunning || !selectedModel.isAvailable)
 
             if let url = reportURL {
                 Button(action: { showShareSheet = true }) {
@@ -138,37 +201,35 @@ struct ContentView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-
-            if kModelPath.isEmpty {
-                Text("⚠️ Model files not found in bundle.\nSee GGUF_SETUP.md.")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .multilineTextAlignment(.center)
-            }
         }
     }
 
     // MARK: – Actions
 
     private func startMeasurement() {
+        let model = selectedModel
         let config = RunConfig(
-            modelKey:   "LFM2-VL-450M",
-            modelPath:  kModelPath,
-            mmprojPath: kMmprojPath,
-            imagePaths: sampleImagePaths,
-            prompt:     "Describe this image briefly.",
-            maxTokens:  64,
-            nWarmup:    1,
-            nMeasure:   5
+            modelKey:     model.id,
+            modelPath:    model.modelPath,
+            mmprojPath:   model.mmprojPath,
+            chatTemplate: model.chatTemplate,
+            hfId:         model.hfId,
+            quantization: model.quantization,
+            imagePaths:   sampleImagePaths,
+            prompt:       "Describe this image briefly.",
+            maxTokens:    64,
+            nWarmup:      1,
+            nMeasure:     5
         )
+        reportURL = nil
         Task {
             guard let stats = await session.run(config: config) else { return }
             let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let modelInfo = ReportExporter.ModelInfo(
-                key:          "LFM2-VL-450M",
-                hfId:         "LiquidAI/LFM2-VL-450M",
-                quantization: "Q4_0",
-                onDiskSizeMB: ggufFileSizeMB(kModelPath)
+                key:          model.id,
+                hfId:         model.hfId,
+                quantization: model.quantization,
+                onDiskSizeMB: ggufFileSizeMB(model.modelPath) + ggufFileSizeMB(model.mmprojPath)
             )
             reportURL = try? ReportExporter.export(modelInfo: modelInfo,
                                                    stats: stats,

@@ -5,6 +5,9 @@ struct RunConfig {
     let modelKey: String       // e.g. "LFM2-VL-450M"
     let modelPath: String      // path to .gguf
     let mmprojPath: String     // path to mmproj .gguf
+    let chatTemplate: String   // "chatml" | "smolvlm"
+    let hfId: String           // HuggingFace model ID
+    let quantization: String   // e.g. "Q4_K_M"
     let imagePaths: [String]   // 5-10 sample images
     let prompt: String
     let maxTokens: Int
@@ -54,7 +57,8 @@ class MeasurementSession: ObservableObject {
             let runner: LlamaVLMRunner
             do {
                 runner = try LlamaVLMRunner(modelPath: config.modelPath,
-                                            mmprojPath: config.mmprojPath)
+                                            mmprojPath: config.mmprojPath,
+                                            chatTemplate: config.chatTemplate)
             } catch {
                 await self.appendLog("❌ Load failed: \(error.localizedDescription)")
                 await MainActor.run { self.isRunning = false }

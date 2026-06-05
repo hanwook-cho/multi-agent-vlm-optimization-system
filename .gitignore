@@ -31,6 +31,12 @@ artifacts/*
 !artifacts/eval_task_*/
 artifacts/eval_task_*/*
 !artifacts/eval_task_*/*.json
+!artifacts/clip_scores/
+artifacts/clip_scores/*
+!artifacts/clip_scores/*.json
+!artifacts/clip_preds/
+artifacts/clip_preds/*
+!artifacts/clip_preds/*.json
 
 # Scratch results directory — working outputs, not committed.
 results/
@@ -38,6 +44,13 @@ results/
 # Dataset photos — only the manifest and our own captions/VQA pairs are committed.
 # Users fetch the actual photos from the source datasets (Flickr30k, COCO, Open Images).
 datasets/stage_a_proxy/photos/
+datasets/stage_a/photos/
+datasets/coco_cache/
+
+# Vendored large dependencies — build from source or download separately.
+# vendor/VLMEvalKit is committed (small, patched). llama.cpp and ml-fastvlm are not.
+vendor/llama.cpp/
+vendor/ml-fastvlm/
 
 # Model weight files — never commit these
 *.gguf

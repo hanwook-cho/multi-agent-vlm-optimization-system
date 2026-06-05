@@ -1,0 +1,43 @@
+{
+  "device_id" : "iphone_16_pro",
+  "experiment_id" : "MiniCPM-V-4.6_iphone16pro_20260605",
+  "model_hf_id" : "openbmb\/MiniCPM-V-4.6",
+  "model_key" : "MiniCPM-V-4.6",
+  "notes" : "iPhone 16 Pro reference baseline, Phase 0 Task 3.2",
+  "performance_metrics" : {
+    "decode_tokens_per_sec_mean" : 35.76544638690892,
+    "on_disk_size_mb" : 1198.8220825195312,
+    "peak_memory_mb_mean" : 970.06793060302732,
+    "raw_peak_mem_mb" : [
+      974.6741943359375,
+      969.7991943359375,
+      961.37729644775391,
+      969.31479644775391,
+      975.17417144775391
+    ],
+    "raw_tps" : [
+      33.550059135520627,
+      33.489049079157056,
+      44.00500683100389,
+      33.913554688235237,
+      33.869562200627762
+    ],
+    "raw_ttft_ms" : [
+      35.762875000000001,
+      35.768791,
+      34.583917,
+      35.398916999999997,
+      36.007750000000001
+    ],
+    "ttft_ms_mean" : 35.504449999999999,
+    "ttft_ms_stddev" : 0.55867896709201514
+  },
+  "quality_scores" : {
+
+  },
+  "quantization" : "Q4_K_M",
+  "schema_version" : "1.0.0",
+  "status" : "completed",
+  "timestamp_end" : "2026-06-05T20:52:35Z",
+  "timestamp_start" : "2026-06-05T20:52:35Z"
+}

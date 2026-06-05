@@ -12,6 +12,10 @@
 		69CFE482C6EA47898F835D51 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D2F7A2574B044F9A5685914 /* Assets.xcassets */; };
 		90655C412FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf in Resources */ = {isa = PBXBuildFile; fileRef = 90655C402FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf */; };
 		90655C432FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf in Resources */ = {isa = PBXBuildFile; fileRef = 90655C422FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf */; };
+		BB00G001000000000000000A /* SmolVLM-500M-Instruct.Q4_K_M.gguf in Resources */ = {isa = PBXBuildFile; fileRef = BB00F001000000000000000A /* SmolVLM-500M-Instruct.Q4_K_M.gguf */; };
+		BB00G002000000000000000A /* mmproj-SmolVLM-500M-Instruct-Q8_0.gguf in Resources */ = {isa = PBXBuildFile; fileRef = BB00F002000000000000000A /* mmproj-SmolVLM-500M-Instruct-Q8_0.gguf */; };
+		BB00G003000000000000000A /* MiniCPM-V-4.6-Q4_K_M.gguf in Resources */ = {isa = PBXBuildFile; fileRef = BB00F003000000000000000A /* MiniCPM-V-4.6-Q4_K_M.gguf */; };
+		BB00G004000000000000000A /* mmproj-MiniCPM-V-4.6-Q8_0.gguf in Resources */ = {isa = PBXBuildFile; fileRef = BB00F004000000000000000A /* mmproj-MiniCPM-V-4.6-Q8_0.gguf */; };
 		BB00S001000000000000000A /* sample1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I001000000000000000A /* sample1.jpg */; };
 		BB00S002000000000000000A /* sample2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I002000000000000000A /* sample2.jpg */; };
 		BB00S003000000000000000A /* sample3.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I003000000000000000A /* sample3.jpg */; };
@@ -34,6 +38,10 @@
 		65DAAE8D1FDA4A27A39D45B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		90655C402FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LFM2-VL-450M-Q4_0.gguf"; sourceTree = "<group>"; };
 		90655C422FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "mmproj-LFM2-VL-450M-Q8_0.gguf"; sourceTree = "<group>"; };
+		BB00F001000000000000000A /* SmolVLM-500M-Instruct.Q4_K_M.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SmolVLM-500M-Instruct.Q4_K_M.gguf"; sourceTree = "<group>"; };
+		BB00F002000000000000000A /* mmproj-SmolVLM-500M-Instruct-Q8_0.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "mmproj-SmolVLM-500M-Instruct-Q8_0.gguf"; sourceTree = "<group>"; };
+		BB00F003000000000000000A /* MiniCPM-V-4.6-Q4_K_M.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MiniCPM-V-4.6-Q4_K_M.gguf"; sourceTree = "<group>"; };
+		BB00F004000000000000000A /* mmproj-MiniCPM-V-4.6-Q8_0.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "mmproj-MiniCPM-V-4.6-Q8_0.gguf"; sourceTree = "<group>"; };
 		BB00I001000000000000000A /* sample1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample1.jpg; sourceTree = "<group>"; };
 		BB00I002000000000000000A /* sample2.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample2.jpg; sourceTree = "<group>"; };
 		BB00I003000000000000000A /* sample3.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample3.jpg; sourceTree = "<group>"; };
@@ -119,6 +127,10 @@
 			children = (
 				90655C402FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf */,
 				90655C422FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf */,
+				BB00F001000000000000000A /* SmolVLM-500M-Instruct.Q4_K_M.gguf */,
+				BB00F002000000000000000A /* mmproj-SmolVLM-500M-Instruct-Q8_0.gguf */,
+				BB00F003000000000000000A /* MiniCPM-V-4.6-Q4_K_M.gguf */,
+				BB00F004000000000000000A /* mmproj-MiniCPM-V-4.6-Q8_0.gguf */,
 				BB00I001000000000000000A /* sample1.jpg */,
 				BB00I002000000000000000A /* sample2.jpg */,
 				BB00I003000000000000000A /* sample3.jpg */,
@@ -195,6 +207,10 @@
 				69CFE482C6EA47898F835D51 /* Assets.xcassets in Resources */,
 				90655C432FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf in Resources */,
 				90655C412FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf in Resources */,
+				BB00G001000000000000000A /* SmolVLM-500M-Instruct.Q4_K_M.gguf in Resources */,
+				BB00G002000000000000000A /* mmproj-SmolVLM-500M-Instruct-Q8_0.gguf in Resources */,
+				BB00G003000000000000000A /* MiniCPM-V-4.6-Q4_K_M.gguf in Resources */,
+				BB00G004000000000000000A /* mmproj-MiniCPM-V-4.6-Q8_0.gguf in Resources */,
 				BB00S001000000000000000A /* sample1.jpg in Resources */,
 				BB00S002000000000000000A /* sample2.jpg in Resources */,
 				BB00S003000000000000000A /* sample3.jpg in Resources */,

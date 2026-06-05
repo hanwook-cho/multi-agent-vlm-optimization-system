@@ -1,0 +1,50 @@
+{
+  "decodeTokensPerSec" : 34.244251157513794,
+  "device" : "iPhone16Pro",
+  "modelKey" : "FastVLM-0.5B-FP16",
+  "onDiskSizeMB" : 0,
+  "outputSample" : "Two cats are sleeping on a red blanket, with one cat wearing a green collar and the other a striped pattern.",
+  "peakMemoryMB" : 2204.0805999755858,
+  "perImageResults" : [
+    {
+      "decodeTokensPerSec" : 34.97677661162226,
+      "imageName" : "sample1",
+      "output" : "Two cats are sleeping on a red blanket, with one cat wearing a green collar and the other a striped pattern.",
+      "peakMemoryMB" : 2196.721206665039,
+      "ttftMs" : 675.5279302597046
+    },
+    {
+      "decodeTokensPerSec" : 35.3399604541454,
+      "imageName" : "sample2",
+      "output" : "The image depicts a rustic kitchen scene with a person standing at a table, surrounded by various cooking utensils and ingredients. The kitchen is well-equipped with pots, pans, and a rolling pin on the table, and there are pots hanging from the ceiling. The person is wearing a white apron and appears to be engaged in cooking or baking activities. The overall atmosphere suggests a traditional or historical kitchen setting.",
+      "peakMemoryMB" : 2207.2681045532227,
+      "ttftMs" : 713.5320901870728
+    },
+    {
+      "decodeTokensPerSec" : 33.80490607104279,
+      "imageName" : "sample3",
+      "output" : "The image depicts a modern kitchen with wooden cabinets, a white stove, and a bowl of fruit on the dining table.",
+      "peakMemoryMB" : 2210.5181045532227,
+      "ttftMs" : 699.720025062561
+    },
+    {
+      "decodeTokensPerSec" : 34.69462039198295,
+      "imageName" : "sample4",
+      "output" : "The image depicts a man standing next to a shopping cart on a city sidewalk, with a traffic light showing a red hand signal. In the background, there is a blue wall with various signs, including one for \"RCDoL Construction\" and another for \"Hyatt Development Corporation.\" The man appears to be homeless, as he is holding a cup and has a bag of clothes on the cart. The scene suggests an urban environment with a mix of commercial and residential elements.",
+      "peakMemoryMB" : 2206.4868545532227,
+      "ttftMs" : 756.3940286636353
+    },
+    {
+      "decodeTokensPerSec" : 32.40499225877556,
+      "imageName" : "sample5",
+      "output" : "The image captures a dynamic scene at a skatepark, where two individuals are engaged in skateboarding and biking activities. The skatepark is adorned with vibrant graffiti on the walls, adding a colorful backdrop to the scene. In the background, a building with a sign reading \"HOSTAGES\" is visible, suggesting the location might be a popular spot for such activities. The overcast sky indicates that the weather is cloudy, which might affect the skateboarding session. The overall atmosphere is energetic and youthful, reflecting the spirit of skateboarding culture.",
+      "peakMemoryMB" : 2199.4087295532227,
+      "ttftMs" : 778.001070022583
+    }
+  ],
+  "quantization" : "FP16",
+  "timestamp" : "2026-06-05T18:21:22Z",
+  "tpsStdDev" : 1.0503239740758168,
+  "ttftMs" : 724.6350288391113,
+  "ttftStdDev" : 37.44892044434425
+}

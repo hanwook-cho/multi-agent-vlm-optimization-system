@@ -16,10 +16,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// Create once per model pair; thread-safe for reads, not for concurrent infer calls.
 @interface LlamaVLMRunner : NSObject
 
-/// modelPath  – path to the LLM .gguf file
-/// mmprojPath – path to the mmproj .gguf file
+/// chatTemplate values:
+///   "chatml"    – <|im_start|>user\n<image>\nprompt<|im_end|>\n<|im_start|>assistant\n  (LFM2, MiniCPM-V 4.6)
+///   "smolvlm"   – User:<image>\nprompt<end_of_utterance>\nAssistant:                    (SmolVLM)
 - (nullable instancetype)initWithModelPath:(NSString *)modelPath
                                mmprojPath:(NSString *)mmprojPath
+                             chatTemplate:(NSString *)chatTemplate
                                     error:(NSError *__autoreleasing *)error;
 
 /// Run one inference pass.  imagePath may be nil for text-only.
