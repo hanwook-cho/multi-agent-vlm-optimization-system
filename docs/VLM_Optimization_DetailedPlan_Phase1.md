@@ -111,26 +111,35 @@ For Phase 1, "optionally trigger iPhone measurement" means the runner writes a r
 
 ### Week 2 — Quantization experiments (AWQ INT4)
 
-**Why first:** AWQ (2306.00978) is the highest-expected-gain experiment — INT4 quantization of the LM backbone reduces model size by ~50% and typically improves TPS by 30–50% with minimal accuracy drop (<2pp on most benchmarks). It's also the best-understood technique and most likely to produce a quick Pareto win.
+**Why first:** AWQ (2306.00978) applies activation-aware calibration to protect the most sensitive weights during INT4 quantization, typically producing better quality at the same bit-width than uniform quantization (Q4_0). It is the best-understood technique with published results across small LLMs.
+
+**Baseline correction (updated before Week 2):**  
+The original hypothesis table assumed AWQ INT4 would improve TPS and memory vs an fp16 baseline. That assumption is wrong for our models:
+
+- **LFM2-VL-450M** is already Q4_0 on iPhone (279MB, 82.4 t/s). AWQ INT4 uses the same 4-bit format — Metal executes both with the same INT4 kernels. TPS and memory gains vs Q4_0 are **negligible**. The real benefit is **quality**: AWQ's calibration reduces the accuracy loss that uniform Q4_0 quantization imposes. The correct question is: does AWQ preserve CLIP-score and POPE better than Q4_0?
+
+- **SmolVLM-500M** is Q4_K_M (mixed 4/6-bit precision, 367MB, 48.6 t/s). AWQ INT4 would standardise to uniform INT4, which may yield a small TPS and memory improvement alongside quality changes. This is a better target for speed gains.
 
 **Tasks:**
 
 **2.1 — AWQ INT4 quantization of LFM2-VL-450M LM backbone**  
-Apply AWQ to the language model component using `llm-awq` or `autoawq`. Keep the vision encoder (mmproj) at its current Q8_0 — the LM backbone is the decode bottleneck, not the vision encoder.
+Apply AWQ to the language model component using `autoawq`. Keep the vision encoder (mmproj) at Q8_0. Run `ExperimentRunner.run()` for Mac quality eval, then deploy to iPhone for performance measurement.
 
-Expected outcome: GGUF with INT4 LM + Q8_0 mmproj. Run via llama.cpp on iPhone.
+*Tooling risk:* `autoawq` calibration requires CUDA. On Mac MPS, calibration may be unsupported or prohibitively slow. If so, pivot to **GPTQ INT4** (H006) which has better CPU/MPS support via `auto-gptq`, or run calibration on a CUDA machine.
 
-Baseline to beat:
-- TTFT: 14.1ms (should improve slightly — smaller KV cache, faster prefill)
-- TPS: 82.4 t/s (should improve 20–40% — INT4 decode is faster than Q4_0 for this model size)
-- Mem: 279MB (should decrease ~15%)
-- POPE: 91.7% (must stay within ±2pp)
-- CLIP-score: 27.6 (must not drop below 25.0)
+Expected outcome vs Phase 0 LFM2 Q4_0 baseline:
+- TTFT: ~14ms (no meaningful change — same prefill path)
+- TPS: ~82 t/s (no meaningful change — same INT4 Metal kernels)
+- Mem: ~270MB (marginal — group_size=128 packs slightly differently)
+- POPE: ≥91.7% **(improvement or equal — AWQ's main advantage)**
+- CLIP-score: ≥27.6 **(improvement or equal — this is the Pareto gain axis)**
 
-**2.2 — SmolVLM-500M AWQ sweep** *(if 2.1 shows positive signal)*  
-Same technique on the second model. Two data points establish whether AWQ generalises across the model family.
+A result with equal or better quality scores at the same speed/memory is a **quality-axis Pareto improvement** — it widens the gap between LFM2 and SmolVLM on the quality front without regression.
 
-**Done when:** ≥1 AWQ result measured on iPhone, MetricsReport in DB.
+**2.2 — SmolVLM-500M AWQ sweep** *(if 2.1 completes without tooling failure)*  
+SmolVLM is a better target for speed/memory gains (Q4_K_M → uniform INT4 may simplify kernel dispatch). Expected: TPS +5–15%, Mem −5–10%, quality neutral or slightly improved.
+
+**Done when:** ≥1 AWQ result measured on iPhone, MetricsReport in ledger.
 
 ---
 
@@ -202,15 +211,19 @@ Merge `docs/blog/draft_phase_0.md` content with Phase 1 results. Flip repo to pu
 
 Phase 1 starts with these hypotheses pre-registered in the HypothesisRecord table. The Search Strategist reads these as the initial known-techniques list.
 
-| ID | Technique | Model | Expected gain | Risk | Paper |
-|---|---|---|---|---|---|
-| H001 | AWQ INT4 LM backbone | LFM2-VL-450M | TPS +30%, Mem -40% | POPE −2pp | 2306.00978 |
-| H002 | AWQ INT4 LM backbone | SmolVLM-500M | TPS +25%, Mem -35% | POPE −2pp | 2306.00978 |
-| H003 | Input resize 336→224px | LFM2-VL-450M | TTFT −30%, Mem −20% | CLIP −1.5 | architecture |
-| H004 | Q4_0 mmproj (was Q8_0) | LFM2-VL-450M | Mem −12%, TTFT −5% | POPE −1pp | — |
-| H005 | ctx-size 512 (was 2048) | LFM2-VL-450M | Mem −15%, TPS +5% | POPE −1pp | 2404.14469 |
-| H006 | GPTQ INT4 LM backbone | LFM2-VL-450M | TPS +25%, Mem -40% | POPE −2pp | 2210.17323 |
-| H007 | FastVLM INT4 MLX build | FastVLM-0.5B | TTFT −90%, Mem −65% | POPE −3pp | 2412.13303 |
+| ID | Technique | Model | Phase 0 baseline | Expected gain | Gain axis | Risk | Paper |
+|---|---|---|---|---|---|---|---|
+| H001 | AWQ INT4 LM backbone | LFM2-VL-450M | Q4_0, 279MB, 82.4 t/s | CLIP +0.5–1.5, POPE neutral | **Quality** ¹ | Calibration requires CUDA | 2306.00978 |
+| H002 | AWQ INT4 LM backbone | SmolVLM-500M | Q4_K_M, 367MB, 48.6 t/s | TPS +5–15%, Mem −5–10%, quality neutral | **Speed+Mem** ² | POPE −1pp | 2306.00978 |
+| H003 | Input resize 336→224px | LFM2-VL-450M | default res, TTFT 14.1ms | TTFT −30%, Mem −20% | **Latency** | CLIP −1.5 | architecture |
+| H004 | Q4_0 mmproj (was Q8_0) | LFM2-VL-450M | Q8_0 mmproj, 99MB | Mem −12%, TTFT −5% | **Mem+Latency** | POPE −1pp | — |
+| H005 | ctx-size 512 (was 2048) | LFM2-VL-450M | ctx 2048 | Mem −15%, TPS +5% | **Mem** | POPE −1pp | 2404.14469 |
+| H006 | GPTQ INT4 LM backbone | LFM2-VL-450M | Q4_0, 279MB, 82.4 t/s | CLIP +0–1, POPE neutral | **Quality** ¹ | Slower calibration than AWQ | 2210.17323 |
+| H007 | FastVLM INT4 MLX build | FastVLM-0.5B | FP16, 2204MB, TTFT 725ms | TTFT −90%, Mem −65% | **Latency+Mem** | POPE −3pp | 2412.13303 |
+
+**Notes:**  
+¹ H001/H006 for LFM2: model is already Q4_0. AWQ/GPTQ gain is **quality preservation** (better CLIP/POPE at same bit-width), not speed or memory. Original "+30% TPS, −40% Mem" estimates were written against an fp16 baseline — corrected here.  
+² H002 for SmolVLM: model is Q4_K_M (mixed 4/6-bit). Standardising to uniform INT4 may simplify kernel dispatch → small speed/memory gain is plausible.  
 
 H007 is the highest-impact experiment but also the riskiest (requires building INT4 MLX tooling for the FastVLM architecture). Defer to Week 3–4 pending AWQ results.
 
@@ -227,7 +240,19 @@ Every experiment result is evaluated against these gates before being accepted a
 | Peak memory | ≤ 3000 MB | iPhone 16 Pro practical limit without entitlement |
 | On-device stability | No OOM crash on 5 test images | Stability requirement |
 
-An experiment that passes all gates AND improves on ≥1 Pareto axis (TTFT, TPS, or memory) without worsening others is a Pareto improvement.
+An experiment that passes all gates AND improves on ≥1 Pareto axis **without worsening the others** is a Pareto improvement.
+
+Pareto axes (updated to include quality):
+
+| Axis | Direction | Notes |
+|---|---|---|
+| TTFT | lower is better | Primary latency metric |
+| TPS | higher is better | Decode throughput |
+| Peak memory | lower is better | iPhone OOM risk |
+| CLIP-score | higher is better | Description quality — valid improvement axis for already-quantized models |
+| POPE accuracy | higher is better | Hallucination quality — valid improvement axis for already-quantized models |
+
+For models already at INT4 (LFM2 Q4_0), a quality-axis improvement (better CLIP or POPE at same speed/memory) counts as a Pareto win.
 
 ---
 
