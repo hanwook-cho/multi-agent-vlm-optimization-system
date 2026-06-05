@@ -1,8 +1,8 @@
 # Project Status
 
-**Last updated:** 2026-05-25  
+**Last updated:** 2026-06-05  
 **Phase:** Phase 0 — Reference Baselines  
-**Current week:** Week 2 ✅ complete → Week 3 starting
+**Current week:** Week 3 (iPhone baselines) — Task 3.1 ✅
 
 ---
 
@@ -12,7 +12,7 @@
 |---|---|---|
 | Week 1 | Infrastructure, schemas, Mac measurement harness | ✅ Done |
 | Week 2 | Mac quality eval (VLMEvalKit, 5 models × 3 benchmarks) | ✅ Done |
-| Week 3 | iPhone 16 Pro reference baselines (4 models) | ⬜ Not started |
+| Week 3 | iPhone 16 Pro reference baselines (4 models) | 🔄 In progress |
 | Week 4 | Pi 5 baselines + Stage A eval set assembly | ⬜ Not started |
 | Week 5 | Dashboard, literature spike, Phase 0 closeout | ⬜ Not started |
 
@@ -24,6 +24,9 @@
 - **Task 1.x** — Schemas (`MetricsReport`, `ExperimentConfig`), device descriptors, project scaffolding
 - **Task 2.1** — Qwen2.5-VL-3B measured on Mac mini M4 16GB (swap-contaminated run documented in ADR-0001)
 - **ADR-0001** — Mac measurement methodology (`docs/decisions/0001-mac-measurement-methodology.md`)
+
+### Week 3
+- **Task 3.1** — iOS developer provisioning: Xcode 26.5, team `9LVH98N9BS`, iPhone 16 Pro registered, smoke-test app deployed
 
 ### Week 2
 - **Task 2.2** — Quality evaluation of all 5 reference VLMs × 3 benchmarks × 100 samples on Mac mini M4 16GB
@@ -84,7 +87,7 @@ Consistency with published numbers: POPE scores match within ~2pp for all models
 
 **Week 3: iPhone 16 Pro reference baselines**
 
-- [ ] Task 3.1 — iOS developer provisioning (Xcode, signing, deploy to device) — **do first, riskiest task**
+- [x] Task 3.1 — iOS developer provisioning (Xcode, signing, deploy to device) ✅ **done**
 - [ ] Task 3.2 — LFM2.5-VL-450M on iPhone via Liquid's LEAP SDK
 - [ ] Task 3.3 — FastVLM-0.5B on iPhone via `apple/ml-fastvlm` demo app (pre-built MLX weights available)
 - [ ] Task 3.4 — SmolVLM-500M (llama.cpp/MLX) + MiniCPM-V 4.6 (OpenBMB iOS demo)
@@ -92,10 +95,12 @@ Consistency with published numbers: POPE scores match within ~2pp for all models
 - [ ] ADR-0002 — iOS measurement methodology
 - [ ] ADR-0003 — iPhone baseline numbers
 
-**Week 3 prerequisite check before starting:**
-- Apple developer account active?
-- iPhone 16 Pro physically available?
-- Xcode installed on the Mac mini?
+**Week 3 provisioning details (Task 3.1):**
+- Xcode 26.5 / iOS 26.5 SDK on Mac mini M4 ✅
+- Apple Developer team: `9LVH98N9BS` (hwcho99@yahoo.com) ✅
+- Device: iPhone 16 Pro `4B5CB219-A5DE-59DF-81A5-7FBECBC17B90` (iPhone17,1, iOS 26.5) ✅
+- Smoke-test app `VLMHarness` (`com.hwcho99.VLMHarness`) deployed and ran on device ✅
+- Xcode project: `ios_harness/VLMHarness.xcodeproj` (automatic signing)
 
 ---
 
