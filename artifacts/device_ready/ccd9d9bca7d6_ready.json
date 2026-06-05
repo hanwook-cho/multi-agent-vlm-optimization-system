@@ -1,0 +1,20 @@
+{
+  "experiment_id": "ccd9d9bca7d6c15ff1d9fa7196fa9f57d412a437d2a052f5b79c25a6c9d9a30e",
+  "created_at": "2026-06-05T23:43:35.211176+00:00",
+  "model_id": "HuggingFaceTB/SmolVLM-500M-Instruct",
+  "compression": {
+    "weight_dtype": "int4",
+    "activation_dtype": null,
+    "group_size": null,
+    "kv_cache_dtype": null,
+    "sparsity": null
+  },
+  "runtime_backend": "llamacpp_gguf",
+  "target_device_id": "iphone16pro-001",
+  "notes": "H002-pivot: SmolVLM-500M i1-Q4_0 (mradermacher imatrix build). AWQ blocked: CUDA required for calibration. i1-Q4_0 = imatrix-calibrated uniform INT4; 245MB LM vs Q4_K_M 289MB (-15%). GGUF: artifacts/experiments/smolvlm-q4-0/SmolVLM-500M-Instruct.i1-Q4_0.gguf. Hypothesis: uniform INT4 Metal kernel dispatch faster than mixed k-quants. Expected: TPS +5-15%, Mem -5-10%, quality neutral.",
+  "instructions": "1. Copy SmolVLM-500M-Instruct.i1-Q4_0.gguf into VLMHarness Xcode bundle. 2. Add PBXFileReference + build file for 'SmolvlmQ4K0' model entry (same mmproj). 3. In ContentView.swift add: ModelEntry(id='SmolVLM-Q4K0', ggufName='SmolVLM-500M-Instruct.i1-Q4_0', mmprojName='mmproj-SmolVLM-500M-Instruct-Q8_0', chatTemplate='smolvlm', hfId='HuggingFaceTB/SmolVLM-500M-Instruct', quantization='i1-Q4_0'). 4. Build & deploy to iPhone 16 Pro. Select SmolVLM-Q4K0 tab. Run Measurement. 5. Export JSON. Call ExperimentRunner.import_iphone_results(experiment_id, path).",
+  "gguf_path": "artifacts/experiments/smolvlm-q4-0/SmolVLM-500M-Instruct.i1-Q4_0.gguf",
+  "gguf_size_mb": 245,
+  "mmproj_path": "ios_harness/VLMHarness/mmproj-SmolVLM-500M-Instruct-Q8_0.gguf",
+  "baseline_experiment_id": "SmolVLM-500M Phase 0 Q4_K_M"
+}

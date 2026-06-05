@@ -45,6 +45,17 @@ private let kModels: [ModelEntry] = [
         hfId:         "HuggingFaceTB/SmolVLM-500M-Instruct",
         quantization: "Q4_K_M"
     ),
+    // Phase 1 Week 2 — H002 pivot: i1-Q4_0 (mradermacher imatrix build)
+    // CLIP-score Mac eval: 27.78 ± 4.26 (n=50) — fp16 proxy, perf measured on iPhone
+    // experiment_id: ccd9d9bca7d6c15ff1d9fa7196fa9f57d412a437d2a052f5b79c25a6c9d9a30e
+    ModelEntry(
+        id:           "SmolVLM-Q4K0",
+        ggufName:     "SmolVLM-500M-Instruct.i1-Q4_0",
+        mmprojName:   "mmproj-SmolVLM-500M-Instruct-Q8_0",
+        chatTemplate: "smolvlm",
+        hfId:         "HuggingFaceTB/SmolVLM-500M-Instruct",
+        quantization: "i1-Q4_0"
+    ),
     ModelEntry(
         id:           "MiniCPM-V-4.6",
         ggufName:     "MiniCPM-V-4.6-Q4_K_M",
