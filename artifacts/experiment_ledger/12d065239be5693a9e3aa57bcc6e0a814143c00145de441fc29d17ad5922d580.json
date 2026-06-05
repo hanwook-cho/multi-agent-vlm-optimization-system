@@ -1,0 +1,57 @@
+{
+  "report": {
+    "experiment_id": "12d065239be5693a9e3aa57bcc6e0a814143c00145de441fc29d17ad5922d580",
+    "device_id": "mac-mini-m4-16gb",
+    "status": "completed",
+    "error_message": null,
+    "started_at": "2026-06-05T23:06:29.246820Z",
+    "completed_at": "2026-06-05T23:08:21.503357Z",
+    "hardware_fingerprint": {
+      "os_version": "macOS 26.5.1",
+      "available_ram_mb": 5582.5,
+      "thermal_state": null,
+      "swap_used_mb": null
+    },
+    "ttft_ms": null,
+    "decode_tokens_per_sec": null,
+    "peak_memory_mb": null,
+    "on_disk_size_mb": null,
+    "energy_j": null,
+    "quality_scores": [
+      {
+        "benchmark": "stage_a_caption",
+        "metric": "clip_score_mean",
+        "value": 28.5858
+      },
+      {
+        "benchmark": "stage_a_caption",
+        "metric": "clip_score_std",
+        "value": 3.5964
+      },
+      {
+        "benchmark": "stage_a_caption",
+        "metric": "clip_score_n",
+        "value": 50.0
+      }
+    ]
+  },
+  "config": {
+    "model_id": "LiquidAI/LFM2-VL-450M",
+    "compression": {
+      "weight_dtype": "int4",
+      "activation_dtype": null,
+      "group_size": null,
+      "kv_cache_dtype": null,
+      "sparsity": null
+    },
+    "input_resolution": null,
+    "vision_token_budget": null,
+    "runtime_backend": "llamacpp_gguf",
+    "decode_strategy": "greedy",
+    "decode_top_k": null,
+    "speculative_draft_model_id": null,
+    "dataset_hash": "e2128ae022b3720375d7c866a037b6d8ec4b399ff92cb59e6065ec9fb7f3e29f",
+    "target_device_id": "iphone16pro-001",
+    "notes": "H001-pivot: Q4_K_M re-quantization (bartowski imatrix build). AWQ blocked: CUDA required for calibration, not available on Mac MPS. Q4_K_M 218MB vs Q4_0 209MB baseline. GGUF: artifacts/experiments/lfm2-q4km/LFM2-VL-450M-Q4_K_M.gguf"
+  }
+}

@@ -26,6 +26,17 @@ private let kModels: [ModelEntry] = [
         hfId:         "LiquidAI/LFM2-VL-450M",
         quantization: "Q4_0"
     ),
+    // Phase 1 Week 2 — H001 pivot: Q4_K_M (bartowski imatrix build)
+    // CLIP-score Mac eval: 28.59 ± 3.60 (vs Q4_0 baseline 27.60)
+    // experiment_id: 12d065239be5693a9e3aa57bcc6e0a814143c00145de441fc29d17ad5922d580
+    ModelEntry(
+        id:           "LFM2-Q4KM",
+        ggufName:     "LFM2-VL-450M-Q4_K_M",
+        mmprojName:   "mmproj-LFM2-VL-450M-Q8_0",
+        chatTemplate: "chatml",
+        hfId:         "LiquidAI/LFM2-VL-450M",
+        quantization: "Q4_K_M"
+    ),
     ModelEntry(
         id:           "SmolVLM-500M",
         ggufName:     "SmolVLM-500M-Instruct.Q4_K_M",
@@ -106,7 +117,7 @@ struct ContentView: View {
             Label("\(selectedModel.id) · \(selectedModel.quantization)",
                   systemImage: "cpu")
                 .font(.headline)
-            Text("iPhone 16 Pro  ·  Phase 0 Task 3.4")
+            Text("iPhone 16 Pro  ·  Phase 1 Week 2")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if !selectedModel.isAvailable {

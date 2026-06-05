@@ -591,8 +591,14 @@ class ExperimentRunner:
 
         iphone_data = json.loads(Path(iphone_json_path).read_text())
 
-        # Extract performance fields from the VLMHarness export format
-        perf = iphone_data.get("performance", iphone_data)   # tolerate both flat and nested
+        # Extract performance fields from the VLMHarness export format.
+        # ReportExporter.swift writes "performance_metrics"; older exports may use
+        # "performance" or a flat structure — try all three.
+        perf = (
+            iphone_data.get("performance_metrics")
+            or iphone_data.get("performance")
+            or iphone_data
+        )
         ttft_ms          = perf.get("ttft_ms") or perf.get("ttft_ms_mean")
         tps              = perf.get("decode_tokens_per_sec_mean") or perf.get("tps")
         peak_mem_mb      = perf.get("peak_memory_mb_mean") or perf.get("peak_memory_mb")

@@ -42,7 +42,7 @@ struct ReportExporter {
                 "raw_peak_mem_mb": stats.peakMemMBValues
             ],
             "quality_scores": [:],  // quality evaluated separately on Mac
-            "notes": "iPhone 16 Pro reference baseline, Phase 0 Task 3.2"
+            "notes": "iPhone 16 Pro · \(modelInfo.key) · \(modelInfo.quantization)"
         ]
 
         let data = try JSONSerialization.data(withJSONObject: report,
