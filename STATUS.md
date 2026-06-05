@@ -27,12 +27,28 @@
 
 ### Week 3
 - **Task 3.1** — iOS developer provisioning: Xcode 26.5, team `9LVH98N9BS`, iPhone 16 Pro registered, smoke-test app deployed
+- **Task 3.2** — LFM2-VL-450M Q4_0 baseline on iPhone 16 Pro via llama.cpp/mtmd (Metal backend)
+  - Harness: `ios_harness/VLMHarness.xcodeproj` (ObjC++ wrapper around libmtmd + libllama)
+  - Archived: `artifacts/eval_task_3_2_20260605/LFM2-VL-450M_iphone16pro_20260605.json`
 
 ### Week 2
 - **Task 2.2** — Quality evaluation of all 5 reference VLMs × 3 benchmarks × 100 samples on Mac mini M4 16GB
   - Runner: `runners/eval_vlmeval.py` (VLMEvalKit-based)
   - Archived: `artifacts/eval_task_2_2_20260525_094121/` (15 MetricsReport JSONs)
   - Several scoring bugs found and fixed during this session (see Known Issues below)
+
+---
+
+## Task 3.2 Results (iPhone 16 Pro A18 Pro, llama.cpp Q4_0, Metal)
+
+| Model | TTFT ms | ±σ | Decode t/s | Peak Mem MB | On-disk MB |
+|---|---:|---:|---:|---:|---:|
+| LFM2-VL-450M | 14.1 | 0.1 | 82.4 | 279 | 219 |
+| FastVLM-0.5B | — | — | — | — | — |
+| SmolVLM-500M | — | — | — | — | — |
+| MiniCPM-V-4.6 | — | — | — | — | — |
+
+Device: iPhone 16 Pro (iPhone17,1, A18 Pro, iOS 26.5). No thermal throttling observed (TTFT variance ±0.1 ms across 5 runs).
 
 ---
 
@@ -88,7 +104,7 @@ Consistency with published numbers: POPE scores match within ~2pp for all models
 **Week 3: iPhone 16 Pro reference baselines**
 
 - [x] Task 3.1 — iOS developer provisioning (Xcode, signing, deploy to device) ✅ **done**
-- [x] Task 3.2 — LFM2-VL-450M app built + installed on device ✅ **pending first run**
+- [x] Task 3.2 — LFM2-VL-450M on iPhone via llama.cpp/mtmd ✅ **done** — TTFT=14.1±0.1 ms, TPS=82.4, mem=279 MB
 - [ ] Task 3.2 — LFM2.5-VL-450M on iPhone via Liquid's LEAP SDK
 - [ ] Task 3.3 — FastVLM-0.5B on iPhone via `apple/ml-fastvlm` demo app (pre-built MLX weights available)
 - [ ] Task 3.4 — SmolVLM-500M (llama.cpp/MLX) + MiniCPM-V 4.6 (OpenBMB iOS demo)

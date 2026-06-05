@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_id": "LFM2-VL-450M_iphone16pro_20260605",
+  "device_id": "iphone_16_pro",
+  "device_detail": "iPhone 16 Pro (iPhone17,1), A18 Pro, iOS 26.5",
+  "model_key": "LFM2-VL-450M",
+  "model_hf_id": "LiquidAI/LFM2-VL-450M",
+  "quantization": "Q4_0",
+  "runtime": "llama.cpp mtmd (libmtmd + llama.xcframework, Metal backend)",
+  "status": "completed",
+  "timestamp": "2026-06-05",
+  "performance_metrics": {
+    "ttft_ms_mean": 14.1,
+    "ttft_ms_stddev": 0.1,
+    "decode_tokens_per_sec_mean": 82.4,
+    "peak_memory_mb_mean": 279,
+    "on_disk_size_mb": 219,
+    "mmproj_size_mb": 99,
+    "raw_ttft_ms": [14.0, 14.1, 14.1, 14.2, 14.3],
+    "raw_tps": [82.9, 79.6, 83.2, 83.7, 82.4],
+    "raw_peak_mem_mb": [280, 286, 279, 274, 275],
+    "n_warmup": 1,
+    "n_measured": 5,
+    "max_new_tokens": 64,
+    "prompt": "Describe this image briefly."
+  },
+  "quality_scores": {},
+  "notes": "iPhone 16 Pro reference baseline, Phase 0 Task 3.2. TTFT variance ±0.1 ms — no thermal throttling observed. Sample output: 'A man is doing a trick on a bicycle in a skate park.' Harness: ios_harness/VLMHarness.xcodeproj, llama.cpp build-ios static libs."
+}
