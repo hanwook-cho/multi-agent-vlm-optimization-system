@@ -1,0 +1,159 @@
+{
+  "papers": [
+    {
+      "id": "2306.00978v6",
+      "title": "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration",
+      "abstract": "Large language models (LLMs) have transformed numerous AI applications. On-device LLM is becoming increasingly important: running LLMs locally on edge devices can reduce the cloud computing cost and protect users' privacy. However, the astronomical model size and the limited hardware resource pose significant deployment challenges. We propose Activation-aware Weight Quantization (AWQ), a hardware-friendly approach for LLM low-bit weight-only quantization. AWQ finds that not all weights in an LLM are equally important. Protecting only 1% salient weights can greatly reduce quantization error. To identify salient weight channels, we should refer to the activation distribution, not weights. To avoid the hardware-inefficient mix-precision quantization, we mathematically derive that scaling up the salient channels can reduce the quantization error. AWQ employs an equivalent transformation to scale the salient weight channels to protect them. The scale is determined by collecting the activation statistics offline. AWQ does not rely on any backpropagation or reconstruction, so it generalizes to different domains and modalities without overfitting the calibration set. AWQ outperforms existing work on various language modeling and domain-specific benchmarks (coding and math). Thanks to better generalization, it achieves excellent quantization performance for instruction-tuned LMs and, for the first time, multi-modal LMs. Alongside AWQ, we implement TinyChat, an efficient and flexible inference framework tailored for 4-bit on-device LLM/VLMs. With kernel fusion and platform-aware weight packing, TinyChat offers more than 3x speedup over the Huggingface FP16 implementation on both desktop and mobile GPUs. It also democratizes the deployment of the 70B Llama-2 model on mobile GPUs.",
+      "authors": [
+        "Ji Lin",
+        "Jiaming Tang",
+        "Haotian Tang",
+        "Shang Yang",
+        "Wei-Ming Chen",
+        "Wei-Chen Wang",
+        "Guangxuan Xiao",
+        "Xingyu Dang",
+        "Chuang Gan",
+        "Song Han"
+      ],
+      "year": 2023,
+      "url": "https://arxiv.org/abs/2306.00978v6",
+      "pdf_url": "https://arxiv.org/pdf/2306.00978v6",
+      "tags": [
+        "quantization",
+        "mobile"
+      ],
+      "notes": "AWQ: activation-aware weight quantization; primary INT4 method for Phase 1 LM quantization",
+      "added": "2026-06-05"
+    },
+    {
+      "id": "2210.17323v2",
+      "title": "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers",
+      "abstract": "Generative Pre-trained Transformer models, known as GPT or OPT, set themselves apart through breakthrough performance across complex language modelling tasks, but also by their extremely high computational and storage costs. Specifically, due to their massive size, even inference for large, highly-accurate GPT models may require multiple performant GPUs, which limits the usability of such models. While there is emerging work on relieving this pressure via model compression, the applicability and performance of existing compression techniques is limited by the scale and complexity of GPT models. In this paper, we address this challenge, and propose GPTQ, a new one-shot weight quantization method based on approximate second-order information, that is both highly-accurate and highly-efficient. Specifically, GPTQ can quantize GPT models with 175 billion parameters in approximately four GPU hours, reducing the bitwidth down to 3 or 4 bits per weight, with negligible accuracy degradation relative to the uncompressed baseline. Our method more than doubles the compression gains relative to previously-proposed one-shot quantization methods, preserving accuracy, allowing us for the first time to execute an 175 billion-parameter model inside a single GPU for generative inference. Moreover, we also show that our method can still provide reasonable accuracy in the extreme quantization regime, in which weights are quantized to 2-bit or even ternary quantization levels. We show experimentally that these improvements can be leveraged for end-to-end inference speedups over FP16, of around 3.25x when using high-end GPUs (NVIDIA A100) and 4.5x when using more cost-effective ones (NVIDIA A6000). The implementation is available at https://github.com/IST-DASLab/gptq.",
+      "authors": [
+        "Elias Frantar",
+        "Saleh Ashkboos",
+        "Torsten Hoefler",
+        "Dan Alistarh"
+      ],
+      "year": 2022,
+      "url": "https://arxiv.org/abs/2210.17323v2",
+      "pdf_url": "https://arxiv.org/pdf/2210.17323v2",
+      "tags": [
+        "quantization"
+      ],
+      "notes": "GPTQ: one-shot post-training INT4 quantization via approximate second-order information",
+      "added": "2026-06-05"
+    },
+    {
+      "id": "2310.03744v2",
+      "title": "Improved Baselines with Visual Instruction Tuning",
+      "abstract": "Large multimodal models (LMM) have recently shown encouraging progress with visual instruction tuning. In this note, we show that the fully-connected vision-language cross-modal connector in LLaVA is surprisingly powerful and data-efficient. With simple modifications to LLaVA, namely, using CLIP-ViT-L-336px with an MLP projection and adding academic-task-oriented VQA data with simple response formatting prompts, we establish stronger baselines that achieve state-of-the-art across 11 benchmarks. Our final 13B checkpoint uses merely 1.2M publicly available data, and finishes full training in ~1 day on a single 8-A100 node. We hope this can make state-of-the-art LMM research more accessible. Code and model will be publicly available.",
+      "authors": [
+        "Haotian Liu",
+        "Chunyuan Li",
+        "Yuheng Li",
+        "Yong Jae Lee"
+      ],
+      "year": 2023,
+      "url": "https://arxiv.org/abs/2310.03744v2",
+      "pdf_url": "https://arxiv.org/pdf/2310.03744v2",
+      "tags": [
+        "vlm-arch"
+      ],
+      "notes": "LLaVA-1.5: improved visual instruction tuning; architecture reference for LLaVA-family VLMs",
+      "added": "2026-06-05"
+    },
+    {
+      "id": "2408.01800v1",
+      "title": "MiniCPM-V: A GPT-4V Level MLLM on Your Phone",
+      "abstract": "The recent surge of Multimodal Large Language Models (MLLMs) has fundamentally reshaped the landscape of AI research and industry, shedding light on a promising path toward the next AI milestone. However, significant challenges remain preventing MLLMs from being practical in real-world applications. The most notable challenge comes from the huge cost of running an MLLM with a massive number of parameters and extensive computation. As a result, most MLLMs need to be deployed on high-performing cloud servers, which greatly limits their application scopes such as mobile, offline, energy-sensitive, and privacy-protective scenarios. In this work, we present MiniCPM-V, a series of efficient MLLMs deployable on end-side devices. By integrating the latest MLLM techniques in architecture, pretraining and alignment, the latest MiniCPM-Llama3-V 2.5 has several notable features: (1) Strong performance, outperforming GPT-4V-1106, Gemini Pro and Claude 3 on OpenCompass, a comprehensive evaluation over 11 popular benchmarks, (2) strong OCR capability and 1.8M pixel high-resolution image perception at any aspect ratio, (3) trustworthy behavior with low hallucination rates, (4) multilingual support for 30+ languages, and (5) efficient deployment on mobile phones. More importantly, MiniCPM-V can be viewed as a representative example of a promising trend: The model sizes for achieving usable (e.g., GPT-4V) level performance are rapidly decreasing, along with the fast growth of end-side computation capacity. This jointly shows that GPT-4V level MLLMs deployed on end devices are becoming increasingly possible, unlocking a wider spectrum of real-world AI applications in the near future.",
+      "authors": [
+        "Yuan Yao",
+        "Tianyu Yu",
+        "Ao Zhang",
+        "Chongyi Wang",
+        "Junbo Cui",
+        "Hongji Zhu",
+        "Tianchi Cai",
+        "Haoyu Li",
+        "Weilin Zhao",
+        "Zhihui He",
+        "Qianyu Chen",
+        "Huarong Zhou",
+        "Zhensheng Zou",
+        "Haoye Zhang",
+        "Shengding Hu",
+        "Zhi Zheng",
+        "Jie Zhou",
+        "Jie Cai",
+        "Xu Han",
+        "Guoyang Zeng",
+        "Dahai Li",
+        "Zhiyuan Liu",
+        "Maosong Sun"
+      ],
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2408.01800v1",
+      "pdf_url": "https://arxiv.org/pdf/2408.01800v1",
+      "tags": [
+        "vlm-arch",
+        "mobile"
+      ],
+      "notes": "MiniCPM-V: GPT-4V level MLLM on phone; Phase 0 baseline model architecture reference",
+      "added": "2026-06-05"
+    },
+    {
+      "id": "2412.13303v2",
+      "title": "FastVLM: Efficient Vision Encoding for Vision Language Models",
+      "abstract": "Scaling the input image resolution is essential for enhancing the performance of Vision Language Models (VLMs), particularly in text-rich image understanding tasks. However, popular visual encoders such as ViTs become inefficient at high resolutions due to the large number of tokens and high encoding latency caused by stacked self-attention layers. At different operational resolutions, the vision encoder of a VLM can be optimized along two axes: reducing encoding latency and minimizing the number of visual tokens passed to the LLM, thereby lowering overall latency. Based on a comprehensive efficiency analysis of the interplay between image resolution, vision latency, token count, and LLM size, we introduce FastVLM, a model that achieves an optimized trade-off between latency, model size and accuracy. FastVLM incorporates FastViTHD, a novel hybrid vision encoder designed to output fewer tokens and significantly reduce encoding time for high-resolution images. Unlike previous methods, FastVLM achieves the optimal balance between visual token count and image resolution solely by scaling the input image, eliminating the need for additional token pruning and simplifying the model design. In the LLaVA-1.5 setup, FastVLM achieves 3.2$\\times$ improvement in time-to-first-token (TTFT) while maintaining similar performance on VLM benchmarks compared to prior works. Compared to LLaVa-OneVision at the highest resolution (1152$\\times$1152), FastVLM achieves better performance on key benchmarks like SeedBench, MMMU and DocVQA, using the same 0.5B LLM, but with 85$\\times$ faster TTFT and a vision encoder that is 3.4$\\times$ smaller. Code and models are available at https://github.com/apple/ml-fastvlm.",
+      "authors": [
+        "Pavan Kumar Anasosalu Vasu",
+        "Fartash Faghri",
+        "Chun-Liang Li",
+        "Cem Koc",
+        "Nate True",
+        "Albert Antony",
+        "Gokul Santhanam",
+        "James Gabriel",
+        "Peter Grasch",
+        "Oncel Tuzel",
+        "Hadi Pouransari"
+      ],
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2412.13303v2",
+      "pdf_url": "https://arxiv.org/pdf/2412.13303v2",
+      "tags": [
+        "vlm-arch",
+        "mobile"
+      ],
+      "notes": "FastVLM: efficient vision encoding via MobileCLIP encoder; Phase 0 baseline model",
+      "added": "2026-06-05"
+    },
+    {
+      "id": "2404.14469v2",
+      "title": "SnapKV: LLM Knows What You are Looking for Before Generation",
+      "abstract": "Large Language Models (LLMs) have made remarkable progress in processing extensive contexts, with the Key-Value (KV) cache playing a vital role in enhancing their performance. However, the growth of the KV cache in response to increasing input length poses challenges to memory and time efficiency. To address this problem, this paper introduces SnapKV, an innovative and fine-tuning-free approach that efficiently minimizes KV cache size while still delivering comparable performance in real-world applications.   We discover that each attention head in the model consistently focuses on specific prompt attention features during generation. Meanwhile, this robust pattern can be obtained from an 'observation' window located at the end of the prompts. Drawing on this insight, SnapKV automatically compresses KV caches by selecting clustered important KV positions for each attention head. Our approach significantly reduces the growing computational overhead and memory footprint when processing long input sequences. Specifically, SnapKV achieves a consistent decoding speed with a 3.6x increase in generation speed and an 8.2x enhancement in memory efficiency compared to the baseline when processing inputs of 16K tokens. At the same time, it maintains comparable performance to the baseline models across 16 long sequence datasets. Moreover, SnapKV can process up to 380K context tokens on a single A100-80GB GPU using HuggingFace implementation with minor changes, exhibiting only a negligible accuracy drop in the Needle-in-a-Haystack test. Further comprehensive studies suggest SnapKV's potential for practical applications.",
+      "authors": [
+        "Yuhong Li",
+        "Yingbing Huang",
+        "Bowen Yang",
+        "Bharat Venkitesh",
+        "Acyr Locatelli",
+        "Hanchen Ye",
+        "Tianle Cai",
+        "Patrick Lewis",
+        "Deming Chen"
+      ],
+      "year": 2024,
+      "url": "https://arxiv.org/abs/2404.14469v2",
+      "pdf_url": "https://arxiv.org/pdf/2404.14469v2",
+      "tags": [
+        "kv-cache",
+        "mobile"
+      ],
+      "notes": "SnapKV: KV cache compression by identifying important tokens before generation; Phase 1 KV-cache experiment baseline",
+      "added": "2026-06-05"
+    }
+  ]
+}
