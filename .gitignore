@@ -49,3 +49,7 @@ datasets/stage_a_proxy/photos/
 # Secrets and local config
 .env
 *.local
+
+# Xcode user-specific state (should never be committed)
+*.xcuserstate
+xcuserdata/
