@@ -1,21 +1,21 @@
 {
   "report": {
     "experiment_id": "ccd9d9bca7d6c15ff1d9fa7196fa9f57d412a437d2a052f5b79c25a6c9d9a30e",
-    "device_id": "mac-mini-m4-16gb",
+    "device_id": "iphone_16_pro",
     "status": "completed",
     "error_message": null,
     "started_at": "2026-06-05T23:37:44.678222Z",
-    "completed_at": "2026-06-05T23:43:34.719164Z",
+    "completed_at": "2026-06-05T23:48:13.154912Z",
     "hardware_fingerprint": {
-      "os_version": "macOS 26.5.1",
-      "available_ram_mb": 5664.8,
+      "os_version": "iOS (unknown)",
+      "available_ram_mb": 0.0,
       "thermal_state": null,
       "swap_used_mb": null
     },
-    "ttft_ms": null,
-    "decode_tokens_per_sec": null,
-    "peak_memory_mb": null,
-    "on_disk_size_mb": null,
+    "ttft_ms": 17.7442252,
+    "decode_tokens_per_sec": 51.93887125024912,
+    "peak_memory_mb": 366.7140182495117,
+    "on_disk_size_mb": 348.34344482421875,
     "energy_j": null,
     "quality_scores": [
       {
@@ -53,5 +53,6 @@
     "dataset_hash": "e2128ae022b3720375d7c866a037b6d8ec4b399ff92cb59e6065ec9fb7f3e29f",
     "target_device_id": "iphone16pro-001",
     "notes": "H002-pivot: SmolVLM-500M i1-Q4_0 (mradermacher imatrix build). AWQ blocked: CUDA required for calibration. i1-Q4_0 = imatrix-calibrated uniform INT4; 245MB LM vs Q4_K_M 289MB (-15%). GGUF: artifacts/experiments/smolvlm-q4-0/SmolVLM-500M-Instruct.i1-Q4_0.gguf. Hypothesis: uniform INT4 Metal kernel dispatch faster than mixed k-quants. Expected: TPS +5-15%, Mem -5-10%, quality neutral."
-  }
+  },
+  "iphone_merged_at": "2026-06-05T23:48:13.155047+00:00"
 }
