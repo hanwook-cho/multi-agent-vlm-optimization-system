@@ -1,0 +1,489 @@
+{
+  "seed": 42,
+  "total_selected_coco": 95,
+  "bucket_targets": {
+    "indoor_scene": 20,
+    "outdoor_scene": 20,
+    "person_activity": 20,
+    "animal": 15,
+    "vehicle": 10,
+    "food": 10
+  },
+  "selections": [
+    {
+      "image_id": 574315,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 176446,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 122046,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 512403,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 231822,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 341828,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 113720,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 274687,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 553788,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 352584,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 80413,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 384527,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 202001,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 320664,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 385719,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 534041,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 578545,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 460494,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 573094,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 64868,
+      "bucket": "indoor_scene",
+      "reason": "sampled from bucket 'indoor_scene'"
+    },
+    {
+      "image_id": 567011,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 183246,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 423104,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 104782,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 350607,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 343315,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 31217,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 328601,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 62692,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 400044,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 469192,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 153797,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 551350,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 430961,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 235778,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 266082,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 25424,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 92177,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 273232,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 334530,
+      "bucket": "outdoor_scene",
+      "reason": "sampled from bucket 'outdoor_scene'"
+    },
+    {
+      "image_id": 97278,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 47828,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 259097,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 66038,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 50943,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 293200,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 287527,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 258541,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 456559,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 554002,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 89078,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 181303,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 6040,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 322724,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 516173,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 145665,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 191672,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 534673,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 269121,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 112110,
+      "bucket": "person_activity",
+      "reason": "sampled from bucket 'person_activity'"
+    },
+    {
+      "image_id": 375763,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 113235,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 173033,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 235057,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 236730,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 221693,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 137576,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 498857,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 411665,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 194506,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 374052,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 308545,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 508639,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 286849,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 133631,
+      "bucket": "animal",
+      "reason": "sampled from bucket 'animal'"
+    },
+    {
+      "image_id": 276720,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 137950,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 55150,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 57149,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 493286,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 517523,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 188689,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 419882,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 319369,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 165681,
+      "bucket": "vehicle",
+      "reason": "sampled from bucket 'vehicle'"
+    },
+    {
+      "image_id": 522156,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 35682,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 397681,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 377814,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 197022,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 296284,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 581206,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 227187,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 434297,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    },
+    {
+      "image_id": 296634,
+      "bucket": "food",
+      "reason": "sampled from bucket 'food'"
+    }
+  ]
+}
