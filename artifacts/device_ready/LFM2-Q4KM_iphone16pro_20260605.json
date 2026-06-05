@@ -1,0 +1,41 @@
+{
+  "device_id" : "iphone_16_pro",
+  "experiment_id" : "LFM2-Q4KM_iphone16pro_20260605",
+  "model_hf_id" : "LiquidAI/LFM2-VL-450M",
+  "model_key" : "LFM2-Q4KM",
+  "notes" : "iPhone 16 Pro · LFM2-Q4KM · Q4_K_M",
+  "performance_metrics" : {
+    "decode_tokens_per_sec_mean" : 78.903614116897373,
+    "on_disk_size_mb" : 317.76443481445312,
+    "peak_memory_mb_mean" : 271.84202880859374,
+    "raw_peak_mem_mb" : [
+      270.03265380859375,
+      276.65765380859375,
+      277.40765380859375,
+      272.67327880859375,
+      262.43890380859375
+    ],
+    "raw_tps" : [
+      77.741522730720732,
+      78.599953444642964,
+      78.975050165798024,
+      77.55167250166528,
+      81.649871741659794
+    ],
+    "raw_ttft_ms" : [
+      15.282624999999999,
+      15.173875000000001,
+      15.238125,
+      15.246667,
+      15.270917000000001
+    ],
+    "ttft_ms_mean" : 15.2424418,
+    "ttft_ms_stddev" : 0.042318493938229625
+  },
+  "quality_scores" : {},
+  "quantization" : "Q4_K_M",
+  "schema_version" : "1.0.0",
+  "status" : "completed",
+  "timestamp_end" : "2026-06-05T23:16:38Z",
+  "timestamp_start" : "2026-06-05T23:16:38Z"
+}
