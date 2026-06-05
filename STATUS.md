@@ -88,6 +88,7 @@ Consistency with published numbers: POPE scores match within ~2pp for all models
 **Week 3: iPhone 16 Pro reference baselines**
 
 - [x] Task 3.1 — iOS developer provisioning (Xcode, signing, deploy to device) ✅ **done**
+- [x] Task 3.2 — LFM2-VL-450M app built + installed on device ✅ **pending first run**
 - [ ] Task 3.2 — LFM2.5-VL-450M on iPhone via Liquid's LEAP SDK
 - [ ] Task 3.3 — FastVLM-0.5B on iPhone via `apple/ml-fastvlm` demo app (pre-built MLX weights available)
 - [ ] Task 3.4 — SmolVLM-500M (llama.cpp/MLX) + MiniCPM-V 4.6 (OpenBMB iOS demo)

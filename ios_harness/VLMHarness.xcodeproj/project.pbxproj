@@ -10,35 +10,49 @@
 		250DCE982430449DA021A852 /* VLMHarnessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A26CE23AB924272A0AF92FF /* VLMHarnessApp.swift */; };
 		31798D948C1F4B87AD2339B6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65DAAE8D1FDA4A27A39D45B2 /* ContentView.swift */; };
 		69CFE482C6EA47898F835D51 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D2F7A2574B044F9A5685914 /* Assets.xcassets */; };
+		90655C412FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf in Resources */ = {isa = PBXBuildFile; fileRef = 90655C402FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf */; };
+		90655C432FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf in Resources */ = {isa = PBXBuildFile; fileRef = 90655C422FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf */; };
+		BB00S001000000000000000A /* sample1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I001000000000000000A /* sample1.jpg */; };
+		BB00S002000000000000000A /* sample2.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I002000000000000000A /* sample2.jpg */; };
+		BB00S003000000000000000A /* sample3.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I003000000000000000A /* sample3.jpg */; };
+		BB00S004000000000000000A /* sample4.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I004000000000000000A /* sample4.jpg */; };
+		BB00S005000000000000000A /* sample5.jpg in Resources */ = {isa = PBXBuildFile; fileRef = BB00I005000000000000000A /* sample5.jpg */; };
 		AA00F001000000000000000A /* libggml.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R001000000000000000A /* libggml.a */; };
 		AA00F002000000000000000A /* libllama.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R002000000000000000A /* libllama.a */; };
 		AA00F003000000000000000A /* libmtmd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R003000000000000000A /* libmtmd.a */; };
+		AA00F004000000000000000A /* LlamaVLMRunner.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA00R005000000000000000A /* LlamaVLMRunner.mm */; };
+		AA00F005000000000000000A /* MeasurementSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00R006000000000000000A /* MeasurementSession.swift */; };
+		AA00F006000000000000000A /* ReportExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00R007000000000000000A /* ReportExporter.swift */; };
 		AA00F007000000000000000A /* libggml-base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R009000000000000000A /* libggml-base.a */; };
 		AA00F008000000000000000A /* libggml-cpu.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R010000000000000000A /* libggml-cpu.a */; };
 		AA00F009000000000000000A /* libggml-blas.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R011000000000000000A /* libggml-blas.a */; };
 		AA00F010000000000000000A /* libggml-metal.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00R012000000000000000A /* libggml-metal.a */; };
-		AA00F004000000000000000A /* LlamaVLMRunner.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA00R005000000000000000A /* LlamaVLMRunner.mm */; };
-		AA00F005000000000000000A /* MeasurementSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00R006000000000000000A /* MeasurementSession.swift */; };
-		AA00F006000000000000000A /* ReportExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00R007000000000000000A /* ReportExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		4A26CE23AB924272A0AF92FF /* VLMHarnessApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VLMHarnessApp.swift; sourceTree = "<group>"; };
 		65DAAE8D1FDA4A27A39D45B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		90655C402FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "LFM2-VL-450M-Q4_0.gguf"; sourceTree = "<group>"; };
+		90655C422FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "mmproj-LFM2-VL-450M-Q8_0.gguf"; sourceTree = "<group>"; };
+		BB00I001000000000000000A /* sample1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample1.jpg; sourceTree = "<group>"; };
+		BB00I002000000000000000A /* sample2.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample2.jpg; sourceTree = "<group>"; };
+		BB00I003000000000000000A /* sample3.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample3.jpg; sourceTree = "<group>"; };
+		BB00I004000000000000000A /* sample4.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample4.jpg; sourceTree = "<group>"; };
+		BB00I005000000000000000A /* sample5.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = sample5.jpg; sourceTree = "<group>"; };
 		9D2F7A2574B044F9A5685914 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9DE36DF40E4B45A1911278C1 /* VLMHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VLMHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AA00R001000000000000000A /* libggml.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libggml.a; path = "libs/libggml.a"; sourceTree = SOURCE_ROOT; };
-		AA00R002000000000000000A /* libllama.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libllama.a; path = "libs/libllama.a"; sourceTree = SOURCE_ROOT; };
-		AA00R003000000000000000A /* libmtmd.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmtmd.a; path = "libs/libmtmd.a"; sourceTree = SOURCE_ROOT; };
-		AA00R009000000000000000A /* libggml-base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-base.a"; path = "libs/libggml-base.a"; sourceTree = SOURCE_ROOT; };
-		AA00R010000000000000000A /* libggml-cpu.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-cpu.a"; path = "libs/libggml-cpu.a"; sourceTree = SOURCE_ROOT; };
-		AA00R011000000000000000A /* libggml-blas.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-blas.a"; path = "libs/libggml-blas.a"; sourceTree = SOURCE_ROOT; };
-		AA00R012000000000000000A /* libggml-metal.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-metal.a"; path = "libs/libggml-metal.a"; sourceTree = SOURCE_ROOT; };
+		AA00R001000000000000000A /* libggml.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libggml.a; path = libs/libggml.a; sourceTree = SOURCE_ROOT; };
+		AA00R002000000000000000A /* libllama.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libllama.a; path = libs/libllama.a; sourceTree = SOURCE_ROOT; };
+		AA00R003000000000000000A /* libmtmd.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmtmd.a; path = libs/libmtmd.a; sourceTree = SOURCE_ROOT; };
 		AA00R004000000000000000A /* LlamaVLMRunner.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LlamaVLMRunner.h; sourceTree = "<group>"; };
 		AA00R005000000000000000A /* LlamaVLMRunner.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LlamaVLMRunner.mm; sourceTree = "<group>"; };
 		AA00R006000000000000000A /* MeasurementSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementSession.swift; sourceTree = "<group>"; };
 		AA00R007000000000000000A /* ReportExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportExporter.swift; sourceTree = "<group>"; };
 		AA00R008000000000000000A /* VLMHarness-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "VLMHarness-Bridging-Header.h"; sourceTree = "<group>"; };
+		AA00R009000000000000000A /* libggml-base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-base.a"; path = "libs/libggml-base.a"; sourceTree = SOURCE_ROOT; };
+		AA00R010000000000000000A /* libggml-cpu.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-cpu.a"; path = "libs/libggml-cpu.a"; sourceTree = SOURCE_ROOT; };
+		AA00R011000000000000000A /* libggml-blas.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-blas.a"; path = "libs/libggml-blas.a"; sourceTree = SOURCE_ROOT; };
+		AA00R012000000000000000A /* libggml-metal.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-metal.a"; path = "libs/libggml-metal.a"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +117,13 @@
 		C3B3118176FE4F969B90491F /* VLMHarness */ = {
 			isa = PBXGroup;
 			children = (
+				90655C402FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf */,
+				90655C422FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf */,
+				BB00I001000000000000000A /* sample1.jpg */,
+				BB00I002000000000000000A /* sample2.jpg */,
+				BB00I003000000000000000A /* sample3.jpg */,
+				BB00I004000000000000000A /* sample4.jpg */,
+				BB00I005000000000000000A /* sample5.jpg */,
 				4A26CE23AB924272A0AF92FF /* VLMHarnessApp.swift */,
 				65DAAE8D1FDA4A27A39D45B2 /* ContentView.swift */,
 				AA00R006000000000000000A /* MeasurementSession.swift */,
@@ -172,6 +193,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				69CFE482C6EA47898F835D51 /* Assets.xcassets in Resources */,
+				90655C432FD33EF300640F81 /* mmproj-LFM2-VL-450M-Q8_0.gguf in Resources */,
+				90655C412FD33EEB00640F81 /* LFM2-VL-450M-Q4_0.gguf in Resources */,
+				BB00S001000000000000000A /* sample1.jpg in Resources */,
+				BB00S002000000000000000A /* sample2.jpg in Resources */,
+				BB00S003000000000000000A /* sample3.jpg in Resources */,
+				BB00S004000000000000000A /* sample4.jpg in Resources */,
+				BB00S005000000000000000A /* sample5.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -227,10 +255,14 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
-					"-framework Accelerate",
-					"-framework Metal",
-					"-framework CoreML",
-					"-framework Foundation",
+					"-framework",
+					Accelerate,
+					"-framework",
+					Metal,
+					"-framework",
+					CoreML,
+					"-framework",
+					Foundation,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.hwcho99.VLMHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -392,10 +424,14 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lc++",
-					"-framework Accelerate",
-					"-framework Metal",
-					"-framework CoreML",
-					"-framework Foundation",
+					"-framework",
+					Accelerate,
+					"-framework",
+					Metal,
+					"-framework",
+					CoreML,
+					"-framework",
+					Foundation,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.hwcho99.VLMHarness;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -428,7 +464,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
 	};
 	rootObject = A458E7652D854FB7B166AD3B /* Project object */;
 }
