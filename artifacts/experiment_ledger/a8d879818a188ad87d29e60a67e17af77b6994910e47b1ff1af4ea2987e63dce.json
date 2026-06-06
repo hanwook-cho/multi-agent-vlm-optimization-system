@@ -1,21 +1,21 @@
 {
   "report": {
     "experiment_id": "a8d879818a188ad87d29e60a67e17af77b6994910e47b1ff1af4ea2987e63dce",
-    "device_id": "mac-mini-m4-16gb",
+    "device_id": "iphone_16_pro",
     "status": "completed",
     "error_message": null,
     "started_at": "2026-06-05T23:59:16.161533Z",
-    "completed_at": "2026-06-06T00:02:22.771793Z",
+    "completed_at": "2026-06-06T00:19:27.178500Z",
     "hardware_fingerprint": {
-      "os_version": "macOS 26.5.1",
-      "available_ram_mb": 9944.7,
+      "os_version": "iOS (unknown)",
+      "available_ram_mb": 0.0,
       "thermal_state": null,
       "swap_used_mb": null
     },
-    "ttft_ms": null,
-    "decode_tokens_per_sec": null,
-    "peak_memory_mb": null,
-    "on_disk_size_mb": null,
+    "ttft_ms": 15.430141800000001,
+    "decode_tokens_per_sec": 79.00180501833374,
+    "peak_memory_mb": 270.01705169677734,
+    "on_disk_size_mb": 317.7644348144531,
     "energy_j": null,
     "quality_scores": [
       {
@@ -53,5 +53,6 @@
     "dataset_hash": "e2128ae022b3720375d7c866a037b6d8ec4b399ff92cb59e6065ec9fb7f3e29f",
     "target_device_id": "iphone16pro-001",
     "notes": "H003: Input resize 336\u2192224px before vision encoder. No training change \u2014 purely inference-time image downscale. Mac eval uses fp16 HF proxy with PIL resize to 224px. iPhone: VLMHarness will resize sample images to 224px via UIImage. Expected: TTFT \u221230%, Mem \u221220% from fewer image tokens. Risk: CLIP \u22121.5 if model trained at 336px fixed resolution."
-  }
+  },
+  "iphone_merged_at": "2026-06-06T00:19:27.178947+00:00"
 }
