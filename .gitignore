@@ -77,3 +77,4 @@ vendor/ml-fastvlm/
 # Xcode user-specific state (should never be committed)
 *.xcuserstate
 xcuserdata/
+artifacts/experiment_queue.json

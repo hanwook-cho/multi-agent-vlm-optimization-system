@@ -58,6 +58,7 @@ class ExperimentConfig(BaseModel):
     compression: Annotated[CompressionSpec, Field(description="Compression scheme for weights and activations.")]
     input_resolution: Annotated[int | None, Field(default=None, ge=64, le=4096, description="Image side length in pixels. Null uses model default.")]
     vision_token_budget: Annotated[int | None, Field(default=None, ge=1, description="Max vision tokens. Null uses model default.")]
+    n_ctx: Annotated[int | None, Field(default=None, ge=64, le=32768, description="KV-cache context size (llama.cpp n_ctx). Null uses model default (4096).")]
     runtime_backend: Annotated[Runtime, Field(description="Inference runtime. Must be in target device's supported_runtimes.")]
     decode_strategy: Annotated[DecodeStrategy, Field(description="Token sampling strategy.")]
     decode_top_k: Annotated[int | None, Field(default=None, ge=1, description="k for top-k sampling. Required when decode_strategy is top_k.")]
