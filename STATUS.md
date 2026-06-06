@@ -1,8 +1,9 @@
 # Project Status
 
-**Last updated:** 2026-06-05  
-**Phase:** Phase 0 → Phase 1 transition  
+**Last updated:** 2026-06-06  
+**Phase:** Phase 1 → Phase 2 transition  
 **Phase 0 status:** ✅ COMPLETE (9/10 exit criteria met; Pi skipped deliberately)
+**Phase 1 status:** ✅ COMPLETE (6/7 exit criteria met; criterion 1.7 pending repo flip)
 
 ---
 
