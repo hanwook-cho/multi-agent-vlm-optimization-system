@@ -307,19 +307,29 @@ def _run_clip_eval(
     items: list[dict],
     device: str,
     experiment_id: str,
+    input_resolution: int | None = None,
 ) -> tuple[list[BenchmarkScore], dict]:
     """
     Generate descriptions for Stage A items and compute CLIP-score.
     Returns (list[BenchmarkScore], raw_predictions_dict).
+
+    input_resolution: if set, PIL images are resized to (input_resolution,
+    input_resolution) with LANCZOS before being passed to the model. This
+    measures quality impact of H003-style input downscaling.
     """
     from runners.compute_clip_score import CLIPScorer
 
     predictions = []
     images_pil  = []
 
+    if input_resolution:
+        print(f"  [H003] Resizing images to {input_resolution}×{input_resolution} before inference")
+
     print(f"  Generating descriptions for {len(items)} images…")
     for item in items:
         img = Image.open(item["path"]).convert("RGB")
+        if input_resolution:
+            img = img.resize((input_resolution, input_resolution), Image.LANCZOS)
         images_pil.append(img)
         text = infer_fn(model, processor, img, EVAL_PROMPT, device)
         predictions.append({"image": item["filename"], "text": text})
@@ -507,6 +517,7 @@ class ExperimentRunner:
                 model, processor, infer_fn, items,
                 device=self.mac_device,
                 experiment_id=experiment_id,
+                input_resolution=config.input_resolution,
             )
 
             # ── 5. Free model memory ──────────────────────────────────────

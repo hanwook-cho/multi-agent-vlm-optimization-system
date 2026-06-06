@@ -11,6 +11,8 @@ struct ModelEntry: Identifiable {
     let chatTemplate: String
     let hfId: String
     let quantization: String
+    /// H003: resize input images to this square resolution before inference. 0 = model default.
+    var inputResolution: Int = 0
 
     var modelPath:  String { Bundle.main.path(forResource: ggufName,  ofType: "gguf") ?? "" }
     var mmprojPath: String { Bundle.main.path(forResource: mmprojName, ofType: "gguf") ?? "" }
@@ -36,6 +38,18 @@ private let kModels: [ModelEntry] = [
         chatTemplate: "chatml",
         hfId:         "LiquidAI/LFM2-VL-450M",
         quantization: "Q4_K_M"
+    ),
+    // Phase 1 Week 3 — H003: input resize 336→224px (no model change)
+    // CLIP-score Mac eval: 27.88 ± 4.54 (n=50) — quality nearly unchanged ✅
+    // experiment_id: a8d879818a188ad8af461a1c32a8e4285ee1beff23d40c8e7cf4ecb0a2ae6ef9
+    ModelEntry(
+        id:             "LFM2-224px",
+        ggufName:       "LFM2-VL-450M-Q4_K_M",
+        mmprojName:     "mmproj-LFM2-VL-450M-Q8_0",
+        chatTemplate:   "chatml",
+        hfId:           "LiquidAI/LFM2-VL-450M",
+        quantization:   "Q4_K_M",
+        inputResolution: 224
     ),
     ModelEntry(
         id:           "SmolVLM-500M",
@@ -231,17 +245,18 @@ struct ContentView: View {
     private func startMeasurement() {
         let model = selectedModel
         let config = RunConfig(
-            modelKey:     model.id,
-            modelPath:    model.modelPath,
-            mmprojPath:   model.mmprojPath,
-            chatTemplate: model.chatTemplate,
-            hfId:         model.hfId,
-            quantization: model.quantization,
-            imagePaths:   sampleImagePaths,
-            prompt:       "Describe this image briefly.",
-            maxTokens:    64,
-            nWarmup:      1,
-            nMeasure:     5
+            modelKey:        model.id,
+            modelPath:       model.modelPath,
+            mmprojPath:      model.mmprojPath,
+            chatTemplate:    model.chatTemplate,
+            hfId:            model.hfId,
+            quantization:    model.quantization,
+            imagePaths:      sampleImagePaths,
+            prompt:          "Describe this image briefly.",
+            maxTokens:       64,
+            nWarmup:         1,
+            nMeasure:        5,
+            inputResolution: model.inputResolution
         )
         reportURL = nil
         Task {

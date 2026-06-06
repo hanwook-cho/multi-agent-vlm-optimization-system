@@ -1,0 +1,16 @@
+{
+  "experiment_id": "a8d879818a188ad87d29e60a67e17af77b6994910e47b1ff1af4ea2987e63dce",
+  "created_at": "2026-06-06T00:02:22.777449+00:00",
+  "model_id": "LiquidAI/LFM2-VL-450M",
+  "compression": {
+    "weight_dtype": "fp16",
+    "activation_dtype": null,
+    "group_size": null,
+    "kv_cache_dtype": null,
+    "sparsity": null
+  },
+  "runtime_backend": "llamacpp_gguf",
+  "target_device_id": "iphone16pro-001",
+  "notes": "H003: Input resize 336\u2192224px before vision encoder. No training change \u2014 purely inference-time image downscale. Mac eval uses fp16 HF proxy with PIL resize to 224px. iPhone: VLMHarness will resize sample images to 224px via UIImage. Expected: TTFT \u221230%, Mem \u221220% from fewer image tokens. Risk: CLIP \u22121.5 if model trained at 336px fixed resolution.",
+  "instructions": "Deploy the model to the target device and run the VLMHarness measurement protocol (5 warm-up + 5 measured runs). Export the MetricsReport JSON and call ExperimentRunner.import_iphone_results(experiment_id, path)."
+}
