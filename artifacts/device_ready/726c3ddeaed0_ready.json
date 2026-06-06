@@ -1,0 +1,6 @@
+{
+  "experiment_id": "726c3ddeaed0dfad1ca9e6e80b725ebaa1391525c5977bf3359a6b6eb342cee9",
+  "iphone_measured": false,
+  "verdict": "SKIP_IPHONE_NULL_PREDICTED",
+  "verdict_reason": "H003 proved that upstream input resize has no effect on GGUF TTFT (llama.cpp CLIP preprocessor overrides to model-native 336px). Same null result guaranteed for SmolVLM. Mac eval confirms quality preserved (CLIP 27.66 ≈ H002 baseline 27.78). Skipping iPhone deploy."
+}

@@ -1,0 +1,57 @@
+{
+  "report": {
+    "experiment_id": "726c3ddeaed0dfad1ca9e6e80b725ebaa1391525c5977bf3359a6b6eb342cee9",
+    "device_id": "mac-mini-m4-16gb",
+    "status": "completed",
+    "error_message": null,
+    "started_at": "2026-06-06T00:14:56.255016Z",
+    "completed_at": "2026-06-06T00:23:28.022057Z",
+    "hardware_fingerprint": {
+      "os_version": "macOS 26.5.1",
+      "available_ram_mb": 6656.5,
+      "thermal_state": null,
+      "swap_used_mb": null
+    },
+    "ttft_ms": null,
+    "decode_tokens_per_sec": null,
+    "peak_memory_mb": null,
+    "on_disk_size_mb": null,
+    "energy_j": null,
+    "quality_scores": [
+      {
+        "benchmark": "stage_a_caption",
+        "metric": "clip_score_mean",
+        "value": 27.6621
+      },
+      {
+        "benchmark": "stage_a_caption",
+        "metric": "clip_score_std",
+        "value": 4.635
+      },
+      {
+        "benchmark": "stage_a_caption",
+        "metric": "clip_score_n",
+        "value": 50.0
+      }
+    ]
+  },
+  "config": {
+    "model_id": "HuggingFaceTB/SmolVLM-500M-Instruct",
+    "compression": {
+      "weight_dtype": "fp16",
+      "activation_dtype": null,
+      "group_size": null,
+      "kv_cache_dtype": null,
+      "sparsity": null
+    },
+    "input_resolution": 224,
+    "vision_token_budget": null,
+    "runtime_backend": "llamacpp_gguf",
+    "decode_strategy": "greedy",
+    "decode_top_k": null,
+    "speculative_draft_model_id": null,
+    "dataset_hash": "e2128ae022b3720375d7c866a037b6d8ec4b399ff92cb59e6065ec9fb7f3e29f",
+    "target_device_id": "iphone16pro-001",
+    "notes": "H004-pivot: SmolVLM-500M input resize 336\u2192224px. H004 (Q4_0 mmproj) blocked; repivoting to same resize technique on SmolVLM. Baseline: CLIP 24.11 (Q4_K_M default res)."
+  }
+}
