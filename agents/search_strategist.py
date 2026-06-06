@@ -37,7 +37,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import anthropic
+try:
+    import anthropic as _anthropic_mod
+    _HAS_ANTHROPIC = True
+except ImportError:
+    _HAS_ANTHROPIC = False
+
+try:
+    import openai as _openai_mod
+    _HAS_OPENAI = True
+except ImportError:
+    _HAS_OPENAI = False
 
 # ── Project root ──────────────────────────────────────────────────────────────
 
@@ -392,37 +402,214 @@ evidence from the ledger in your rationale.
 """
 
 
+# ── LLM backend abstraction ───────────────────────────────────────────────────
+# Normalised turn: (stop_reason, text, tool_calls)
+# stop_reason: "done" | "tool_use"
+# tool_calls:  [{"id": str, "name": str, "input": dict}]
+
+def _openai_tools_from_anthropic(tools: list[dict]) -> list[dict]:
+    """Convert Anthropic tool schema → OpenAI function-calling schema."""
+    out = []
+    for t in tools:
+        out.append({
+            "type": "function",
+            "function": {
+                "name":        t["name"],
+                "description": t["description"],
+                "parameters":  t["input_schema"],
+            },
+        })
+    return out
+
+
+class _AnthropicBackend:
+    def __init__(self, model: str, api_key: str):
+        if not _HAS_ANTHROPIC:
+            raise ImportError("pip install anthropic")
+        self.client = _anthropic_mod.Anthropic(api_key=api_key)
+        self.model  = model
+
+    def chat(self, messages: list[dict], system: str, tools: list[dict]):
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=4096,
+            system=system,
+            tools=tools,
+            messages=messages,
+        )
+        text_parts = [b.text for b in response.content if b.type == "text"]
+        tool_calls = [
+            {"id": b.id, "name": b.name, "input": b.input}
+            for b in response.content if b.type == "tool_use"
+        ]
+        stop = "tool_use" if response.stop_reason == "tool_use" else "done"
+        return stop, "\n".join(text_parts), tool_calls
+
+    def append_assistant(self, messages: list[dict], text: str, tool_calls: list[dict],
+                         _raw_response=None):
+        """Append the assistant turn in Anthropic message format."""
+        content = []
+        if text:
+            content.append({"type": "text", "text": text})
+        for tc in tool_calls:
+            content.append({"type": "tool_use", "id": tc["id"], "name": tc["name"], "input": tc["input"]})
+        messages.append({"role": "assistant", "content": content})
+
+    def append_tool_results(self, messages: list[dict], results: list[dict]):
+        """Append tool results in Anthropic format."""
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "tool_result", "tool_use_id": r["id"], "content": r["result"]}
+                for r in results
+            ],
+        })
+
+
+class _OpenAICompatibleBackend:
+    """
+    Works with any OpenAI-compatible endpoint: Ollama, LM Studio, vLLM, etc.
+
+    For Ollama (default):
+        base_url = "http://localhost:11434/v1"
+        api_key  = "ollama"   (ignored by Ollama but required by the SDK)
+        model    = "gemma3"  (or "llama3.2", "qwen2.5", ...)
+
+    The system prompt is injected as the first message with role="system".
+    """
+
+    def __init__(self, model: str, base_url: str, api_key: str = "ollama"):
+        if not _HAS_OPENAI:
+            raise ImportError("pip install openai")
+        self.client = _openai_mod.OpenAI(base_url=base_url, api_key=api_key)
+        self.model  = model
+        self._oai_tools = _openai_tools_from_anthropic(TOOLS)
+
+    def chat(self, messages: list[dict], system: str, tools: list[dict]):
+        # Inject system prompt as first message if not already present
+        msgs = messages
+        if not msgs or msgs[0].get("role") != "system":
+            msgs = [{"role": "system", "content": system}] + messages
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=msgs,
+            tools=self._oai_tools,
+            tool_choice="auto",
+        )
+        choice  = response.choices[0]
+        message = choice.message
+        text    = message.content or ""
+        tool_calls = []
+        if message.tool_calls:
+            for tc in message.tool_calls:
+                try:
+                    inp = json.loads(tc.function.arguments)
+                except Exception:
+                    inp = {}
+                tool_calls.append({"id": tc.id, "name": tc.function.name, "input": inp})
+        stop = "tool_use" if tool_calls else "done"
+        return stop, text, tool_calls
+
+    def append_assistant(self, messages: list[dict], text: str, tool_calls: list[dict],
+                         _raw_response=None):
+        """Append the assistant turn in OpenAI message format."""
+        tc_list = None
+        if tool_calls:
+            tc_list = [
+                {
+                    "id":       tc["id"],
+                    "type":     "function",
+                    "function": {"name": tc["name"], "arguments": json.dumps(tc["input"])},
+                }
+                for tc in tool_calls
+            ]
+        messages.append({"role": "assistant", "content": text or None, "tool_calls": tc_list})
+
+    def append_tool_results(self, messages: list[dict], results: list[dict]):
+        """Append tool results in OpenAI format (one message per result)."""
+        for r in results:
+            messages.append({"role": "tool", "tool_call_id": r["id"], "content": r["result"]})
+
+
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
 class SearchStrategist:
     """
-    Calls the Claude API with tool use to propose the next VLM experiment.
+    Proposes the next VLM optimization experiment using an LLM with tool use.
+
+    Supports two backends — pick one:
+
+    1. Anthropic API (default if ANTHROPIC_API_KEY is set):
+       agent = SearchStrategist()                          # auto-detect
+       agent = SearchStrategist(backend="anthropic")
+
+    2. Local model via Ollama (or any OpenAI-compatible server):
+       agent = SearchStrategist(backend="ollama")          # default: gemma3
+       agent = SearchStrategist(backend="ollama",
+                                model="llama3.2:3b")
+       agent = SearchStrategist(backend="openai_compat",
+                                model="...",
+                                base_url="http://localhost:1234/v1")
 
     Args:
-        model:       Claude model to use (default claude-sonnet-4-5).
-        api_key:     Anthropic API key. Falls back to ANTHROPIC_API_KEY env var.
-        max_rounds:  Max tool-call rounds before giving up (default 6).
-        verbose:     Print reasoning trace to stdout (default True).
+        backend:    "auto" | "anthropic" | "ollama" | "openai_compat"
+                    "auto" tries Anthropic first (if ANTHROPIC_API_KEY set),
+                    then falls back to Ollama.
+        model:      Model name. Defaults: Anthropic → "claude-sonnet-4-5",
+                    Ollama → "gemma3".
+        api_key:    Anthropic API key (falls back to ANTHROPIC_API_KEY env var).
+        base_url:   Base URL for OpenAI-compatible server.
+                    Default for "ollama": "http://localhost:11434/v1".
+        max_rounds: Max tool-call rounds before giving up (default 6).
+        verbose:    Print reasoning trace to stdout (default True).
     """
 
     def __init__(
         self,
-        model: str = "claude-sonnet-4-5",
-        api_key: str | None = None,
+        backend:    str = "auto",
+        model:      str | None = None,
+        api_key:    str | None = None,
+        base_url:   str | None = None,
         max_rounds: int = 6,
-        verbose: bool = True,
+        verbose:    bool = True,
     ):
-        key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-        if not key:
-            raise ValueError(
-                "ANTHROPIC_API_KEY not set. "
-                "Export it or pass api_key= to SearchStrategist()."
-            )
-        self.client     = anthropic.Anthropic(api_key=key)
-        self.model      = model
         self.max_rounds = max_rounds
         self.verbose    = verbose
         self._last_proposal: ExperimentProposal | None = None
+
+        # Resolve backend
+        if backend == "auto":
+            if api_key or os.environ.get("ANTHROPIC_API_KEY"):
+                backend = "anthropic"
+            else:
+                backend = "ollama"
+
+        if backend == "anthropic":
+            key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+            if not key:
+                raise ValueError(
+                    "ANTHROPIC_API_KEY not set. "
+                    "Set it or use backend='ollama' for a local model."
+                )
+            self._backend = _AnthropicBackend(
+                model=model or "claude-sonnet-4-5",
+                api_key=key,
+            )
+
+        elif backend in ("ollama", "openai_compat"):
+            url = base_url or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+            mdl = model or os.environ.get("OLLAMA_MODEL", "gemma3")
+            self._backend = _OpenAICompatibleBackend(
+                model=mdl,
+                base_url=url,
+                api_key=api_key or "ollama",
+            )
+            if self.verbose:
+                print(f"  [SearchStrategist] backend=ollama  model={mdl}  url={url}")
+
+        else:
+            raise ValueError(f"Unknown backend: {backend!r}. Use 'anthropic', 'ollama', or 'openai_compat'.")
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -454,10 +641,10 @@ class SearchStrategist:
             self._last_proposal = proposal
             return proposal
 
-        system = _build_system_prompt()
+        system   = _build_system_prompt()
         messages: list[dict] = [
             {
-                "role": "user",
+                "role":    "user",
                 "content": (
                     "Please analyse the current experiment state and propose the "
                     "single best next experiment to run. Use the available tools to "
@@ -473,37 +660,25 @@ class SearchStrategist:
             if self.verbose:
                 print(f"\n  [SearchStrategist] Round {round_idx + 1}/{self.max_rounds}")
 
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=4096,
-                system=system,
-                tools=TOOLS,
-                messages=messages,
-            )
+            stop, text, tool_calls = self._backend.chat(messages, system, TOOLS)
 
             reasoning_trace.append({
-                "round":        round_idx + 1,
-                "stop_reason":  response.stop_reason,
-                "content":      [self._content_to_dict(c) for c in response.content],
+                "round":       round_idx + 1,
+                "stop_reason": stop,
+                "text":        text[:200] if text else "",
+                "tool_calls":  [{"name": tc["name"], "input": tc["input"]} for tc in tool_calls],
             })
 
-            # Collect assistant message
-            messages.append({"role": "assistant", "content": response.content})
+            self._backend.append_assistant(messages, text, tool_calls)
 
-            if response.stop_reason == "end_turn":
-                break
-
-            if response.stop_reason != "tool_use":
+            if stop == "done":
                 break
 
             # Process tool calls
-            tool_results = []
-            for block in response.content:
-                if block.type != "tool_use":
-                    continue
-
-                tool_name = block.name
-                tool_input = block.input
+            results = []
+            for tc in tool_calls:
+                tool_name  = tc["name"]
+                tool_input = tc["input"]
 
                 if self.verbose:
                     print(f"    → tool: {tool_name}({json.dumps(tool_input)[:80]}…)")
@@ -514,7 +689,6 @@ class SearchStrategist:
                     result = _tool_query_frontier()
                 elif tool_name == "propose_experiment":
                     result = _tool_propose_experiment(**tool_input)
-                    # Capture the proposal
                     try:
                         result_data = json.loads(result)
                         if result_data.get("status") == "queued":
@@ -525,7 +699,7 @@ class SearchStrategist:
                                 rationale=tool_input.get("rationale", ""),
                                 expected_gain=tool_input.get("expected_gain", ""),
                                 gain_axis=tool_input.get("gain_axis", ""),
-                                config=None,  # reconstructed from queue
+                                config=None,
                                 consecutive_non_improvements=consecutive_non_improvements,
                                 reasoning_trace=reasoning_trace,
                             )
@@ -534,13 +708,9 @@ class SearchStrategist:
                 else:
                     result = json.dumps({"error": f"Unknown tool: {tool_name}"})
 
-                tool_results.append({
-                    "type":        "tool_result",
-                    "tool_use_id": block.id,
-                    "content":     result,
-                })
+                results.append({"id": tc["id"], "result": result})
 
-            messages.append({"role": "user", "content": tool_results})
+            self._backend.append_tool_results(messages, results)
 
         if proposed is None:
             raise RuntimeError(
@@ -594,7 +764,6 @@ class SearchStrategist:
             if p.is_pareto_frontier and not p.is_baseline
         }
 
-        # Walk ledger in modification-time order (most recent last)
         ledger_files = sorted(
             (p for p in LEDGER_DIR.glob("*.json") if not p.stem.endswith("_preds")),
             key=lambda p: p.stat().st_mtime,
@@ -603,26 +772,15 @@ class SearchStrategist:
         consecutive = 0
         for path in reversed(ledger_files):
             try:
-                data = json.loads(path.read_text())
+                data   = json.loads(path.read_text())
                 exp_id = data["report"]["experiment_id"]
             except Exception:
                 continue
             if exp_id in frontier_ids:
-                break      # hit a frontier point → reset counter
+                break
             if exp_id in dominated_ids:
                 consecutive += 1
-            # Mac-only proxy runs (no ttft) don't count toward the streak
         return consecutive
-
-    @staticmethod
-    def _content_to_dict(block: Any) -> dict:
-        """Serialize an API content block to a plain dict."""
-        if hasattr(block, "type"):
-            if block.type == "text":
-                return {"type": "text", "text": block.text}
-            if block.type == "tool_use":
-                return {"type": "tool_use", "name": block.name, "input": block.input}
-        return {"type": str(type(block))}
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
@@ -630,7 +788,18 @@ class SearchStrategist:
 if __name__ == "__main__":
     import sys
 
-    agent    = SearchStrategist(verbose=True)
+    # Usage:
+    #   python3 agents/search_strategist.py                    # auto-detect backend
+    #   python3 agents/search_strategist.py anthropic          # force Anthropic API
+    #   python3 agents/search_strategist.py ollama             # Ollama (default: gemma3)
+    #   python3 agents/search_strategist.py ollama llama3.2    # Ollama with specific model
+    #   OLLAMA_MODEL=qwen2.5 python3 agents/search_strategist.py ollama
+
+    backend = sys.argv[1] if len(sys.argv) > 1 else "auto"
+    model   = sys.argv[2] if len(sys.argv) > 2 else None
+
+    print(f"\n  backend={backend}  model={model or '(default)'}")
+    agent    = SearchStrategist(backend=backend, model=model, verbose=True)
     proposal = agent.propose_next()
     agent.print_report()
 
