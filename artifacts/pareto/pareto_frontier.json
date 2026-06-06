@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-06-06T00:28:06.103281+00:00",
+  "axes": [
+    "clip_score",
+    "ttft_ms",
+    "decode_tokens_per_sec",
+    "peak_memory_mb"
+  ],
+  "n_total": 7,
+  "n_frontier": 4,
+  "frontier": [
+    {
+      "experiment_id": "7f6459c7074edfe5856b966a52b32b8f0c817ebb39a5d87f27fce0ee90c55d25",
+      "label": "LFM2-VL-450M \u00b7 fp16",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "fp16",
+      "clip_score": 31.3929,
+      "ttft_ms": null,
+      "decode_tokens_per_sec": null,
+      "peak_memory_mb": null,
+      "on_disk_size_mb": null,
+      "is_baseline": false
+    },
+    {
+      "experiment_id": "12d065239be5693a9e3aa57bcc6e0a814143c00145de441fc29d17ad5922d580",
+      "label": "LFM2-VL-450M \u00b7 int4",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "int4",
+      "clip_score": 28.5858,
+      "ttft_ms": 15.2424418,
+      "decode_tokens_per_sec": 78.90361411689737,
+      "peak_memory_mb": 271.84202880859374,
+      "on_disk_size_mb": 317.7644348144531,
+      "is_baseline": false
+    },
+    {
+      "experiment_id": "a8d879818a188ad87d29e60a67e17af77b6994910e47b1ff1af4ea2987e63dce",
+      "label": "LFM2-VL-450M \u00b7 fp16 \u00b7 224px",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "fp16",
+      "clip_score": 27.8755,
+      "ttft_ms": 15.430141800000001,
+      "decode_tokens_per_sec": 79.00180501833374,
+      "peak_memory_mb": 270.01705169677734,
+      "on_disk_size_mb": 317.7644348144531,
+      "is_baseline": false
+    },
+    {
+      "experiment_id": "ph0_lfm2_q4_0",
+      "label": "Ph0 LFM2-Q4_0",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "Q4_0",
+      "clip_score": 27.6,
+      "ttft_ms": null,
+      "decode_tokens_per_sec": 82.4,
+      "peak_memory_mb": 275.0,
+      "on_disk_size_mb": 279.0,
+      "is_baseline": true
+    }
+  ]
+}

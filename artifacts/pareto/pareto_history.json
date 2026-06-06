@@ -1,0 +1,121 @@
+{
+  "generated_at": "2026-06-06T00:28:06.103926+00:00",
+  "axes": [
+    "clip_score",
+    "ttft_ms",
+    "decode_tokens_per_sec",
+    "peak_memory_mb"
+  ],
+  "experiments": [
+    {
+      "experiment_id": "ph0_lfm2_q4_0",
+      "label": "Ph0 LFM2-Q4_0",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "Q4_0",
+      "clip_score": 27.6,
+      "ttft_ms": null,
+      "decode_tokens_per_sec": 82.4,
+      "peak_memory_mb": 275.0,
+      "on_disk_size_mb": 279.0,
+      "is_baseline": true,
+      "is_pareto_frontier": true,
+      "dominated_by": []
+    },
+    {
+      "experiment_id": "ph0_smolvlm_q4km",
+      "label": "Ph0 SmolVLM-Q4KM",
+      "model_key": "SmolVLM-500M",
+      "quantization": "Q4_K_M",
+      "clip_score": 24.11,
+      "ttft_ms": 20.15,
+      "decode_tokens_per_sec": 48.6,
+      "peak_memory_mb": 367.0,
+      "on_disk_size_mb": 393.0,
+      "is_baseline": true,
+      "is_pareto_frontier": false,
+      "dominated_by": [
+        "12d065239be5693a9e3aa57bcc6e0a814143c00145de441fc29d17ad5922d580",
+        "a8d879818a188ad87d29e60a67e17af77b6994910e47b1ff1af4ea2987e63dce",
+        "ccd9d9bca7d6c15ff1d9fa7196fa9f57d412a437d2a052f5b79c25a6c9d9a30e"
+      ]
+    },
+    {
+      "experiment_id": "12d065239be5693a9e3aa57bcc6e0a814143c00145de441fc29d17ad5922d580",
+      "label": "LFM2-VL-450M \u00b7 int4",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "int4",
+      "clip_score": 28.5858,
+      "ttft_ms": 15.2424418,
+      "decode_tokens_per_sec": 78.90361411689737,
+      "peak_memory_mb": 271.84202880859374,
+      "on_disk_size_mb": 317.7644348144531,
+      "is_baseline": false,
+      "is_pareto_frontier": true,
+      "dominated_by": []
+    },
+    {
+      "experiment_id": "726c3ddeaed0dfad1ca9e6e80b725ebaa1391525c5977bf3359a6b6eb342cee9",
+      "label": "SmolVLM-500M \u00b7 fp16 \u00b7 224px",
+      "model_key": "SmolVLM-500M",
+      "quantization": "fp16",
+      "clip_score": 27.6621,
+      "ttft_ms": null,
+      "decode_tokens_per_sec": null,
+      "peak_memory_mb": null,
+      "on_disk_size_mb": null,
+      "is_baseline": false,
+      "is_pareto_frontier": false,
+      "dominated_by": [
+        "12d065239be5693a9e3aa57bcc6e0a814143c00145de441fc29d17ad5922d580",
+        "7f6459c7074edfe5856b966a52b32b8f0c817ebb39a5d87f27fce0ee90c55d25",
+        "a8d879818a188ad87d29e60a67e17af77b6994910e47b1ff1af4ea2987e63dce",
+        "ccd9d9bca7d6c15ff1d9fa7196fa9f57d412a437d2a052f5b79c25a6c9d9a30e"
+      ]
+    },
+    {
+      "experiment_id": "7f6459c7074edfe5856b966a52b32b8f0c817ebb39a5d87f27fce0ee90c55d25",
+      "label": "LFM2-VL-450M \u00b7 fp16",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "fp16",
+      "clip_score": 31.3929,
+      "ttft_ms": null,
+      "decode_tokens_per_sec": null,
+      "peak_memory_mb": null,
+      "on_disk_size_mb": null,
+      "is_baseline": false,
+      "is_pareto_frontier": true,
+      "dominated_by": []
+    },
+    {
+      "experiment_id": "a8d879818a188ad87d29e60a67e17af77b6994910e47b1ff1af4ea2987e63dce",
+      "label": "LFM2-VL-450M \u00b7 fp16 \u00b7 224px",
+      "model_key": "LFM2-VL-450M",
+      "quantization": "fp16",
+      "clip_score": 27.8755,
+      "ttft_ms": 15.430141800000001,
+      "decode_tokens_per_sec": 79.00180501833374,
+      "peak_memory_mb": 270.01705169677734,
+      "on_disk_size_mb": 317.7644348144531,
+      "is_baseline": false,
+      "is_pareto_frontier": true,
+      "dominated_by": []
+    },
+    {
+      "experiment_id": "ccd9d9bca7d6c15ff1d9fa7196fa9f57d412a437d2a052f5b79c25a6c9d9a30e",
+      "label": "SmolVLM-500M \u00b7 int4",
+      "model_key": "SmolVLM-500M",
+      "quantization": "int4",
+      "clip_score": 27.7831,
+      "ttft_ms": 17.7442252,
+      "decode_tokens_per_sec": 51.93887125024912,
+      "peak_memory_mb": 366.7140182495117,
+      "on_disk_size_mb": 348.34344482421875,
+      "is_baseline": false,
+      "is_pareto_frontier": false,
+      "dominated_by": [
+        "12d065239be5693a9e3aa57bcc6e0a814143c00145de441fc29d17ad5922d580",
+        "a8d879818a188ad87d29e60a67e17af77b6994910e47b1ff1af4ea2987e63dce"
+      ]
+    }
+  ]
+}

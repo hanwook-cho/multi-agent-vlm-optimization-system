@@ -45,6 +45,9 @@ artifacts/experiment_ledger/*_FAILED.json
 !artifacts/device_ready/
 artifacts/device_ready/*
 !artifacts/device_ready/*.json
+!artifacts/pareto/
+artifacts/pareto/*
+!artifacts/pareto/*.json
 
 # Scratch results directory — working outputs, not committed.
 results/
