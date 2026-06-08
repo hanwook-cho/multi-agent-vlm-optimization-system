@@ -213,22 +213,37 @@ def _tool_query_frontier() -> str:
 
 
 def _tool_propose_experiment(
-    hypothesis_id: str,
-    technique: str,
-    model: str,
-    rationale: str,
-    expected_gain: str,
-    gain_axis: str,
-    weight_dtype: str,
-    runtime_backend: str,
+    hypothesis_id: str = "",
+    technique: str = "",
+    model: str = "",
+    rationale: str = "",
+    expected_gain: str = "",
+    gain_axis: str = "",
+    weight_dtype: str = "",
+    runtime_backend: str = "",
     input_resolution: int | None = None,
     n_ctx: int | None = None,
     notes: str | None = None,
+    **_extra,          # absorb unknown keys from less-disciplined models
 ) -> str:
     """
     Validate and enqueue an experiment proposal.
     Returns success confirmation or validation error.
     """
+    # Validate required fields — return a clear error rather than crashing
+    missing = [f for f in ("hypothesis_id","technique","model","weight_dtype","runtime_backend")
+               if not locals()[f]]
+    if missing:
+        return json.dumps({
+            "status": "error",
+            "message": (
+                f"Missing required fields: {missing}. "
+                "Please call propose_experiment again with all required arguments: "
+                "hypothesis_id, technique, model, rationale, expected_gain, gain_axis, "
+                "weight_dtype, runtime_backend."
+            ),
+        })
+
     try:
         config = ExperimentConfig(
             model_id=_model_id_for_key(model),
@@ -466,6 +481,42 @@ class _AnthropicBackend:
         })
 
 
+def _react_system_suffix(tools: list[dict]) -> str:
+    """
+    Describe tools in a ReAct-style JSON format for models that don't support
+    the native tool-calling API. Appended to the system prompt.
+    """
+    tool_descs = []
+    for t in tools:
+        props = t["input_schema"].get("properties", {})
+        req   = t["input_schema"].get("required", [])
+        params = ", ".join(
+            f"{k} ({'required' if k in req else 'optional'})"
+            for k in props
+        )
+        tool_descs.append(f"- {t['name']}({params}): {t['description']}")
+
+    return """
+
+## Tool use (JSON mode)
+This model does not use the native function-calling API.
+Instead, output tool calls as a JSON block in your reply:
+
+```json
+{
+  "thought": "brief reason for calling this tool",
+  "action": "<tool_name>",
+  "action_input": { ... }
+}
+```
+
+After receiving the tool result, you may call another tool or output your final
+answer as plain text (no JSON block). Call propose_experiment last, once.
+
+Available tools:
+""" + "\n".join(tool_descs)
+
+
 class _OpenAICompatibleBackend:
     """
     Works with any OpenAI-compatible endpoint: Ollama, LM Studio, vLLM, etc.
@@ -475,28 +526,54 @@ class _OpenAICompatibleBackend:
         api_key  = "ollama"   (ignored by Ollama but required by the SDK)
         model    = "gemma3"  (or "llama3.2", "qwen2.5", ...)
 
-    The system prompt is injected as the first message with role="system".
+    Auto-detects whether the model supports native tool calling.
+    Falls back to a ReAct JSON-mode approach for models like gemma3 that
+    don't expose tools via the OpenAI endpoint.
     """
 
     def __init__(self, model: str, base_url: str, api_key: str = "ollama"):
         if not _HAS_OPENAI:
             raise ImportError("pip install openai")
-        self.client = _openai_mod.OpenAI(base_url=base_url, api_key=api_key)
-        self.model  = model
-        self._oai_tools = _openai_tools_from_anthropic(TOOLS)
+        self.client      = _openai_mod.OpenAI(base_url=base_url, api_key=api_key)
+        self.model       = model
+        self._oai_tools  = _openai_tools_from_anthropic(TOOLS)
+        self._react_mode = False   # set True after first "does not support tools" 400
 
     def chat(self, messages: list[dict], system: str, tools: list[dict]):
-        # Inject system prompt as first message if not already present
+        # Inject system prompt (+ ReAct suffix if needed) as first message
+        sys_content = system + (_react_system_suffix(tools) if self._react_mode else "")
         msgs = messages
         if not msgs or msgs[0].get("role") != "system":
-            msgs = [{"role": "system", "content": system}] + messages
+            msgs = [{"role": "system", "content": sys_content}] + messages
+        else:
+            # replace system message with updated content
+            msgs = [{"role": "system", "content": sys_content}] + messages[1:]
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=msgs,
-            tools=self._oai_tools,
-            tool_choice="auto",
-        )
+        if self._react_mode:
+            return self._chat_react(msgs)
+        else:
+            return self._chat_tools(msgs, tools)
+
+    def _chat_tools(self, msgs: list[dict], tools: list[dict]):
+        """Try native tool calling; fall back to ReAct on 400."""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=msgs,
+                tools=self._oai_tools,
+                tool_choice="auto",
+            )
+        except Exception as e:
+            err_str = str(e)
+            if "does not support tools" in err_str or "400" in err_str:
+                print(f"    [backend] model doesn't support tools API — switching to ReAct JSON mode")
+                self._react_mode = True
+                # Rebuild msgs with ReAct suffix now injected into the system message
+                sys_msg = msgs[0]["content"] + _react_system_suffix(TOOLS)
+                msgs_react = [{"role": "system", "content": sys_msg}] + msgs[1:]
+                return self._chat_react(msgs_react)
+            raise
+
         choice  = response.choices[0]
         message = choice.message
         text    = message.content or ""
@@ -511,25 +588,79 @@ class _OpenAICompatibleBackend:
         stop = "tool_use" if tool_calls else "done"
         return stop, text, tool_calls
 
+    def _chat_react(self, msgs: list[dict]):
+        """
+        ReAct JSON-mode: parse tool calls from markdown ```json blocks.
+        Works with any model that can follow JSON instructions.
+        """
+        import re, uuid
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=msgs,
+        )
+        text = response.choices[0].message.content or ""
+        # Show first 300 chars so we can see if the model is on track
+        print(f"    [gemma3 raw] {text[:300].replace(chr(10),' ')}")
+
+        # Extract ```json ... ``` block
+        m = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+        if not m:
+            # Try raw JSON object anywhere in the text
+            m = re.search(r"\{[^{}]*\"action\"\s*:[^{}]*\}", text, re.DOTALL)
+
+        if m:
+            try:
+                obj = json.loads(m.group(1) if "```" in (m.group(0) or "") else m.group(0))
+                action = obj.get("action", "")
+                if action in {t["name"] for t in TOOLS}:
+                    tc = {
+                        "id":    f"react_{uuid.uuid4().hex[:8]}",
+                        "name":  action,
+                        "input": obj.get("action_input", {}),
+                    }
+                    # strip the json block from visible text
+                    visible = text[:m.start()].strip()
+                    return "tool_use", visible, [tc]
+            except json.JSONDecodeError:
+                pass
+
+        # No tool call found — treat as final answer
+        return "done", text, []
+
     def append_assistant(self, messages: list[dict], text: str, tool_calls: list[dict],
                          _raw_response=None):
-        """Append the assistant turn in OpenAI message format."""
-        tc_list = None
-        if tool_calls:
-            tc_list = [
-                {
-                    "id":       tc["id"],
-                    "type":     "function",
-                    "function": {"name": tc["name"], "arguments": json.dumps(tc["input"])},
-                }
-                for tc in tool_calls
-            ]
-        messages.append({"role": "assistant", "content": text or None, "tool_calls": tc_list})
+        """Append the assistant turn in OpenAI / ReAct format."""
+        if self._react_mode:
+            # In ReAct mode, the assistant message is just the text (no tool_calls field)
+            content = text or ""
+            if tool_calls:
+                # Re-embed the JSON block so the history is coherent
+                tc = tool_calls[0]
+                content += f'\n```json\n{json.dumps({"action": tc["name"], "action_input": tc["input"]}, indent=2)}\n```'
+            messages.append({"role": "assistant", "content": content})
+        else:
+            tc_list = None
+            if tool_calls:
+                tc_list = [
+                    {
+                        "id":       tc["id"],
+                        "type":     "function",
+                        "function": {"name": tc["name"], "arguments": json.dumps(tc["input"])},
+                    }
+                    for tc in tool_calls
+                ]
+            messages.append({"role": "assistant", "content": text or None, "tool_calls": tc_list})
 
     def append_tool_results(self, messages: list[dict], results: list[dict]):
-        """Append tool results in OpenAI format (one message per result)."""
-        for r in results:
-            messages.append({"role": "tool", "tool_call_id": r["id"], "content": r["result"]})
+        """Append tool results — plain user message in ReAct mode, tool messages otherwise."""
+        if self._react_mode:
+            parts = []
+            for r in results:
+                parts.append(f"Tool result for `{r.get('name', 'tool')}`:\n{r['result']}")
+            messages.append({"role": "user", "content": "\n\n".join(parts)})
+        else:
+            for r in results:
+                messages.append({"role": "tool", "tool_call_id": r["id"], "content": r["result"]})
 
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
@@ -708,7 +839,7 @@ class SearchStrategist:
                 else:
                     result = json.dumps({"error": f"Unknown tool: {tool_name}"})
 
-                results.append({"id": tc["id"], "result": result})
+                results.append({"id": tc["id"], "name": tool_name, "result": result})
 
             self._backend.append_tool_results(messages, results)
 
