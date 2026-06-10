@@ -37,6 +37,12 @@ artifacts/clip_scores/*
 !artifacts/clip_preds/
 artifacts/clip_preds/*
 !artifacts/clip_preds/*.json
+!artifacts/clip_preds_n50/
+artifacts/clip_preds_n50/*
+!artifacts/clip_preds_n50/*.json
+!artifacts/clip_scores_n50/
+artifacts/clip_scores_n50/*
+!artifacts/clip_scores_n50/*.json
 !artifacts/experiment_ledger/
 artifacts/experiment_ledger/*
 !artifacts/experiment_ledger/*.json

@@ -1,0 +1,259 @@
+{
+  "model_key": "Qwen2.5-VL-3B",
+  "clip_model": "openai/clip-vit-large-patch14",
+  "mean_clip_score": 28.5597,
+  "std_clip_score": 3.3236,
+  "n": 50,
+  "per_image": [
+    {
+      "image": "000000006040.jpg",
+      "text": "In the image, there is a blue and white train traveling on tracks. The train appears to be a modern passenger train, possibly a light rail or commuter train, as it is designed for public transportation. It has several windows along its side, allowing passengers to see outside while they travel.\n\nThere are also a few cars visible in the scene, with one car located near the left edge of the image and another car further back, closer to the center. Additionally, there is a truck parked nearby, which is positioned between the two cars. The presence of these vehicles suggests that the train is operating in an urban area where multiple modes of transportation",
+      "clip_score": 25.1069
+    },
+    {
+      "image": "000000025424.jpg",
+      "text": "In the image, there is a person on a grass tennis court, seemingly in the middle of a serve or a powerful shot. The individual is wearing a white shirt and white shorts, which are typical attire for playing tennis. The person's arm is extended upwards, holding a tennis racket with a blue grip and a green and white striped frame. The background shows the green surface of the tennis court with white lines marking the boundaries. There is also a yellow tennis ball visible in the air, indicating that the player has just hit it. The overall scene captures the intensity and focus required in tennis.",
+      "clip_score": 30.5431
+    },
+    {
+      "image": "000000031217.jpg",
+      "text": "In the image, there is a person playing tennis on an outdoor court. The individual is wearing a blue shirt and black shorts while holding a tennis racket. They appear to be in the middle of a game, possibly hitting the ball with their racket. The tennis court has a net in the background, and there is a fence surrounding it.",
+      "clip_score": 28.9772
+    },
+    {
+      "image": "000000035682.jpg",
+      "text": "In the image, there is a person sitting at a table with a variety of donuts and pastries on their tray. The person appears to be enjoying their meal, possibly in a restaurant or caf\u00e9 setting. There are several donuts and pastries displayed on the tray, including chocolate-covered ones. In addition to the donuts, there is also a cup of coffee placed on the table.\n\nThe scene includes other people in the background, suggesting that it might be a busy dining area. A handbag can be seen near one of the individuals, indicating that they might be a customer or a staff member. Overall, the image captures a",
+      "clip_score": 28.79
+    },
+    {
+      "image": "000000047828.jpg",
+      "text": "The image depicts a nighttime scene by a river, with a large bridge illuminated in blue lights. The bridge spans across the water, creating a striking visual effect against the dark sky. On the left side of the image, there is a dock or pier where several people are gathered, possibly enjoying the view or waiting for something. A boat is visible on the river, adding to the serene atmosphere of the scene. The overall ambiance suggests a peaceful and picturesque setting, likely in an urban area.",
+      "clip_score": 29.585
+    },
+    {
+      "image": "000000050943.jpg",
+      "text": "In the image, there is a surfer riding a large wave on a surfboard. The surfer is positioned towards the center of the wave, skillfully navigating the powerful force of the water. The wave itself is quite impressive, with its crest curling over and creating a dramatic scene. The surfer appears to be enjoying the thrilling experience as they ride the wave.",
+      "clip_score": 23.5977
+    },
+    {
+      "image": "000000055150.jpg",
+      "text": "In the image, there is a young girl and a baby sitting on a luggage cart in a parking lot. The girl is holding a bottle of water, while the baby is sitting next to her. They are surrounded by several cars parked around them.\n\nThe scene appears to be in front of a gas station, as there are multiple cars and a truck visible in the background. A few other people can also be seen in the vicinity, possibly waiting for their turn to park or load their belongings into their vehicles.",
+      "clip_score": 26.2035
+    },
+    {
+      "image": "000000057149.jpg",
+      "text": "The image shows a busy street with multiple vehicles, including cars and a school bus, stopped at a traffic light. There is also a train passing by on the tracks nearby. The scene appears to be in an urban area, possibly near a railroad crossing.\n\nIn addition to the vehicles, there are several traffic signs visible throughout the scene, such as stop signs, yield signs, and a stop sign near the train tracks. A few people can be seen walking or standing around the intersection, likely waiting for the traffic light to change.",
+      "clip_score": 27.3644
+    },
+    {
+      "image": "000000062692.jpg",
+      "text": "In the image, there is a woman playing tennis on a court. She is wearing a black tank top and white shorts, with her hair tied back. The tennis court has a net in the foreground, and there is a fence surrounding the area. The woman appears to be in motion, possibly running or preparing to hit the ball.",
+      "clip_score": 25.9138
+    },
+    {
+      "image": "000000064868.jpg",
+      "text": "In the image, there is a man wearing a white shirt and blue jeans standing in front of an open oven. He appears to be reaching into the oven with his right hand, which is covered by a white glove. The oven door is open, revealing the interior of the appliance. On the counter next to the oven, there is a box of cereal and a bottle of beer. The kitchen setting includes a countertop and cabinets, and the floor has a tiled pattern.",
+      "clip_score": 30.548
+    },
+    {
+      "image": "000000066038.jpg",
+      "text": "The image shows a group of people sitting on the beach under colorful umbrellas, enjoying their time at the shore. There are several chairs and umbrellas scattered around the area, providing shade for the beachgoers. \n\nIn addition to the people, there is a bird standing on the sand near the bottom left corner of the scene. The beach appears to be quite spacious, with ample room for relaxation and leisure activities.",
+      "clip_score": 28.8519
+    },
+    {
+      "image": "000000080413.jpg",
+      "text": "The image shows the interior of a car, focusing on the dashboard area. There is a small stuffed animal, possibly a teddy bear, sitting on the dashboard. The dashboard features various controls and buttons, including a radio or CD player with buttons for volume control and other functions. The steering wheel is visible on the left side of the image. The overall setting suggests that the car might be parked or stationary, as there is no indication of movement.",
+      "clip_score": 31.0957
+    },
+    {
+      "image": "000000089078.jpg",
+      "text": "In the image, I see a person standing on a snow-covered surface, likely a ski slope or a snowy area. The individual is dressed in winter clothing appropriate for cold weather, including a purple jacket with yellow accents and white pants with black polka dots. They are also wearing gloves and have a helmet on their head, which suggests they might be engaged in winter sports such as skiing or snowboarding. The background shows a snowy landscape with tracks in the snow, indicating that the area has been used by others before.",
+      "clip_score": 26.4303
+    },
+    {
+      "image": "000000092177.jpg",
+      "text": "The image shows a beautifully decorated cake from Sweetness Bakery. The cake is round and has a light blue fondant covering, giving it a smooth and glossy appearance. At the top of the cake, there is a small sandy beach scene with two palm trees on either side. The palm trees are made of chocolate and have green fondant leaves. Between the palm trees, there is a white fondant banner with the text \"HAPPY 30TH BIRTHDAY\" written on it.\n\nOn the sandy beach, there is a surfboard with red, white, and blue stripes, positioned horizontally. Next to the surfboard,",
+      "clip_score": 34.0996
+    },
+    {
+      "image": "000000097278.jpg",
+      "text": "In the image, there is a person standing on a snowboard in a snowy environment. The individual is wearing a red hoodie and black pants. The snowboarder appears to be posing for the camera, with their arms outstretched. In the background, there is a mailbox visible near the edge of the snow-covered area.",
+      "clip_score": 25.0253
+    },
+    {
+      "image": "000000104782.jpg",
+      "text": "In the image, I see a street sign that reads \"BACCHANALIA CT.\" The sign is green with white lettering and is mounted on a pole. Below it, there is a red stop sign with the word \"STOP\" written in white letters. The background features a clear blue sky and some trees, indicating an outdoor setting.",
+      "clip_score": 38.6719
+    },
+    {
+      "image": "000000112110.jpg",
+      "text": "In the image, there is a person standing on a laptop computer that is placed on the ground. The person appears to be balancing or stepping on the laptop, which is positioned horizontally. The scene takes place outdoors at night, as indicated by the dark background and lighting. The person is wearing jeans and shoes, and the overall setting suggests an informal or playful situation.",
+      "clip_score": 30.8716
+    },
+    {
+      "image": "000000113235.jpg",
+      "text": "In the image, there is an alpaca standing in a grassy field with a white fence in the background. The alpaca appears to be eating a carrot held by a person's hand. In the distance, there is another animal, possibly a horse or a cow, grazing on the grass. The scene takes place outdoors, and the overall atmosphere seems calm and peaceful.",
+      "clip_score": 28.1668
+    },
+    {
+      "image": "000000113720.jpg",
+      "text": "The image shows a man and a woman sitting at a dining table, enjoying a meal together. They are both smiling and appear to be having a good time. The table is covered with a green and white checkered tablecloth, and there are several plates of pizza on the table. \n\nIn addition to the pizza, there are various drinks placed around the table, including a bottle of soda, a glass of soda, and a can of soda. There are also two bottles visible in the scene, one near the left side of the table and another closer to the center. A fork can be seen on the table as well.\n\nThere are",
+      "clip_score": 29.9478
+    },
+    {
+      "image": "000000122046.jpg",
+      "text": "In the image, there is a young woman sitting on a chair against a vibrant red wall. She is holding a pink umbrella with a white handle and a white lace trim. The woman is wearing a light-colored dress that has a floral pattern and is paired with white high-heeled shoes. The setting appears to be outdoors, possibly on a sidewalk or patio area, as indicated by the tiled ground beneath her.",
+      "clip_score": 32.3932
+    },
+    {
+      "image": "000000133631.jpg",
+      "text": "In the image, there is an elephant standing on a dirt ground. The elephant appears to be in a zoo or a similar enclosure, as indicated by the presence of a fence and some greenery in the background. The elephant's trunk is raised, and it seems to be interacting with something on the ground, possibly using its trunk to pick up or move objects. The overall scene suggests that the elephant might be engaged in a playful or curious behavior.",
+      "clip_score": 28.418
+    },
+    {
+      "image": "000000137576.jpg",
+      "text": "In the image, there is a group of cows gathered around a feeding trough filled with hay. The cows appear to be in a barn or stable setting, and they are eating the hay. There is also a red tractor visible in the background, suggesting that it might be used for farm work or transportation within the barn. The scene depicts a typical farm environment where livestock is being fed and cared for.",
+      "clip_score": 30.502
+    },
+    {
+      "image": "000000137950.jpg",
+      "text": "The image features an old-fashioned airplane flying over a field with trees in the background. The plane is positioned centrally in the frame, and it appears to be in mid-flight, possibly approaching or departing from an airport. \n\nThere are several poles scattered around the field, likely serving as markers or part of the airport infrastructure. The scene gives off a nostalgic atmosphere, reminiscent of earlier times when such aircraft were more common.",
+      "clip_score": 24.5297
+    },
+    {
+      "image": "000000145665.jpg",
+      "text": "In the image, there is a person lying on their back on a paved surface, possibly a parking lot or a similar area. The individual appears to be wearing casual clothing and has a skateboard nearby, suggesting they might have been skateboarding. The background includes some greenery, such as bushes or small trees, and a curb that separates the paved area from another section of the ground. The overall scene gives an impression of a relaxed, outdoor setting.",
+      "clip_score": 32.6586
+    },
+    {
+      "image": "000000153797.jpg",
+      "text": "In the image, I see a baseball player on a baseball field, likely during a game or practice. The player is wearing a gray and black uniform with the word \"Camden\" visible on the jersey. He appears to be in the middle of pitching, with his arm extended and the ball in motion towards the left side of the image. The background shows a well-maintained grassy area typical of a baseball field.",
+      "clip_score": 27.7095
+    },
+    {
+      "image": "000000165681.jpg",
+      "text": "The image depicts a busy street scene with numerous motorcycles parked along the sidewalk. The motorcycles are lined up in rows, filling the entire width of the street. There are at least 15 motorcycles visible in the foreground and background, all facing the same direction.\n\nIn addition to the motorcycles, there are two people standing near the center of the image, possibly talking or waiting for someone. A few more people can be seen scattered throughout the scene, some closer to the motorcycles and others further away. The overall atmosphere suggests a bustling urban environment where many people rely on motorcycles as their primary mode of transportation.",
+      "clip_score": 30.3715
+    },
+    {
+      "image": "000000173033.jpg",
+      "text": "The image shows two black bears standing on a stone surface, possibly in an indoor setting like a museum or exhibit. The larger bear is positioned behind the smaller one, and both appear to be taxidermied. In the background, there is a sign with text that reads \"North America\" and \"The Spr,\" followed by additional text about forest mammals and new growth. There is also a painting or photograph of a landscape visible above the bears.",
+      "clip_score": 34.2794
+    },
+    {
+      "image": "000000176446.jpg",
+      "text": "The image shows a desk with various items on it, including a laptop, a notebook, and a pen. The laptop is open and positioned to the left side of the desk, while the notebook is placed next to it. A pen is resting on top of the notebook. The desk appears to be made of metal or a similar material, and there is a window visible in the background. The overall scene suggests a workspace or study area.",
+      "clip_score": 25.9104
+    },
+    {
+      "image": "000000181303.jpg",
+      "text": "In the image, there is a young child standing on a grassy field. The child is holding a kite above their head with both hands. The kite appears to be a small, colorful design. In the background, there is a wooden fence and some trees, suggesting that the location might be a park or an open area. The child seems to be enjoying their time outdoors, possibly flying the kite.",
+      "clip_score": 27.2404
+    },
+    {
+      "image": "000000183246.jpg",
+      "text": "In the image, I see an urban street scene with several notable elements:\n\n1. **Traffic Lights**: There are multiple traffic lights visible, including a red light that is prominently displayed.\n2. **Construction Vehicles**: An orange construction vehicle, likely a utility truck or a similar type of work vehicle, is parked on the side of the road.\n3. **Buildings and Structures**: There are buildings and structures in the background, indicating an urban setting.\n4. **Street Signs**: Various street signs can be seen, although their specific details are not clear from the image.\n5. **Vehicles**: A few vehicles are present, including",
+      "clip_score": 28.6363
+    },
+    {
+      "image": "000000188689.jpg",
+      "text": "In the image, there is a boat that appears to be stranded on a sandy beach. The boat is positioned near the water's edge, with its bow pointing towards the shore and its stern facing the sea. The sky above is clear, suggesting it might be a calm day. The boat has a simple design, with a flat bottom and a small cabin area. There are no people visible in the image, and the surrounding environment looks relatively quiet and undisturbed. The overall scene conveys a sense of solitude and tranquility.",
+      "clip_score": 27.4517
+    },
+    {
+      "image": "000000191672.jpg",
+      "text": "In the image, I see a person surfing on a wave. The surfer is wearing a wetsuit and appears to be riding a small, breaking wave. The water looks relatively calm with some ripples, and the sky above is clear. The surfer is positioned towards the center of the wave, maintaining balance as they ride it. The overall scene captures the dynamic motion of surfing.",
+      "clip_score": 21.6709
+    },
+    {
+      "image": "000000194506.jpg",
+      "text": "In the image, there are two bears in a body of water. The bear on the left appears to be larger and is positioned slightly behind the other bear, which is more towards the center-right of the frame. Both bears seem to be engaged in some form of interaction or play in the water. The scene captures a moment of natural behavior, possibly indicating a playful or social interaction between the bears.",
+      "clip_score": 30.3357
+    },
+    {
+      "image": "000000197022.jpg",
+      "text": "The image shows two homemade pizzas on wooden cutting boards. The pizza on the left appears to be fully cooked and topped with various ingredients, including mushrooms, olives, and possibly some cheese. The pizza on the right is partially eaten, revealing more of its toppings, which include mushrooms, olives, and possibly other vegetables or meats. Both pizzas have a golden-brown crust and are placed on a concrete surface.",
+      "clip_score": 28.2671
+    },
+    {
+      "image": "000000202001.jpg",
+      "text": "In the image, there is a person sitting on a couch and holding a cell phone. The individual appears to be wearing a checkered shirt and a sweater. The background features a patterned wall.",
+      "clip_score": 24.9371
+    },
+    {
+      "image": "000000221693.jpg",
+      "text": "In the image, there is a dog running on a grassy field with an orange frisbee in its mouth. The dog appears to be in motion, possibly playing fetch or chasing after the frisbee. The background consists of green grass, and the overall scene suggests a playful and active outdoor environment.",
+      "clip_score": 28.1085
+    },
+    {
+      "image": "000000227187.jpg",
+      "text": "In the image, there is a wooden table with several ripe bananas scattered on it. The table is situated outdoors, surrounded by lush greenery and trees. Several birds are perched on the table, pecking at the bananas. The scene appears to be a natural setting, possibly a garden or a park, where birds have found a source of food. The overall atmosphere is serene and peaceful, with the birds enjoying their meal amidst the green surroundings.",
+      "clip_score": 29.451
+    },
+    {
+      "image": "000000231822.jpg",
+      "text": "The image shows a meal served on a black tray. The main components of the meal include:\n\n1. Two hamburger buns with a piece of fish fillet between them.\n2. A serving of macaroni and cheese.\n3. A side of vegetables, which appear to be broccoli and possibly other mixed vegetables.\n4. A small bowl containing a dessert, which looks like a chocolate cake or brownie.\n5. A fork and knife placed next to the dessert.\n6. Two glasses of beverages: one appears to be a milkshake or smoothie, and the other is a clear drink, possibly water or another type of beverage",
+      "clip_score": 33.8056
+    },
+    {
+      "image": "000000235057.jpg",
+      "text": "In the image, there is a giraffe drinking water from a pond or a small body of water. The giraffe's long neck and head are extended towards the water, with its tongue visible as it reaches for the drink. The scene appears to be set in a natural environment, possibly a zoo or wildlife reserve, where the giraffe is allowed to interact with its surroundings.",
+      "clip_score": 33.5594
+    },
+    {
+      "image": "000000235778.jpg",
+      "text": "In the image, there is a person hanging colorful flags from a string. The flags come in various colors and shapes, including diamond-shaped and square-shaped ones. Some of the flags have text written on them, such as \"SINT OF GOD.\" The background appears to be indoors, with a striped curtain visible behind the person. The scene suggests a festive or celebratory atmosphere.",
+      "clip_score": 27.743
+    },
+    {
+      "image": "000000236730.jpg",
+      "text": "In the image, there is a zebra standing on a sandy ground. The zebra occupies most of the frame, with its head and upper body visible. The background appears to be an outdoor setting, possibly a zoo or wildlife park, with some rocks and vegetation visible behind the zebra.",
+      "clip_score": 27.6519
+    },
+    {
+      "image": "000000258541.jpg",
+      "text": "The image shows a person standing indoors, likely in a lobby or hallway with a polished floor and columns. The individual is wearing a light-colored dress shirt with a pocket square and a bright orange tie. The background features a ceiling with recessed lighting and some framed pictures or artwork on the walls. The overall setting appears to be formal or professional.",
+      "clip_score": 26.4874
+    },
+    {
+      "image": "000000259097.jpg",
+      "text": "In the image, there is a person standing in a field of tall, golden crops. The person appears to be reaching up with their right hand, possibly trying to catch or throw a red frisbee that is flying in the air above them. The background features a clear blue sky and a line of trees in the distance, creating a serene and open landscape. The overall scene suggests an outdoor activity, likely involving playing frisbee in a rural setting.",
+      "clip_score": 29.219
+    },
+    {
+      "image": "000000266082.jpg",
+      "text": "In the image, there is an orange fire hydrant prominently positioned in the foreground. The background features a modern building with large glass windows and a sleek architectural design. The building has a combination of glass and concrete materials, giving it a contemporary look. The sky above is partly cloudy, adding to the urban setting of the scene.",
+      "clip_score": 28.9358
+    },
+    {
+      "image": "000000269121.jpg",
+      "text": "In the image, there is a man playing tennis on a court. He is wearing a white shirt and shorts, and he appears to be in the middle of a serve or a forehand shot. The man is holding a tennis racket with both hands, and his body is positioned as if he is about to hit the ball. The background shows a fence and some greenery, indicating that the tennis court is outdoors.",
+      "clip_score": 30.4523
+    },
+    {
+      "image": "000000273232.jpg",
+      "text": "In the image, there is a man walking along the beach with his surfboard under his arm. He is accompanied by a dog that is also walking on the beach. The scene appears to be lively and energetic, as there are several kites flying in the sky above the ocean. The man seems to be enjoying his time at the beach, possibly preparing for some water activities or just taking a break from them.",
+      "clip_score": 28.2181
+    },
+    {
+      "image": "000000274687.jpg",
+      "text": "In the image, there is a black bicycle parked inside a room. The bicycle has a saddle bag attached to its frame and is positioned near a bed with a brown blanket. There is also a guitar leaning against a chair in the background. Additionally, there are two doors visible in the scene, one on the left side and another on the right side of the room.",
+      "clip_score": 25.2053
+    },
+    {
+      "image": "000000276720.jpg",
+      "text": "The image depicts a quaint, narrow street with a mix of old and new buildings. The street is lined with small, charming houses made of stone or brick, giving it a historic feel. There are several cars parked along the street, including two red vehicles that stand out due to their color.\n\nA stop sign is visible on the left side of the street, indicating traffic control for pedestrians and drivers. Additionally, there are two traffic cones placed near the curb, possibly indicating a construction zone or a temporary road closure. A few more cars can be seen further down the street, adding to the sense of a bustling neighborhood.",
+      "clip_score": 25.6585
+    },
+    {
+      "image": "000000286849.jpg",
+      "text": "In the image, three giraffes are peeking out from behind a rocky wall. The giraffes appear to be in a zoo or wildlife park setting, as indicated by the artificial rock formation they are hiding behind. The giraffes have their heads and necks visible, with their long necks and distinctive spotted patterns clearly seen. The background includes some greenery, suggesting that the area might be part of a larger naturalistic habitat within the enclosure.",
+      "clip_score": 28.3299
+    },
+    {
+      "image": "000000287527.jpg",
+      "text": "The image shows two people standing close together, smiling at the camera. The person on the left has long dark hair and is wearing a red top. The person on the right is wearing a white shirt with a black tie. The background appears to be outdoors, possibly in a park or garden, with greenery visible behind them. The overall mood of the image is cheerful and friendly.",
+      "clip_score": 20.057
+    }
+  ]
+}

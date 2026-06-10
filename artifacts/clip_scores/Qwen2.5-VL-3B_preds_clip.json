@@ -1,0 +1,34 @@
+{
+  "model_key": "Qwen2.5-VL-3B",
+  "clip_model": "openai/clip-vit-large-patch14",
+  "mean_clip_score": 26.8105,
+  "std_clip_score": 3.7501,
+  "n": 5,
+  "per_image": [
+    {
+      "image": "img1.jpg",
+      "text": "In the image, there are two cats lying on a pink couch. The first cat is positioned towards the left side of the couch, while the second cat is more towards the right side. Both cats appear to be resting comfortably. There are also two remote controls placed on the couch, one near each cat.",
+      "clip_score": 32.7008
+    },
+    {
+      "image": "img2.jpg",
+      "text": "In the image, there is a woman standing in a kitchen with various cooking utensils hanging on the wall behind her. The kitchen has multiple ovens and stoves, and several pots and pans are hanging from hooks. There are also bowls and a spoon visible on the counter. The woman appears to be preparing food, possibly making pies or other baked goods.",
+      "clip_score": 27.4455
+    },
+    {
+      "image": "img3.jpg",
+      "text": "The image depicts a well-lit kitchen with modern appliances and wooden cabinetry. The kitchen features a white stove, oven, and refrigerator, all of which are integrated into the cabinetry. There is a countertop with a fruit bowl containing oranges and bananas. The floor is covered with light-colored carpeting, and there is a window above the countertop, allowing natural light to enter the room. The overall design is clean and functional, with a neutral color palette.",
+      "clip_score": 24.4482
+    },
+    {
+      "image": "img4.jpg",
+      "text": "In the image, there is a man standing on the sidewalk with a shopping cart full of clothes. He appears to be looking at his phone while standing next to the cart. There are other people walking by, including a woman and a man. The scene takes place near a blue building, and there is an umbrella visible in the background.",
+      "clip_score": 22.8703
+    },
+    {
+      "image": "img5.jpg",
+      "text": "In the image, there is a skateboarder performing a trick on a ramp at a skate park. The skateboarder is airborne, and their skateboard is in mid-air as they execute the trick. There are other people present in the scene, some of whom are watching the skateboarder perform the trick.\n\nThe skate park has various ramps and obstacles for skateboarders to use, and it appears to be a popular spot for skateboarders to practice and showcase their skills. The atmosphere seems energetic and exciting, with multiple individuals gathered around to observe the skateboarder's performance.",
+      "clip_score": 26.5875
+    }
+  ]
+}

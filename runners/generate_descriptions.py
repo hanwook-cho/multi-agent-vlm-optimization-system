@@ -135,6 +135,31 @@ def infer_fastvlm(model, processor, image: Image.Image, prompt: str, device) -> 
     return decoded.strip()
 
 
+def load_qwen25vl(device):
+    """Qwen2.5-VL-3B — the Phase 2 starting point (general-purpose, not edge-optimized)."""
+    from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+    model_id = "Qwen/Qwen2.5-VL-3B-Instruct"
+    processor = AutoProcessor.from_pretrained(model_id)
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        model_id, torch_dtype=torch.bfloat16
+    ).to(device).eval()
+    return model, processor
+
+def infer_qwen25vl(model, processor, image: Image.Image, prompt: str, device) -> str:
+    messages = [{"role": "user", "content": [
+        {"type": "image", "image": image},
+        {"type": "text",  "text": prompt},
+    ]}]
+    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = processor(text=[text], images=[image], return_tensors="pt").to(device)
+    with torch.no_grad():
+        out = model.generate(**inputs, max_new_tokens=128, do_sample=False)
+    decoded = processor.batch_decode(
+        out[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True
+    )[0]
+    return decoded.strip()
+
+
 # ── Registry ─────────────────────────────────────────────────────────────────
 
 MODEL_REGISTRY = {
@@ -142,14 +167,31 @@ MODEL_REGISTRY = {
     "SmolVLM-500M":  (load_smolvlm,   infer_smolvlm),
     "MiniCPM-V-4.6": (load_minicpm,   infer_minicpm),
     "FastVLM-0.5B":  (load_fastvlm,   infer_fastvlm),
+    "Qwen2.5-VL-3B": (load_qwen25vl,  infer_qwen25vl),
 }
 
 SAMPLE_IMAGES = [f"img{i}.jpg" for i in range(1, 6)]
 
 
+def list_images(image_dir: Path, limit: int | None = None) -> list[str]:
+    """Return sorted image filenames in the dir, optionally capped at `limit`.
+
+    Sorted order is deterministic and reproducible. For the proxy dir this
+    yields img1-5.jpg (same protocol as the Phase 0 baselines). For stage_a
+    (95 COCO + 5 proxy) the COCO files sort first, so `--limit 50` selects 50
+    clean COCO images and excludes the proxy set.
+    """
+    names = sorted(
+        p.name for p in image_dir.iterdir()
+        if p.suffix.lower() in (".jpg", ".jpeg", ".png")
+    )
+    return names[:limit] if limit else names
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
-def run_model(model_key: str, image_dir: Path, out_dir: Path, device: str):
+def run_model(model_key: str, image_dir: Path, out_dir: Path, device: str,
+              limit: int | None = None):
     load_fn, infer_fn = MODEL_REGISTRY[model_key]
     out_file = out_dir / f"{model_key}_preds.json"
 
@@ -157,12 +199,13 @@ def run_model(model_key: str, image_dir: Path, out_dir: Path, device: str):
         print(f"  {model_key}: already exists, skipping → {out_file}")
         return
 
+    image_names = list_images(image_dir, limit)
     print(f"\n{'═'*55}")
-    print(f"  Loading {model_key}…")
+    print(f"  Loading {model_key}…  ({len(image_names)} images)")
     model, processor = load_fn(device)
 
     predictions = []
-    for img_name in SAMPLE_IMAGES:
+    for img_name in image_names:
         img_path = image_dir / img_name
         if not img_path.exists():
             print(f"  WARNING: {img_path} not found, skipping")
@@ -195,6 +238,9 @@ def main():
                     help=f"Models to run (default: all). Choices: {list(MODEL_REGISTRY)}")
     ap.add_argument("--device",  default=None,
                     help="Device (mps/cuda/cpu). Auto-detected if not specified.")
+    ap.add_argument("--limit",   type=int, default=None,
+                    help="Max images to score when enumerating a directory (e.g. 50). "
+                         "Ignored when the proxy SAMPLE_IMAGES (img1-5.jpg) are present.")
     args = ap.parse_args()
 
     device = args.device
@@ -212,7 +258,7 @@ def main():
         sys.exit(1)
 
     for model_key in args.models:
-        run_model(model_key, image_dir, out_dir, device)
+        run_model(model_key, image_dir, out_dir, device, limit=args.limit)
 
     print(f"\n✅ Done. Predictions in {out_dir}/")
     print("Next: python runners/compute_clip_score.py"

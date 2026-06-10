@@ -167,7 +167,7 @@ Strategy C requires human-implemented Tier 2 code (new architecture swap, prunin
 - 3 seeds × 2 students = 6 training runs ≈ 24–30 hours total
 - Runs overnight; no blocking
 
-**Quality target:** The distilled LFM2-VL-450M should exceed H001's CLIP 28.59. If it reaches ≥29.0, that's a confirmed improvement and a Pareto advancement.
+**Quality target:** The distilled LFM2-VL-450M should improve on the **MCQ benchmark set** (POPE/RealWorldQA/MMBench) toward the Qwen2.5-VL-3B teacher's scores, while not regressing CLIP-score below the Phase 0 baseline (27.6). See the revised Success Targets section — P2-1.1 showed the teacher is not a CLIP-score leader, so MCQ is the distillation signal.
 
 ### Week 5 — iPhone + Pi 5 evaluation of top candidates
 
@@ -240,15 +240,33 @@ All approvals logged to `artifacts/approval_queue.json` with timestamp and ratio
 
 ## Success targets (quantitative)
 
-| Metric | Phase 1 best | Phase 2 target | Notes |
+> **Revised after P2-1.1 (2026-06-10).** The Qwen2.5-VL-3B teacher's CLIP-score
+> (26.8 ± 3.7, n=5) is *not* above the edge models — CLIP-score of open-ended
+> captions does not capture the teacher's advantage (verbosity + 77-token cap
+> dilute it). The teacher's real edge is on **MCQ/reasoning benchmarks** (Phase 0:
+> POPE 96.7, RealWorldQA 55, MMBench 66 — all measured). So the **distillation
+> quality signal is the MCQ benchmark set, not CLIP-score.** CLIP-score is
+> retained only as a no-regression sanity check. See
+> [`docs/observations/2026-06-10-qwen25vl-3b-baseline.md`](observations/2026-06-10-qwen25vl-3b-baseline.md).
+
+**Primary quality signal (distillation target — where the teacher leads):**
+
+| Metric | Phase 0/1 best (edge) | Qwen2.5-VL-3B teacher | Phase 2 target |
 |---|---|---|---|
-| CLIP-score (iPhone) | 28.59 (H001) | ≥ 29.5 | Distillation from Qwen3B should exceed pure quant |
-| TTFT ms (iPhone) | 15.2ms (H001) | ≤ 20ms | Same or slightly slower than H001 is acceptable |
-| TPS (iPhone) | 79.0 (H001) | ≥ 75 t/s | Small regression acceptable for quality gain |
-| Peak Mem MB (iPhone) | 272 (H001) | ≤ 350 | Fine-tune doesn't change model size |
+| POPE % (Mac) | 91.7 (LFM2/MiniCPM) | **96.7** | ≥ 93, toward teacher |
+| RealWorldQA % (Mac) | 42 (LFM2) | **55** | ≥ 48 |
+| MMBench % (Mac) | 74 (LFM2) | 66 | ≥ 74 (no regression) |
+
+**Sanity / no-regression checks (not the distillation target):**
+
+| Metric | Phase 1 best | Phase 2 bound | Notes |
+|---|---|---|---|
+| CLIP-score | 28.59 (H001) | ≥ 27.6 (no regress vs Ph0 baseline) | Teacher CLIP ~26.8 — not a target to beat; just don't degrade caption alignment |
+| TTFT ms (iPhone) | 15.2 (H001) | ≤ 20 | Slightly slower acceptable |
+| TPS (iPhone) | 79.0 (H001) | ≥ 75 t/s | Small regression OK for quality gain |
+| Peak Mem MB (iPhone) | 272 (H001) | ≤ 350 | Fine-tune doesn't change size |
 | On-disk MB | 318 (H001) | ≤ 350 | Q4_K_M same size as H001 base |
-| POPE % (Mac) | 91.7% (Phase 0) | ≥ 93% | Distillation on diverse data should help MCQ |
-| Pi 5 TPS | — (not measured) | ≥ 5 t/s | Stretch goal (X2 from Goals doc) |
+| Pi 5 TPS | — | ≥ 5 t/s | Stretch (X2 from Goals doc) |
 
 ---
 
@@ -260,7 +278,7 @@ All approvals logged to `artifacts/approval_queue.json` with timestamp and ratio
 | Caption distillation doesn't improve CLIP over direct fine-tuning | Medium | Strategy B fails | Fall back to direct fine-tuning on Stage A + COCO captions (no teacher); lower quality gain but still meaningful |
 | Pi 5 hardware unavailable | Low | Criterion 2.5 partial fail | Document gap; iPhone-only Phase 2 is still valid for the core claim; Pi 5 becomes Phase 3 debt |
 | LoRA fine-tuning degrades TTFT/TPS on iPhone (larger weights from adapter merge) | Low | Pareto regression | Measure before/after adapter merge; if regression, use separate adapter file or reduce rank |
-| Strategy B produces CLIP ≥ 29.5 but POPE regresses below 89% quality gate | Medium | Blocks deployment | Add POPE to LoRA training evaluation; check after every epoch; adjust training data balance |
+| Strategy B improves MCQ but regresses POPE below the 89% quality gate | Medium | Blocks deployment | Add POPE to LoRA training evaluation; check after every epoch; adjust training data balance |
 | 3B → 450M jump exceeds what KD can bridge without structural change | Low | Strategy B ceiling | Strategy C (pruning or backbone swap) is the contingency; file Tier 2 hypothesis; human implements in Week 6 |
 | Phase 2 calendar time exceeds 9 weeks | Medium | T3 criterion weakens | Document honestly; time compression is still the story if < 5 months total from Phase 0 start |
 
