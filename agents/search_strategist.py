@@ -64,6 +64,19 @@ QUEUE_FILE  = PROJECT_ROOT / "artifacts" / "experiment_queue.json"
 
 STAGE_A_HASH = "e2128ae022b3720375d7c866a037b6d8ec4b399ff92cb59e6065ec9fb7f3e29f"
 
+# ── Local backend defaults ──────────────────────────────────────────────────
+# Primary local backend is llama.cpp's server with Qwen2.5-7B-Instruct.
+# Qwen2.5 has native tool-calling, so with `--jinja` the OpenAI `tools` API
+# works directly (no ReAct fallback needed). Launch with:
+#   llama-server -m qwen2.5-7b-instruct-q4_k_m.gguf --jinja --port 8080 -c 8192
+# See scripts/start_strategist_llm.sh.
+#
+# Hardware note: Qwen2.5-7B Q4_K_M (~5GB runtime) is the default for the
+# M4 16GB Mac mini. On a 32GB machine, step up to qwen2.5-32b-instruct
+# (set LLAMACPP_MODEL + serve the 32B GGUF). See ADR-0010.
+LLAMACPP_BASE_URL = "http://localhost:8080/v1"
+LLAMACPP_MODEL    = "qwen2.5-7b-instruct"  # cosmetic — llama-server uses the loaded GGUF
+
 # ── Hypothesis table (seed — matches Phase 1 plan) ───────────────────────────
 
 HYPOTHESIS_TABLE = [
@@ -369,8 +382,29 @@ TOOLS = [
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
-def _build_system_prompt() -> str:
-    hyp_json = json.dumps(HYPOTHESIS_TABLE, indent=2)
+#: Statuses that mean "this hypothesis is no longer a candidate"
+_CLOSED_STATUSES = {"CONFIRMED", "NULL_RESULT", "BLOCKED"}
+
+
+def _build_system_prompt(hypothesis_table: list[dict] | None = None) -> str:
+    table = hypothesis_table or HYPOTHESIS_TABLE
+
+    open_hyps   = [h for h in table if h["status"] not in _CLOSED_STATUSES]
+    closed_hyps = [h for h in table if h["status"] in _CLOSED_STATUSES]
+
+    open_json = json.dumps(open_hyps, indent=2)
+
+    closed_lines = "\n".join(
+        f"  {h['id']} [{h['status']}]: {h['technique']} on {h['model']}"
+        + (f" — {h['result_summary'][:120]}" if h.get("result_summary") else "")
+        for h in closed_hyps
+    )
+    closed_block = (
+        "## Closed Hypotheses (already tried or blocked — DO NOT propose these)\n"
+        + closed_lines
+        if closed_hyps else ""
+    )
+
     baselines_json = json.dumps(PHASE0_BASELINES, indent=2)
     return f"""You are the Search Strategist Agent for a multi-agent VLM optimization system.
 
@@ -383,8 +417,10 @@ Your job is to propose the single best next experiment to run, given:
 ## Phase 0 Baselines
 {baselines_json}
 
-## Hypothesis Table
-{hyp_json}
+## Open Hypotheses (NOT_TRIED — choose from these only)
+{open_json}
+
+{closed_block}
 
 ## Reasoning Policy (follow this exactly)
 1. Query the frontier and recent results first to understand current state.
@@ -519,23 +555,31 @@ Available tools:
 
 class _OpenAICompatibleBackend:
     """
-    Works with any OpenAI-compatible endpoint: Ollama, LM Studio, vLLM, etc.
+    Works with any OpenAI-compatible endpoint: llama.cpp server, Ollama,
+    LM Studio, vLLM, etc.
 
-    For Ollama (default):
+    For llama.cpp + Qwen2.5 (default local backend):
+        base_url = "http://localhost:8080/v1"
+        model    = "qwen2.5-7b-instruct"
+        Launch llama-server with --jinja so the OpenAI `tools` API works
+        natively (Qwen2.5 is tool-trained — no ReAct fallback needed).
+
+    For Ollama:
         base_url = "http://localhost:11434/v1"
-        api_key  = "ollama"   (ignored by Ollama but required by the SDK)
-        model    = "gemma3"  (or "llama3.2", "qwen2.5", ...)
+        model    = "gemma3"  (tool-less → uses ReAct JSON fallback)
 
     Auto-detects whether the model supports native tool calling.
-    Falls back to a ReAct JSON-mode approach for models like gemma3 that
-    don't expose tools via the OpenAI endpoint.
+    Falls back to a ReAct JSON-mode approach for models/servers that
+    return HTTP 400 on the `tools` parameter (e.g. gemma3 via Ollama).
     """
 
-    def __init__(self, model: str, base_url: str, api_key: str = "ollama"):
+    def __init__(self, model: str, base_url: str, api_key: str = "local",
+                 verbose: bool = True):
         if not _HAS_OPENAI:
             raise ImportError("pip install openai")
         self.client      = _openai_mod.OpenAI(base_url=base_url, api_key=api_key)
         self.model       = model
+        self.verbose     = verbose
         self._oai_tools  = _openai_tools_from_anthropic(TOOLS)
         self._react_mode = False   # set True after first "does not support tools" 400
 
@@ -599,8 +643,8 @@ class _OpenAICompatibleBackend:
             messages=msgs,
         )
         text = response.choices[0].message.content or ""
-        # Show first 300 chars so we can see if the model is on track
-        print(f"    [gemma3 raw] {text[:300].replace(chr(10),' ')}")
+        if self.verbose:
+            print(f"    [backend raw] {text[:300].replace(chr(10), ' ')}")
 
         # Extract ```json ... ``` block
         m = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
@@ -669,29 +713,30 @@ class SearchStrategist:
     """
     Proposes the next VLM optimization experiment using an LLM with tool use.
 
-    Supports two backends — pick one:
+    Supports three backends — pick one:
 
-    1. Anthropic API (default if ANTHROPIC_API_KEY is set):
-       agent = SearchStrategist()                          # auto-detect
+    1. llama.cpp server + Qwen2.5 (local default; native tool-calling):
+       agent = SearchStrategist(backend="llamacpp")        # default: qwen2.5-7b-instruct
+       # Requires llama-server running with --jinja. See scripts/start_strategist_llm.sh.
+
+    2. Anthropic API (used when ANTHROPIC_API_KEY is set):
        agent = SearchStrategist(backend="anthropic")
 
-    2. Local model via Ollama (or any OpenAI-compatible server):
-       agent = SearchStrategist(backend="ollama")          # default: gemma3
-       agent = SearchStrategist(backend="ollama",
-                                model="llama3.2:3b")
+    3. Ollama or any other OpenAI-compatible server:
+       agent = SearchStrategist(backend="ollama")          # default: gemma3 (ReAct fallback)
        agent = SearchStrategist(backend="openai_compat",
                                 model="...",
                                 base_url="http://localhost:1234/v1")
 
     Args:
-        backend:    "auto" | "anthropic" | "ollama" | "openai_compat"
-                    "auto" tries Anthropic first (if ANTHROPIC_API_KEY set),
-                    then falls back to Ollama.
+        backend:    "auto" | "llamacpp" | "anthropic" | "ollama" | "openai_compat"
+                    "auto" uses Anthropic if ANTHROPIC_API_KEY is set, else
+                    falls back to llamacpp (local llama.cpp + Qwen2.5).
         model:      Model name. Defaults: Anthropic → "claude-sonnet-4-5",
-                    Ollama → "gemma3".
+                    llamacpp → "qwen2.5-7b-instruct", Ollama → "gemma3".
         api_key:    Anthropic API key (falls back to ANTHROPIC_API_KEY env var).
         base_url:   Base URL for OpenAI-compatible server.
-                    Default for "ollama": "http://localhost:11434/v1".
+                    Default for "llamacpp": "http://localhost:8080/v1".
         max_rounds: Max tool-call rounds before giving up (default 6).
         verbose:    Print reasoning trace to stdout (default True).
     """
@@ -714,30 +759,35 @@ class SearchStrategist:
             if api_key or os.environ.get("ANTHROPIC_API_KEY"):
                 backend = "anthropic"
             else:
-                backend = "ollama"
+                backend = "llamacpp"   # local default: llama.cpp + Qwen2.5
 
         if backend == "anthropic":
             key = api_key or os.environ.get("ANTHROPIC_API_KEY")
             if not key:
                 raise ValueError(
                     "ANTHROPIC_API_KEY not set. "
-                    "Set it or use backend='ollama' for a local model."
+                    "Set it or use backend='llamacpp' for a local model."
                 )
             self._backend = _AnthropicBackend(
                 model=model or "claude-sonnet-4-5",
                 api_key=key,
             )
 
-        elif backend in ("ollama", "openai_compat"):
-            url = base_url or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-            mdl = model or os.environ.get("OLLAMA_MODEL", "gemma3")
+        elif backend in ("llamacpp", "ollama", "openai_compat"):
+            if backend == "ollama":
+                url = base_url or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+                mdl = model or os.environ.get("OLLAMA_MODEL", "gemma3")
+            else:   # llamacpp (default) and generic openai_compat
+                url = base_url or os.environ.get("LLAMACPP_BASE_URL", LLAMACPP_BASE_URL)
+                mdl = model or os.environ.get("LLAMACPP_MODEL", LLAMACPP_MODEL)
             self._backend = _OpenAICompatibleBackend(
                 model=mdl,
                 base_url=url,
-                api_key=api_key or "ollama",
+                api_key=api_key or "local",
+                verbose=self.verbose,
             )
             if self.verbose:
-                print(f"  [SearchStrategist] backend=ollama  model={mdl}  url={url}")
+                print(f"  [SearchStrategist] backend={backend}  model={mdl}  url={url}")
 
         else:
             raise ValueError(f"Unknown backend: {backend!r}. Use 'anthropic', 'ollama', or 'openai_compat'.")
@@ -872,8 +922,9 @@ class SearchStrategist:
             print(f"  Expected gain: {p.expected_gain}  [{p.gain_axis}]")
             print(f"  Rationale:")
             for line in p.rationale.split(". "):
-                if line.strip():
-                    print(f"    • {line.strip()}.")
+                sentence = line.strip().rstrip(".")
+                if sentence:
+                    print(f"    • {sentence}.")
         print(f"  Consec. non-improvements: {p.consecutive_non_improvements}")
         print("═" * 72)
 
@@ -920,11 +971,14 @@ if __name__ == "__main__":
     import sys
 
     # Usage:
-    #   python3 agents/search_strategist.py                    # auto-detect backend
-    #   python3 agents/search_strategist.py anthropic          # force Anthropic API
-    #   python3 agents/search_strategist.py ollama             # Ollama (default: gemma3)
-    #   python3 agents/search_strategist.py ollama llama3.2    # Ollama with specific model
-    #   OLLAMA_MODEL=qwen2.5 python3 agents/search_strategist.py ollama
+    #   python3 agents/search_strategist.py                          # auto (llamacpp local, or anthropic if key set)
+    #   python3 agents/search_strategist.py llamacpp                 # llama.cpp server (default: qwen2.5-7b-instruct)
+    #   python3 agents/search_strategist.py llamacpp qwen2.5-32b     # llama.cpp with a specific model
+    #   python3 agents/search_strategist.py anthropic               # force Anthropic API
+    #   python3 agents/search_strategist.py ollama                  # Ollama (default: gemma3, ReAct fallback)
+    #   LLAMACPP_BASE_URL=http://localhost:8080/v1 python3 agents/search_strategist.py llamacpp
+    #
+    # Start the local LLM first:  ./scripts/start_strategist_llm.sh
 
     backend = sys.argv[1] if len(sys.argv) > 1 else "auto"
     model   = sys.argv[2] if len(sys.argv) > 2 else None
