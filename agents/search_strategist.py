@@ -243,9 +243,19 @@ def _tool_propose_experiment(
     Validate and enqueue an experiment proposal.
     Returns success confirmation or validation error.
     """
-    # Validate required fields — return a clear error rather than crashing
-    missing = [f for f in ("hypothesis_id","technique","model","weight_dtype","runtime_backend")
-               if not locals()[f]]
+    # Validate required fields — return a clear error rather than crashing.
+    # Build an explicit map; do NOT use locals() inside a comprehension. On
+    # Python < 3.12 the comprehension has its own scope and locals() won't
+    # contain the function arguments, raising KeyError (PEP 709 changed this
+    # in 3.12, which is why it only surfaced on the 3.11 CI runner).
+    _required = {
+        "hypothesis_id":   hypothesis_id,
+        "technique":       technique,
+        "model":           model,
+        "weight_dtype":    weight_dtype,
+        "runtime_backend": runtime_backend,
+    }
+    missing = [name for name, val in _required.items() if not val]
     if missing:
         return json.dumps({
             "status": "error",

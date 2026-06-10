@@ -35,6 +35,13 @@
       "minimum": 1,
       "default": null
     },
+    "n_ctx": {
+      "type": ["integer", "null"],
+      "description": "KV-cache context size (llama.cpp n_ctx). Null uses the model default (typically 4096).",
+      "minimum": 64,
+      "maximum": 32768,
+      "default": null
+    },
     "runtime_backend": {
       "type": "string",
       "description": "Inference runtime to use. Must be listed in the target device's supported_runtimes (DeviceDescriptor). See accelerators/supported_runtimes enums — closed by design; add new values only when a new device forces it.",
