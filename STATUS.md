@@ -1,9 +1,18 @@
 # Project Status
 
-**Last updated:** 2026-06-06  
+**Last updated:** 2026-06-10  
 **Phase:** Phase 1 → Phase 2 transition  
 **Phase 0 status:** ✅ COMPLETE (9/10 exit criteria met; Pi skipped deliberately)
 **Phase 1 status:** ✅ COMPLETE (6/7 exit criteria met; criterion 1.7 pending repo flip)
+
+---
+
+## Phase 2 readiness (2026-06-10)
+
+- **Plan written:** [`docs/VLM_Optimization_DetailedPlan_Phase2.md`](docs/VLM_Optimization_DetailedPlan_Phase2.md) — Qwen2.5-VL-3B → edge model, 7-week breakdown.
+- **Search Strategist local backend decided + verified:** llama.cpp `--jinja` + `qwen2.5-7b-instruct` (native tool-calling, M4 16GB). 32B path reserved for the future 32GB Mac. See [ADR-0010](docs/decisions/0010-search-strategist-backend.md) and [observation](docs/observations/2026-06-10-qwen25-llamacpp-verification.md).
+- **Agent hardening:** completed-hypothesis filter + 26 unit tests added (`tests/test_search_strategist.py`).
+- **Launch helper:** `scripts/start_strategist_llm.sh`.
 
 ---
 
