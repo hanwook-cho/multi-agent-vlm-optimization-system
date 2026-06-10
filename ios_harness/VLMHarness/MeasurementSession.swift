@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Holds configuration for one measurement run.
 struct RunConfig {
@@ -53,7 +54,7 @@ class MeasurementSession: ObservableObject {
 
     /// Resizes an image file to a square of `resolution` px and writes a temp JPEG.
     /// Returns the temp file path, or the original path if resolution == 0.
-    private func prepareImagePath(_ originalPath: String?, resolution: Int) -> String? {
+    nonisolated private func prepareImagePath(_ originalPath: String?, resolution: Int) -> String? {
         guard let path = originalPath, resolution > 0 else { return originalPath }
         guard let src = UIImage(contentsOfFile: path) else { return path }
         let size = CGSize(width: resolution, height: resolution)
