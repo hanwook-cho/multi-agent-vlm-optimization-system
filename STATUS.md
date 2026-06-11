@@ -14,6 +14,14 @@
 - **Agent hardening:** completed-hypothesis filter + 26 unit tests added (`tests/test_search_strategist.py`).
 - **Launch helper:** `scripts/start_strategist_llm.sh`.
 
+### Phase 2 Week 1 progress
+
+- **P2-1.1 ✅ Qwen2.5-VL-3B CLIP baseline:** teacher tied with LFM2 (28.56 vs 29.00, n=50, paired t=−1.19) → distillation signal switched to MCQ benchmarks. See [observation](docs/observations/2026-06-10-qwen25vl-3b-baseline.md).
+- **P2-1.2 ✅ Qwen2.5-VL-3B → Q4_K_M GGUF:** converted + verified via `llama-mtmd-cli` (coherent multimodal output). Recipe: `scripts/convert_qwen25vl_gguf.sh`.
+  - Deployable bundle: **Q4_K_M LM 1.93GB + mmproj F16 1.34GB = ~3.27GB on-disk** (vs edge models 219–393MB). mmproj stays F16 (sub-Q8_0 blocked, H004).
+  - ⚠️ Early signal for **P2-1.4 (iPhone gate):** Qwen-VL wants ≥1024 image tokens (vs LFM2's 576) + 1.34GB mmproj → expect high TTFT + memory on-device. GGUF files gitignored (live in `models/qwen2.5-vl-3b-gguf/`).
+- **Next:** P2-1.3 (MCQ benchmarks on the Q4_K_M GGUF) → P2-1.4 (iPhone feasibility gate).
+
 ---
 
 ## Phase 0 Progress
