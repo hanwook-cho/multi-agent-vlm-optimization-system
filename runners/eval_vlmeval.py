@@ -84,6 +84,28 @@ MODEL_REGISTRY: dict[str, dict] = {
         "dtype": WeightDtype.FP16,
         "runtime": Runtime.PYTORCH_MPS,
     },
+    "Qwen2.5-VL-3B-Q4_K_M": {
+        # P2-1.3: the actual on-device GGUF bundle (text Q4_K_M + mmproj F16),
+        # evaluated via llama.cpp/mtmd rather than HF fp16. Produced by
+        # scripts/convert_qwen25vl_gguf.sh.
+        "hf_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+        "family": "qwen2_5_vl_gguf",
+        "dtype": WeightDtype.INT4,
+        "runtime": Runtime.LLAMACPP_GGUF,
+        "model_path": "models/qwen2.5-vl-3b-gguf/Qwen2.5-VL-3B-Q4_K_M.gguf",
+        "mmproj_path": "models/qwen2.5-vl-3b-gguf/mmproj-Qwen2.5-VL-3B-f16.gguf",
+    },
+    "Qwen2.5-VL-3B-F16-GGUF": {
+        # P2-1.3 control: F16 GGUF via the SAME llama.cpp/mtmd path as Q4_K_M.
+        # Lets us decompose the GGUF-vs-fp16 delta into runtime effect (transformers
+        # fp16 vs F16 GGUF) and pure quantization effect (F16 GGUF vs Q4_K_M GGUF).
+        "hf_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+        "family": "qwen2_5_vl_gguf",
+        "dtype": WeightDtype.FP16,
+        "runtime": Runtime.LLAMACPP_GGUF,
+        "model_path": "models/qwen2.5-vl-3b-gguf/Qwen2.5-VL-3B-f16.gguf",
+        "mmproj_path": "models/qwen2.5-vl-3b-gguf/mmproj-Qwen2.5-VL-3B-f16.gguf",
+    },
     "FastVLM-0.5B": {
         "hf_id": "apple/FastVLM-0.5B",
         "family": "fastvlm",
@@ -475,8 +497,91 @@ class MiniCPMV46Model:
         torch.mps.empty_cache()
 
 
+class Qwen25VLGGUFModel:
+    """Qwen2.5-VL-3B Q4_K_M GGUF via llama.cpp/mtmd — the on-device inference path.
+
+    Unlike the other classes (HuggingFace fp16 on MPS), this evaluates the actual
+    quantized GGUF bundle (text Q4_K_M + vision mmproj F16) through llama.cpp, so
+    P2-1.3 measures the deployed artifact, not an fp16 proxy.
+
+    Runs a local llama-server once with the multimodal model loaded, then answers
+    each (image, question) via the OpenAI-compatible /v1/chat/completions endpoint
+    with the image inlined as a base64 data URI. --image-min-tokens 1024 is passed
+    because Qwen-VL needs >=1024 image tokens for grounding accuracy (llama.cpp
+    load warning); omitting it would understate quality.
+    """
+
+    model_key = "Qwen2.5-VL-3B-Q4_K_M"
+
+    def __init__(self, model_path: str, mmproj_path: str, port: int = 8081) -> None:
+        import subprocess
+        import time
+        import urllib.request
+
+        server_bin = ROOT / "vendor" / "llama.cpp" / "build" / "bin" / "llama-server"
+        if not server_bin.exists():
+            raise RuntimeError(f"llama-server not built at {server_bin}")
+        for p in (model_path, mmproj_path):
+            if not Path(p).exists():
+                raise RuntimeError(f"GGUF not found: {p} (run scripts/convert_qwen25vl_gguf.sh)")
+
+        self.port = port
+        print(f"  Starting llama-server (mtmd) on :{port} …")
+        self._proc = subprocess.Popen(
+            [str(server_bin), "-m", str(model_path), "--mmproj", str(mmproj_path),
+             "--port", str(port), "-c", "4096", "-ngl", "999",
+             "--image-min-tokens", "1024"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        health = f"http://localhost:{port}/health"
+        for _ in range(180):
+            try:
+                if urllib.request.urlopen(health, timeout=2).status == 200:
+                    break
+            except Exception:
+                time.sleep(1)
+        else:
+            self.unload()
+            raise RuntimeError("llama-server did not become healthy in time")
+
+        import openai
+        self.client = openai.OpenAI(base_url=f"http://localhost:{port}/v1", api_key="local")
+
+    def infer(self, image_path: str, question: str, is_mcq: bool) -> str:
+        import base64
+        suffix = MCQ_PROMPT_SUFFIX if is_mcq else POPE_PROMPT_SUFFIX
+        with open(image_path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        ext = Path(image_path).suffix.lower().lstrip(".")
+        mime = "jpeg" if ext in ("jpg", "jpeg") else (ext or "jpeg")
+        resp = self.client.chat.completions.create(
+            model="qwen2.5-vl-3b",
+            messages=[{"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/{mime};base64,{b64}"}},
+                {"type": "text", "text": question + suffix},
+            ]}],
+            max_tokens=32, temperature=0.0,
+        )
+        text = (resp.choices[0].message.content or "").strip()
+        for line in text.splitlines():
+            line = line.strip()
+            if line:
+                return line
+        return text
+
+    def unload(self) -> None:
+        proc = getattr(self, "_proc", None)
+        if proc is not None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=10)
+            except Exception:
+                proc.kill()
+
+
 _FAMILY_TO_CLASS = {
     "qwen2_5_vl": Qwen25VLModel,
+    "qwen2_5_vl_gguf": Qwen25VLGGUFModel,
     "smolvlm": SmolVLMModel,
     "minicpm": MiniCPMVModel,
     "minicpm46": MiniCPMV46Model,
@@ -488,6 +593,8 @@ _FAMILY_TO_CLASS = {
 def load_model(model_key: str) -> MPSModel:
     cfg = MODEL_REGISTRY[model_key]
     cls = _FAMILY_TO_CLASS[cfg["family"]]
+    if cfg["family"] == "qwen2_5_vl_gguf":
+        return cls(str(ROOT / cfg["model_path"]), str(ROOT / cfg["mmproj_path"]))
     return cls(cfg["hf_id"])
 
 
