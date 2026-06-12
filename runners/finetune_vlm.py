@@ -189,7 +189,7 @@ def finetune(
         report_to=[],
         remove_unused_columns=False,
         seed=seed,
-        use_mps_device=(device == "mps"),
+        # MPS is auto-detected in transformers 5.x (use_mps_device was removed).
     )
     trainer = Trainer(model=model, args=args, train_dataset=ds, data_collator=collator)
 
