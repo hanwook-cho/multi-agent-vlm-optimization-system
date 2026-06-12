@@ -66,6 +66,11 @@ results/
 datasets/stage_a_proxy/photos/
 datasets/stage_a/photos/
 datasets/coco_cache/
+datasets/coco_train2017/
+datasets/caption_cache/        # Phase 2 teacher caption caches (generated, large)
+
+# Phase 2 student adapters — trained locally, not committed.
+artifacts/students/
 
 # Vendored large dependencies — build from source or download separately.
 # vendor/VLMEvalKit is committed (small, patched). llama.cpp and ml-fastvlm are not.

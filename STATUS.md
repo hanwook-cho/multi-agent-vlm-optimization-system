@@ -24,7 +24,14 @@
 - **Dashboard updated (P2-2.5, early):** new **🧪 Phase 2 — Week 1** tab — CLIP n=50 baseline + the Q4_K_M GGUF MCQ path-vs-quant decomposition. `tools/build_metrics_db.py` now ingests `artifacts/clip_scores_n50/` and `artifacts/phase2_mcq/`. Rebuild: `python tools/build_metrics_db.py && streamlit run dashboard.py`.
 - **P2-1.4 ✅ iPhone gate — resolved as NON-VIABLE (Mac-measured, no forced deploy):** Qwen2.5-VL-3B Q4_K_M on Mac M4 = **TTFT 5.1s, peak mem 6.53GB** (1085 img+text tokens). 6.53GB exceeds the iPhone ceiling even with the increased-memory entitlement → would OOM-kill; 5.1s TTFT is unusable even on the faster Mac. **Qwen2.5-VL-3B is the teacher, not deployable.** Distillation target: ~7× memory, ~130× TTFT. See [observation](docs/observations/2026-06-12-qwen-3b-iphone-non-viable.md).
 
-**Phase 2 Week 1 complete.** → **Next: Strategy B (distillation)** — caption-cache from the Qwen teacher → LoRA student (H-P2-005/006), validated on MCQ benchmarks (per P2-1.3 methodology).
+**Phase 2 Week 1 complete.**
+
+### Strategy B (distillation) — scaffolds built
+
+- `services/distillation_pipeline.py` — teacher caption-cache generator (Qwen2.5-VL-3B fp16, resumable JSONL). Smoke-tested. Reuses the P2-1.1 Qwen path.
+- `runners/finetune_vlm.py` — LoRA student trainer (default LFM2-VL-450M, H-P2-005; r=16/α=32, q/v/o proj). Requires `peft` (added to requirements-dev.txt).
+- **Decisions locked:** local compute (M4 runs Qwen fp16 — no cloud GPU needed); **pilot-first** (small cache → validate distill→fine-tune→eval loop before the 50K overnight run).
+- **Next compute gates (need approval):** (1) pilot caption cache (~1hr), (2) canary fine-tune (P2-3.5), then (3) full 50K cache + 3-seed fine-tune. Also need: COCO train2017 images fetched (`datasets/coco_train2017/`) for the real cache; `pip install peft`.
 
 ---
 
