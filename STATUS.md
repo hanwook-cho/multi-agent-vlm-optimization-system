@@ -21,6 +21,7 @@
   - Deployable bundle: **Q4_K_M LM 1.93GB + mmproj F16 1.34GB = ~3.27GB on-disk** (vs edge models 219–393MB). mmproj stays F16 (sub-Q8_0 blocked, H004).
   - ⚠️ Early signal for **P2-1.4 (iPhone gate):** Qwen-VL wants ≥1024 image tokens (vs LFM2's 576) + 1.34GB mmproj → expect high TTFT + memory on-device. GGUF files gitignored (live in `models/qwen2.5-vl-3b-gguf/`).
 - **P2-1.3 ✅ MCQ benchmarks on the Q4_K_M GGUF:** decomposed path vs quantization on identical slices. **Q4_K_M is quality-preserving** (quant Δ ≤5pts: POPE −1.5, MMBench 0, RWQA −5). Benchmark swings are the **inference path** (transformers→llama.cpp ±10–19pts), not quantization. Methodology rule: hold the inference path constant for cross-model comparisons. See [observation](docs/observations/2026-06-11-qwen-gguf-mcq-path-vs-quant.md).
+- **Dashboard updated (P2-2.5, early):** new **🧪 Phase 2 — Week 1** tab — CLIP n=50 baseline + the Q4_K_M GGUF MCQ path-vs-quant decomposition. `tools/build_metrics_db.py` now ingests `artifacts/clip_scores_n50/` and `artifacts/phase2_mcq/`. Rebuild: `python tools/build_metrics_db.py && streamlit run dashboard.py`.
 - **Next:** P2-1.4 (iPhone feasibility gate — needs device).
 
 ---

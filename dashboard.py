@@ -93,6 +93,61 @@ def load_db() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     return iphone, quality_pivot, clip
 
 
+# Display order + labels for the Phase 2 inference-path variants
+PHASE2_PATHS = {
+    "Qwen2.5-VL-3B":          "fp16 (transformers)",
+    "Qwen2.5-VL-3B-F16-GGUF": "F16 GGUF (llama.cpp)",
+    "Qwen2.5-VL-3B-Q4_K_M":   "Q4_K_M GGUF (llama.cpp)",
+}
+
+
+@st.cache_data
+def load_phase2() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return (clip_n50, mcq_decomp) for the Phase 2 Week-1 tab.
+
+    clip_n50:    robust n=50 CLIP baseline (P2-1.1).
+    mcq_decomp:  POPE/RealWorldQA/MMBench for the three inference-path variants
+                 (P2-1.3), normalised to 0-100, pivoted rows=benchmark cols=path.
+    """
+    if not DB_PATH.exists():
+        return pd.DataFrame(), pd.DataFrame()
+    conn = sqlite3.connect(DB_PATH)
+
+    try:
+        clip_n50 = pd.read_sql(
+            "SELECT model_key, mean_clip_score, std_clip_score, n FROM clip_scores_n50",
+            conn,
+        )
+    except Exception:
+        clip_n50 = pd.DataFrame()
+
+    try:
+        mcq = pd.read_sql(
+            """
+            SELECT model_key, benchmark, value FROM phase2_mcq
+            WHERE (benchmark='POPE'           AND metric='Overall')
+               OR (benchmark='RealWorldQA'    AND metric='Overall')
+               OR (benchmark='MMBench_DEV_EN' AND metric='Overall')
+            """,
+            conn,
+        )
+    except Exception:
+        mcq = pd.DataFrame()
+    conn.close()
+
+    if not mcq.empty:
+        # RealWorldQA / MMBench Overall are 0-1; POPE Overall is already 0-100.
+        mcq.loc[mcq["benchmark"] != "POPE", "value"] *= 100
+        mcq["path"] = mcq["model_key"].map(PHASE2_PATHS).fillna(mcq["model_key"])
+        mcq = mcq.pivot_table(index="benchmark", columns="path", values="value")
+        # Order columns fp16 → F16-GGUF → Q4_K_M, rows in a sensible order
+        col_order = [v for v in PHASE2_PATHS.values() if v in mcq.columns]
+        mcq = mcq.reindex(columns=col_order)
+        mcq = mcq.reindex(index=[b for b in ["POPE", "RealWorldQA", "MMBench_DEV_EN"]
+                                 if b in mcq.index])
+    return clip_n50, mcq
+
+
 # ── Page setup ────────────────────────────────────────────────────────────────
 
 st.set_page_config(
@@ -101,11 +156,11 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("📊 VLM Optimization — Phase 0 Baselines")
+st.title("📊 VLM Optimization — Baselines & Phase 2 Week 1")
 st.caption(
-    "Reference measurements for 4 small-edge VLMs on iPhone 16 Pro (A18 Pro). "
-    "All numbers are Phase 0 frozen baselines. Phase 1 optimization experiments "
-    "must improve on these."
+    "Phase 0 frozen baselines for 4 small-edge VLMs on iPhone 16 Pro (A18 Pro), "
+    "plus Phase 2 Week-1 characterization of the Qwen2.5-VL-3B teacher "
+    "(CLIP baseline + Q4_K_M GGUF MCQ decomposition). See the Phase 2 tab."
 )
 
 if not DB_PATH.exists():
@@ -116,13 +171,15 @@ if not DB_PATH.exists():
     st.stop()
 
 iphone_df, quality_df, clip_df = load_db()
+clip_n50_df, mcq_decomp_df = load_phase2()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🚀 iPhone Performance",
     "🎯 Mac Quality (Benchmarks)",
     "🖼️ CLIP-Score",
+    "🧪 Phase 2 — Week 1",
     "ℹ️ About",
 ])
 
@@ -426,8 +483,99 @@ Limitation: CLIP-score rewards semantic overlap but not factual precision. A cap
         """)
 
 
-# ══ Tab 4 — About ═════════════════════════════════════════════════════════════
+# ══ Tab 4 — Phase 2 (Week 1) ══════════════════════════════════════════════════
 with tab4:
+    st.subheader("Phase 2 — Week 1: Qwen2.5-VL-3B teacher characterization")
+    st.caption(
+        "The Phase 2 starting point is Qwen2.5-VL-3B (general-purpose, not edge-optimized). "
+        "Week 1 measures it before distillation. Two findings reshaped the plan."
+    )
+
+    # ── A. CLIP-score baseline (P2-1.1) ──────────────────────────────────────
+    st.markdown("### P2-1.1 — The 3B teacher is *not* a CLIP-score leader")
+    st.caption(
+        "Robust n=50 paired run on the same 50 COCO images (vs the n=5 pilot). "
+        "CLIP-score of open-ended captions — the teacher is tied with the 450M edge model."
+    )
+    if clip_n50_df.empty:
+        st.info("No n=50 CLIP data — run runners/generate_descriptions.py + compute_clip_score.py.")
+    else:
+        c_l, c_r = st.columns([3, 2])
+        with c_l:
+            figp = px.bar(
+                clip_n50_df.sort_values("mean_clip_score", ascending=False),
+                x="model_key", y="mean_clip_score", error_y="std_clip_score",
+                color="model_key", color_discrete_map=MODEL_COLORS,
+                labels={"model_key": "Model", "mean_clip_score": "CLIPScore (n=50)"},
+                text="mean_clip_score", height=320,
+            )
+            figp.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+            figp.update_layout(showlegend=False, yaxis_range=[0, 35], margin=dict(t=10, b=10))
+            st.plotly_chart(figp, use_container_width=True)
+        with c_r:
+            t = clip_n50_df[["model_key", "mean_clip_score", "std_clip_score", "n"]].copy()
+            t.columns = ["Model", "CLIPScore", "±σ", "n"]
+            st.dataframe(
+                t.style.format({"CLIPScore": "{:.2f}", "±σ": "{:.2f}"})
+                       .highlight_max(subset=["CLIPScore"], color="#c6efce"),
+                use_container_width=True, hide_index=True,
+            )
+            st.markdown(
+                "**Paired test:** Qwen − LFM2 = −0.44 (t = −1.19, **not significant**). "
+                "→ Distillation signal switched from CLIP-score to **MCQ benchmarks**, "
+                "where the teacher genuinely leads."
+            )
+
+    st.divider()
+
+    # ── B. MCQ path-vs-quant decomposition (P2-1.3) ──────────────────────────
+    st.markdown("### P2-1.3 — Q4_K_M is quality-preserving; benchmark swings are the *inference path*")
+    st.caption(
+        "Same 100-sample slices across three configs. Pure quantization (F16-GGUF → Q4_K_M) "
+        "moves quality ≤5 pts; the big swings come from the runtime (transformers → llama.cpp/mtmd)."
+    )
+    if mcq_decomp_df.empty:
+        st.info("No Phase 2 MCQ data — see artifacts/phase2_mcq/ and rebuild metrics.db.")
+    else:
+        c_l, c_r = st.columns([3, 2])
+        with c_l:
+            long_rows = []
+            for bench, row in mcq_decomp_df.iterrows():
+                for path, val in row.items():
+                    long_rows.append({"Benchmark": bench.replace("_DEV_EN", ""),
+                                      "Path": path, "Score %": val})
+            figm = px.bar(
+                pd.DataFrame(long_rows), x="Benchmark", y="Score %", color="Path",
+                barmode="group", height=380, text="Score %",
+                color_discrete_sequence=["#9467bd", "#5b9bd5", "#2ca02c"],
+            )
+            figm.update_traces(texttemplate="%{text:.0f}", textposition="outside")
+            figm.update_layout(yaxis_range=[0, 105], margin=dict(t=10, b=10),
+                               legend=dict(orientation="h", yanchor="bottom", y=1.02))
+            st.plotly_chart(figm, use_container_width=True)
+        with c_r:
+            disp = mcq_decomp_df.copy()
+            # Add decomposition deltas (path effect, quant effect)
+            cols = list(disp.columns)
+            if len(cols) == 3:
+                disp["Path Δ"] = disp[cols[1]] - disp[cols[0]]
+                disp["Quant Δ"] = disp[cols[2]] - disp[cols[1]]
+            disp.index = [i.replace("_DEV_EN", "") for i in disp.index]
+            st.dataframe(
+                disp.style.format("{:+.1f}", subset=["Path Δ", "Quant Δ"])
+                          .format("{:.1f}", subset=cols)
+                          .background_gradient(subset=["Quant Δ"], cmap="Greens_r"),
+                use_container_width=True,
+            )
+            st.markdown(
+                "**Quant Δ ≤ 5 pts** (POPE −1.5, MMBench 0, RWQA −5) → the deployable "
+                "Q4_K_M teacher is faithful. **Methodology rule:** hold the inference path "
+                "constant for cross-model quality comparisons."
+            )
+
+
+# ══ Tab 5 — About ═════════════════════════════════════════════════════════════
+with tab5:
     st.subheader("About this dashboard")
     st.markdown(f"""
 **Project:** Multi-Agent VLM Optimization System

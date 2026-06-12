@@ -185,10 +185,94 @@ def load_clip_scores(db: sqlite3.Connection) -> int:
     return rows
 
 
+def load_clip_scores_n50(db: sqlite3.Connection) -> int:
+    """Load the robust n=50 CLIP-score JSONs from artifacts/clip_scores_n50/ (Phase 2 P2-1.1)."""
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS clip_scores_n50 (
+            model_key         TEXT NOT NULL,
+            clip_model        TEXT,
+            mean_clip_score   REAL,
+            std_clip_score    REAL,
+            n                 INTEGER,
+            source_file       TEXT
+        )
+    """)
+    db.execute("DELETE FROM clip_scores_n50")
+
+    rows = 0
+    src = PROJECT_ROOT / "artifacts/clip_scores_n50"
+    if not src.exists():
+        return 0
+    for path in sorted(src.glob("*_clip.json")):
+        data = json.loads(path.read_text())
+        db.execute(
+            "INSERT INTO clip_scores_n50 VALUES (?,?,?,?,?,?)",
+            (
+                data.get("model_key", path.stem),
+                data.get("clip_model"),
+                data.get("mean_clip_score"),
+                data.get("std_clip_score"),
+                data.get("n"),
+                path.name,
+            ),
+        )
+        rows += 1
+    db.commit()
+    return rows
+
+
+def load_phase2_mcq(db: sqlite3.Connection) -> int:
+    """Load Phase 2 P2-1.3 MCQ results from artifacts/phase2_mcq/.
+
+    Each file is <model_key>_<benchmark>.json. Model keys distinguish the
+    inference path: Qwen2.5-VL-3B (fp16 transformers), Qwen2.5-VL-3B-F16-GGUF,
+    Qwen2.5-VL-3B-Q4_K_M (both via llama.cpp/mtmd). Lets the dashboard show the
+    path-vs-quantization decomposition.
+    """
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS phase2_mcq (
+            model_key     TEXT NOT NULL,
+            benchmark     TEXT NOT NULL,
+            metric        TEXT NOT NULL,
+            value         REAL,
+            experiment_id TEXT
+        )
+    """)
+    db.execute("DELETE FROM phase2_mcq")
+
+    BENCHMARK_SUFFIXES = ("_POPE", "_RealWorldQA", "_MMBench_DEV_EN")
+    rows = 0
+    src = PROJECT_ROOT / "artifacts/phase2_mcq"
+    if not src.exists():
+        return 0
+    for path in sorted(src.glob("*.json")):
+        if "_config" in path.name:
+            continue
+        stem = path.stem
+        benchmark = model_key = None
+        for suf in BENCHMARK_SUFFIXES:
+            if stem.endswith(suf):
+                benchmark = suf.lstrip("_")
+                model_key = stem[: -len(suf)]
+                break
+        if not model_key:
+            continue
+        data = json.loads(path.read_text())
+        for qs in data.get("quality_scores", []):
+            db.execute(
+                "INSERT INTO phase2_mcq VALUES (?,?,?,?,?)",
+                (model_key, benchmark, qs.get("metric"), qs.get("value"),
+                 data.get("experiment_id")),
+            )
+            rows += 1
+    db.commit()
+    return rows
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    ap = argparse.ArgumentParser(description="Build Phase 0 metrics SQLite DB")
+    ap = argparse.ArgumentParser(description="Build metrics SQLite DB (Phase 0 + Phase 2)")
     ap.add_argument("--db", default="metrics.db", help="Output SQLite file")
     args = ap.parse_args()
 
@@ -196,13 +280,17 @@ def main():
     db = sqlite3.connect(db_path)
 
     print(f"Building {db_path} …")
-    n_iphone  = load_iphone_perf(db)
-    n_quality = load_mac_quality(db)
-    n_clip    = load_clip_scores(db)
+    n_iphone   = load_iphone_perf(db)
+    n_quality  = load_mac_quality(db)
+    n_clip     = load_clip_scores(db)
+    n_clip50   = load_clip_scores_n50(db)
+    n_p2_mcq   = load_phase2_mcq(db)
 
-    print(f"  iphone_perf  : {n_iphone} rows")
-    print(f"  mac_quality  : {n_quality} rows")
-    print(f"  clip_scores  : {n_clip} rows")
+    print(f"  iphone_perf     : {n_iphone} rows")
+    print(f"  mac_quality     : {n_quality} rows")
+    print(f"  clip_scores     : {n_clip} rows")
+    print(f"  clip_scores_n50 : {n_clip50} rows")
+    print(f"  phase2_mcq      : {n_p2_mcq} rows")
     print(f"Done → {db_path}")
     db.close()
 
