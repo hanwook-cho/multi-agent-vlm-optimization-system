@@ -22,7 +22,9 @@
   - ⚠️ Early signal for **P2-1.4 (iPhone gate):** Qwen-VL wants ≥1024 image tokens (vs LFM2's 576) + 1.34GB mmproj → expect high TTFT + memory on-device. GGUF files gitignored (live in `models/qwen2.5-vl-3b-gguf/`).
 - **P2-1.3 ✅ MCQ benchmarks on the Q4_K_M GGUF:** decomposed path vs quantization on identical slices. **Q4_K_M is quality-preserving** (quant Δ ≤5pts: POPE −1.5, MMBench 0, RWQA −5). Benchmark swings are the **inference path** (transformers→llama.cpp ±10–19pts), not quantization. Methodology rule: hold the inference path constant for cross-model comparisons. See [observation](docs/observations/2026-06-11-qwen-gguf-mcq-path-vs-quant.md).
 - **Dashboard updated (P2-2.5, early):** new **🧪 Phase 2 — Week 1** tab — CLIP n=50 baseline + the Q4_K_M GGUF MCQ path-vs-quant decomposition. `tools/build_metrics_db.py` now ingests `artifacts/clip_scores_n50/` and `artifacts/phase2_mcq/`. Rebuild: `python tools/build_metrics_db.py && streamlit run dashboard.py`.
-- **Next:** P2-1.4 (iPhone feasibility gate — needs device).
+- **P2-1.4 ✅ iPhone gate — resolved as NON-VIABLE (Mac-measured, no forced deploy):** Qwen2.5-VL-3B Q4_K_M on Mac M4 = **TTFT 5.1s, peak mem 6.53GB** (1085 img+text tokens). 6.53GB exceeds the iPhone ceiling even with the increased-memory entitlement → would OOM-kill; 5.1s TTFT is unusable even on the faster Mac. **Qwen2.5-VL-3B is the teacher, not deployable.** Distillation target: ~7× memory, ~130× TTFT. See [observation](docs/observations/2026-06-12-qwen-3b-iphone-non-viable.md).
+
+**Phase 2 Week 1 complete.** → **Next: Strategy B (distillation)** — caption-cache from the Qwen teacher → LoRA student (H-P2-005/006), validated on MCQ benchmarks (per P2-1.3 methodology).
 
 ---
 
