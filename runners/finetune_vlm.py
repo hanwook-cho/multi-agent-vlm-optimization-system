@@ -119,7 +119,10 @@ class _CaptionCollator:
             images.append(image)
             prompt_lens.append(len(self.processor.tokenizer(prompt_text).input_ids))
 
-        enc = self.processor(text=texts, images=images, return_tensors="pt", padding=True)
+        # Group images per text (nested) so batched samples map 1:1 to their image;
+        # a flat list fails for batch>1 ("number of images in text [1,1,..] and images [N]").
+        enc = self.processor(text=texts, images=[[im] for im in images],
+                             return_tensors="pt", padding=True)
         labels = enc["input_ids"].clone()
         labels[enc["attention_mask"] == 0] = -100
         # Mask the prompt span (everything before the caption) per example.
