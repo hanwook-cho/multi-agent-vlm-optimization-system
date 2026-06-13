@@ -75,8 +75,12 @@ def _device() -> str:
     return "mps" if torch.backends.mps.is_available() else "cpu"
 
 
-def load_cache(cache_path: Path, image_dir: Path, max_samples: int | None) -> list[dict]:
-    """Load (image_path, caption) pairs from the JSONL cache; skip missing images."""
+def _cache_rows(cache_path: Path, image_dir: Path, default_prompt: str) -> list[dict]:
+    """Load a JSONL cache into unified {image_path, prompt, target} rows.
+
+    Handles both formats: caption records ({image, caption}) → (default_prompt, caption),
+    and task-aligned QA records ({image, prompt, target}). Skips missing images.
+    """
     rows: list[dict] = []
     for line in cache_path.read_text().splitlines():
         line = line.strip()
@@ -84,24 +88,48 @@ def load_cache(cache_path: Path, image_dir: Path, max_samples: int | None) -> li
             continue
         rec = json.loads(line)
         img = image_dir / rec["image"]
-        if not img.exists() or not rec.get("caption"):
+        if not img.exists():
             continue
-        rows.append({"image_path": str(img), "caption": rec["caption"]})
-        if max_samples and len(rows) >= max_samples:
-            break
+        if rec.get("target"):                       # QA / task-aligned record
+            prompt, target = rec.get("prompt", default_prompt), rec["target"]
+        elif rec.get("caption"):                     # caption record
+            prompt, target = default_prompt, rec["caption"]
+        else:
+            continue
+        rows.append({"image_path": str(img), "prompt": prompt, "target": target})
     return rows
 
 
-class _CaptionCollator:
-    """Collate (image, caption) → model inputs with labels masked on the prompt.
+def load_cache(cache_path: Path, image_dir: Path, max_samples: int | None,
+               default_prompt: str = CAPTION_PROMPT,
+               rehearse_cache: Path | None = None,
+               rehearse_frac: float = 0.2) -> list[dict]:
+    """Load training rows; optionally mix in a fraction of a second cache (rehearsal).
 
-    Only the assistant caption tokens contribute to the loss; the user prompt and
-    image-placeholder tokens are masked to -100.
+    Rehearsal (mixing caption data into a QA run, or vice versa) mitigates the
+    catastrophic forgetting that broke P2-D1.
+    """
+    import random
+    rows = _cache_rows(cache_path, image_dir, default_prompt)
+    if rehearse_cache and rehearse_cache.exists():
+        extra = _cache_rows(rehearse_cache, image_dir, default_prompt)
+        k = int(len(rows) * rehearse_frac)
+        rows += random.Random(0).sample(extra, min(k, len(extra)))
+    random.Random(0).shuffle(rows)
+    return rows[:max_samples] if max_samples else rows
+
+
+class _CaptionCollator:
+    """Collate (image, prompt, target) → model inputs with labels masked on the prompt.
+
+    Uses each example's own prompt (a question in QA mode, the caption prompt in
+    caption mode). Only the assistant target tokens contribute to the loss; the
+    user prompt and image-placeholder tokens are masked to -100.
     """
 
     def __init__(self, processor, prompt: str):
         self.processor = processor
-        self.prompt = prompt
+        self.default_prompt = prompt
 
     def __call__(self, batch: list[dict]) -> dict:
         texts, images = [], []
@@ -110,11 +138,11 @@ class _CaptionCollator:
             image = Image.open(ex["image_path"]).convert("RGB")
             user_msg = [{"role": "user", "content": [
                 {"type": "image", "image": image},
-                {"type": "text", "text": self.prompt},
+                {"type": "text", "text": ex.get("prompt") or self.default_prompt},
             ]}]
-            # Prompt-only render (for masking length), then full with the caption.
+            # Prompt-only render (for masking length), then full with the target.
             prompt_text = self.processor.apply_chat_template(user_msg, add_generation_prompt=True)
-            full_text = prompt_text + ex["caption"] + self.processor.tokenizer.eos_token
+            full_text = prompt_text + ex["target"] + self.processor.tokenizer.eos_token
             texts.append(full_text)
             images.append(image)
             prompt_lens.append(len(self.processor.tokenizer(prompt_text).input_ids))
@@ -144,8 +172,9 @@ def finetune(
     max_samples: int | None = None,
     seed: int = 0,
     prompt: str = CAPTION_PROMPT,
+    rehearse_cache: Path | None = None,
 ) -> Path:
-    """LoRA-fine-tune the student on the caption cache. Returns the adapter dir."""
+    """LoRA-fine-tune the student on the distillation cache. Returns the adapter dir."""
     _require_peft()
     from peft import LoraConfig, get_peft_model
     from transformers import (AutoProcessor, AutoModelForImageTextToText,
@@ -155,7 +184,8 @@ def finetune(
     device = _device()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    rows = load_cache(cache_path, image_dir, max_samples)
+    rows = load_cache(cache_path, image_dir, max_samples, default_prompt=prompt,
+                      rehearse_cache=rehearse_cache)
     if not rows:
         raise SystemExit(f"no usable (image, caption) pairs in {cache_path}")
     print(f"  student   : {base_model}")
@@ -233,6 +263,8 @@ def main():
     ap.add_argument("--batch-size", type=int, default=1)
     ap.add_argument("--grad-accum", type=int, default=16)
     ap.add_argument("--max-samples", type=int, default=None, help="Cap pairs (canary)")
+    ap.add_argument("--rehearse-cache", default=None,
+                    help="Optional 2nd cache (e.g. captions) mixed in to prevent forgetting (P2-D2)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -241,6 +273,7 @@ def main():
         base_model=args.base_model, epochs=args.epochs, lr=args.lr,
         batch_size=args.batch_size, grad_accum=args.grad_accum,
         max_samples=args.max_samples, seed=args.seed,
+        rehearse_cache=Path(args.rehearse_cache) if args.rehearse_cache else None,
     )
 
 
