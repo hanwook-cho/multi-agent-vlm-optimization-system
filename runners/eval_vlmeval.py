@@ -112,6 +112,16 @@ MODEL_REGISTRY: dict[str, dict] = {
         "dtype": WeightDtype.FP16,
         "runtime": Runtime.PYTORCH_MPS,
     },
+    "LFM2-VL-450M-distill": {
+        # Phase 2 Strategy B pilot student: base LFM2-VL-450M + LoRA adapter
+        # distilled from the Qwen2.5-VL-3B teacher (5K COCO caption cache).
+        # Evaluated on the SAME fp16 transformers path as the LFM2-VL-450M baseline.
+        "hf_id": "LiquidAI/LFM2-VL-450M",
+        "family": "lfm2vl_distill",
+        "dtype": WeightDtype.FP16,
+        "runtime": Runtime.PYTORCH_MPS,
+        "adapter_path": "artifacts/students/lfm2vl_distill_pilot_s0/adapter",
+    },
 }
 
 BENCHMARKS = ["POPE", "RealWorldQA", "MMBench_DEV_EN"]
@@ -362,6 +372,24 @@ class LFM2VLModel:
         torch.mps.empty_cache()
 
 
+class LFM2VLDistilledModel(LFM2VLModel):
+    """LFM2-VL-450M + a Strategy B distillation LoRA adapter (Phase 2 student).
+
+    Loads the base model exactly as LFM2VLModel (same fp16 transformers/MPS path)
+    and applies the LoRA adapter, so a comparison against the LFM2-VL-450M baseline
+    is on the SAME inference path (P2-1.3 methodology). infer()/unload() inherited.
+    """
+
+    model_key = "LFM2-VL-450M-distill"
+
+    def __init__(self, hf_id: str, adapter_path: str) -> None:
+        super().__init__(hf_id)  # base fp16 + processor — identical to the baseline
+        from peft import PeftModel
+        print(f"  applying LoRA adapter: {adapter_path}")
+        self.model = PeftModel.from_pretrained(self.model, adapter_path)
+        self.model = self.model.to(dtype=torch.float16, device=self.device).eval()
+
+
 class FastVLMModel:
     """Apple FastVLM-0.5B — LLaVA-QWen2 architecture with MobileCLIP vision tower.
 
@@ -586,6 +614,7 @@ _FAMILY_TO_CLASS = {
     "minicpm": MiniCPMVModel,
     "minicpm46": MiniCPMV46Model,
     "lfm2vl": LFM2VLModel,
+    "lfm2vl_distill": LFM2VLDistilledModel,
     "fastvlm": FastVLMModel,
 }
 
@@ -595,6 +624,8 @@ def load_model(model_key: str) -> MPSModel:
     cls = _FAMILY_TO_CLASS[cfg["family"]]
     if cfg["family"] == "qwen2_5_vl_gguf":
         return cls(str(ROOT / cfg["model_path"]), str(ROOT / cfg["mmproj_path"]))
+    if cfg["family"] == "lfm2vl_distill":
+        return cls(cfg["hf_id"], str(ROOT / cfg["adapter_path"]))
     return cls(cfg["hf_id"])
 
 

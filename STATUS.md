@@ -31,7 +31,8 @@
 - `services/distillation_pipeline.py` — teacher caption-cache generator (Qwen2.5-VL-3B fp16, resumable JSONL). Smoke-tested. Reuses the P2-1.1 Qwen path.
 - `runners/finetune_vlm.py` — LoRA student trainer (default LFM2-VL-450M, H-P2-005; r=16/α=32, q/v/o proj). Requires `peft` (added to requirements-dev.txt).
 - **Decisions locked:** local compute (M4 runs Qwen fp16 — no cloud GPU needed); **pilot-first** (small cache → validate distill→fine-tune→eval loop before the 50K overnight run).
-- **Next compute gates (need approval):** (1) pilot caption cache (~1hr), (2) canary fine-tune (P2-3.5), then (3) full 50K cache + 3-seed fine-tune. Also need: COCO train2017 images fetched (`datasets/coco_train2017/`) for the real cache; `pip install peft`.
+- **Pilot run COMPLETE — negative result (informative):** distilled LFM2-VL-450M from a 5K Qwen caption cache → **regressed on every MCQ benchmark** (POPE 86.2→**38.5**, RWQA 42→36, MMBench 74→57). Answers stay well-formed but wrong (POPE recall 33% — under-detecting objects): caption-only LoRA caused **task interference / catastrophic forgetting** of grounding. We distilled captioning (the teacher's *weak*, misaligned skill per P2-1.1) instead of the MCQ skill we measure. The pilot caught this for ~3hr compute, before the full 50K/3-seed run. See [observation](docs/observations/2026-06-13-distill-pilot-caption-only-regresses.md).
+- **Strategy B v2 (next):** align distillation data to the target skill — teacher answers **grounded VQA / yes-no / MCQ** prompts (not open captions) + rehearsal to prevent forgetting; re-baseline same-path each change. Pipeline reusable; only the teacher prompt/target format changes.
 
 ---
 
