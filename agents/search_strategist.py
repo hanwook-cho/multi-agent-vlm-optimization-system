@@ -133,8 +133,9 @@ HYPOTHESIS_TABLE = [
         "model": "LFM2-VL-450M",
         "expected_gain": "Mem -15%, TPS +5%",
         "gain_axis": "mem",
-        "status": "NOT_TRIED",
-        "result_summary": "",
+        "status": "DEFERRED",
+        "phase": 1,
+        "result_summary": "Phase 1 quantization tweak — deferred; Phase 1 is complete and the project is now on the Phase 2 (3B→edge) goal.",
     },
     {
         "id": "H006",
@@ -142,8 +143,9 @@ HYPOTHESIS_TABLE = [
         "model": "LFM2-VL-450M",
         "expected_gain": "CLIP +0–1, POPE neutral (quality-preserving INT4)",
         "gain_axis": "quality",
-        "status": "NOT_TRIED",
-        "result_summary": "",
+        "status": "DEFERRED",
+        "phase": 1,
+        "result_summary": "Phase 1 quantization tweak — deferred; project is now on the Phase 2 (3B→edge) goal.",
     },
     {
         "id": "H007",
@@ -151,8 +153,62 @@ HYPOTHESIS_TABLE = [
         "model": "FastVLM-0.5B",
         "expected_gain": "TTFT -90%, Mem -65% (vs fp16 baseline)",
         "gain_axis": "latency+mem",
+        "status": "DEFERRED",
+        "phase": 1,
+        "result_summary": "Phase 1 quantization tweak — deferred; project is now on the Phase 2 (3B→edge) goal.",
+    },
+    # ── Phase 2: produce an edge model FROM Qwen2.5-VL-3B (open, general),
+    #    competitive with the LFM2-VL-450M BENCHMARK. LFM2 is the target/yardstick,
+    #    not a student. All Phase 2 techniques are Tier-2 (code, human-implemented).
+    {
+        "id": "P2-D1",
+        "technique": "Caption-only distillation (Qwen2.5-VL-3B teacher → student)",
+        "model": "LFM2-VL-450M (student)",
+        "expected_gain": "lift student MCQ toward teacher",
+        "gain_axis": "quality",
+        "status": "REGRESSED",
+        "phase": 2,
+        "tier": "code",
+        "result_summary": (
+            "5K Qwen captions LoRA-distilled into LFM2-VL-450M. REGRESSED on every MCQ "
+            "(same-path): POPE 86.2→38.5, RWQA 42→36, MMBench 74→57. Caption-only objective "
+            "caused task interference / forgetting of grounding (answers well-formed but wrong). "
+            "Two lessons: (a) distill the skill we MEASURE (grounded Q&A), not captions; "
+            "(b) LFM2 is the BENCHMARK, not a valid student — it is already edge-optimized."
+        ),
+    },
+    {
+        "id": "P2-D2",
+        "technique": "Task-aligned distillation (teacher answers grounded VQA/yes-no/MCQ → student) + rehearsal",
+        "model": "open small student derived from Qwen2.5-VL-3B",
+        "expected_gain": "lift POPE/RWQA/MMBench toward teacher without forgetting",
+        "gain_axis": "quality",
         "status": "NOT_TRIED",
-        "result_summary": "",
+        "phase": 2,
+        "tier": "code",
+        "result_summary": "Direct fix for P2-D1: align the distillation target to the measured task; mix instruction-following data to prevent forgetting.",
+    },
+    {
+        "id": "P2-C1",
+        "technique": "Structured prune Qwen2.5-VL-3B → ~450M + distill-recover",
+        "model": "Qwen2.5-VL-3B (compressed)",
+        "expected_gain": "edge-size model with direct 3B lineage",
+        "gain_axis": "size",
+        "status": "NOT_TRIED",
+        "phase": 2,
+        "tier": "code",
+        "result_summary": "Architecture constraint: vision encoder 669M + embeddings 311M = 980M ALONE > 2× the 450M target. Pure LM-layer pruning cannot reach the budget; must also replace the vision encoder and shrink the vocab — collapses toward an assemble-small-student rebuild (P2-B1).",
+    },
+    {
+        "id": "P2-B1",
+        "technique": "Assemble small student (Qwen2.5-0.5B LM + small SigLIP vision) + distill from 3B",
+        "model": "assembled ~450–600M VLM",
+        "expected_gain": "edge-size model matching the LFM2 benchmark; right-sized architecture from the start",
+        "gain_axis": "size+quality",
+        "status": "NOT_TRIED",
+        "phase": 2,
+        "tier": "code",
+        "result_summary": "Same-family LM (Qwen2.5-0.5B ← Qwen2.5-3B) shares tokenizer/embedding space → easier distillation; small SigLIP gives the lean vision budget the 3B's 669M ViT cannot.",
     },
 ]
 
@@ -393,7 +449,7 @@ TOOLS = [
 # ── System prompt ─────────────────────────────────────────────────────────────
 
 #: Statuses that mean "this hypothesis is no longer a candidate"
-_CLOSED_STATUSES = {"CONFIRMED", "NULL_RESULT", "BLOCKED"}
+_CLOSED_STATUSES = {"CONFIRMED", "NULL_RESULT", "BLOCKED", "REGRESSED", "DEFERRED"}
 
 
 def _build_system_prompt(hypothesis_table: list[dict] | None = None) -> str:
@@ -432,29 +488,51 @@ Your job is to propose the single best next experiment to run, given:
 
 {closed_block}
 
+## CURRENT PHASE: Phase 2 — produce an edge model FROM Qwen2.5-VL-3B
+The project is now in Phase 2. Goal: starting from the open, general-purpose
+**Qwen2.5-VL-3B** (NOT an already-optimized model), produce a ~450M-class edge model
+that is competitive with the **LFM2-VL-450M benchmark**. LFM2-VL-450M is the
+TARGET/YARDSTICK to match — never a student to train.
+
+Same-path baseline to beat (LFM2-VL-450M, fp16 transformers): POPE 86.2, RealWorldQA 42, MMBench 74.
+The distillation quality signal is the **MCQ benchmark set** (POPE/RealWorldQA/MMBench),
+NOT CLIP-score (P2-1.1: the teacher is not a CLIP leader). Always compare candidates and
+the benchmark on the SAME inference path (P2-1.3).
+
+Prioritize Phase 2 hypotheses (phase==2). Phase 1 hypotheses (quantization) are
+lower priority now.
+
 ## Reasoning Policy (follow this exactly)
 1. Query the frontier and recent results first to understand current state.
-2. Identify the highest-expected-gain hypothesis that has NOT been tried (status NOT_TRIED).
-3. If the last experiment was a Pareto improvement: consider a variation of that technique.
-4. If the last experiment was NOT an improvement: move to the next untried technique.
-5. After 3 consecutive non-improvements: flag for human review instead of proposing.
-6. Avoid re-proposing any experiment whose experiment_id is already in the ledger.
+2. Prefer the highest-expected-gain NOT_TRIED Phase 2 hypothesis that is not invalidated
+   by a closed/REGRESSED result.
+3. If the last experiment REGRESSED or was not an improvement: do NOT repeat its mistake —
+   propose the hypothesis that directly addresses the failure cause.
+4. After 3 consecutive non-improvements: flag for human review instead of proposing.
+5. Avoid re-proposing any closed hypothesis (CONFIRMED/NULL_RESULT/BLOCKED/REGRESSED).
+
+## Tier-2 (code-requiring) hypotheses — Phase 2
+All Phase 2 hypotheses are Tier-2: they require human implementation (new training/
+architecture code), not just a config change (HLD §6.3). Your job is to recommend
+the single best next Tier-2 hypothesis with a concrete rationale grounded in the ledger;
+the human implements it. When calling propose_experiment for a Tier-2 hypothesis, set
+weight_dtype/runtime_backend to the intended DEPLOY target (e.g. int4 / llamacpp_gguf)
+and put the technique + rationale in the corresponding fields.
 
 ## Quality Gates (any proposal must expect to pass these)
-- POPE accuracy ≥ 89.0%
-- CLIP-score ≥ 25.0
-- Peak memory ≤ 3000 MB
-- No OOM crash on 5 test images
+- POPE accuracy ≥ 89.0% (must not regress below the LFM2 benchmark 86.2 — see P2-D1)
+- Peak memory ≤ 3000 MB on Mac proxy; edge target ≤ LFM2 footprint
+- No OOM crash
 
 ## Key constraints
-- Phase 1 only uses post-training techniques (quantization, input changes, ctx-size).
-- No training runs, no distillation — those are Phase 2.
-- iPhone runtime is llamacpp_gguf. Mac quality proxy uses pytorch_mps.
-- IMPORTANT: Input resize (input_resolution != null) does NOT reduce TTFT on the
-  llamacpp_gguf path — H003 proved this. Do not propose input resize as a latency
-  technique for GGUF models.
-- IMPORTANT: Q4_0 mmproj quantization is BLOCKED (all tooling paths fail). Do not
-  propose H004 (Q4_0 mmproj) — it cannot be executed.
+- LFM2-VL-450M is the BENCHMARK, not a student. Do NOT propose distilling/fine-tuning
+  INTO LFM2 or other already-edge-optimized models (P2-D1 regressed and it violates the
+  Phase 2 premise). The edge model's lineage must be Qwen2.5-VL-3B.
+- Caption-only distillation REGRESSED (P2-D1): it teaches captioning, not the measured
+  MCQ skill, and causes forgetting. Distill the skill we MEASURE (grounded VQA/MCQ) + rehearsal.
+- Architecture budget (measured): Qwen2.5-VL-3B vision encoder 669M + embeddings 311M =
+  980M alone — already > 2× the 450M target. Pruning LM layers cannot hit the budget without
+  also replacing the vision encoder and shrinking the vocab.
 
 ## Output
 Use the available tools to query current state, reason through the options, and
