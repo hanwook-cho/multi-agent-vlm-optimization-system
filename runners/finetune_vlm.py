@@ -227,8 +227,11 @@ def main():
     ap.add_argument("--base-model", default=DEFAULT_STUDENT)
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--lr", type=float, default=2e-4)
-    ap.add_argument("--batch-size", type=int, default=4)
-    ap.add_argument("--grad-accum", type=int, default=8)
+    # batch-size 1 is the M4 16GB-safe default: batch>1 fp32 VLM training
+    # exhausts unified memory and swap-thrashes (stuck at step 0). Raise on the
+    # 32GB machine. grad-accum keeps the effective batch reasonable.
+    ap.add_argument("--batch-size", type=int, default=1)
+    ap.add_argument("--grad-accum", type=int, default=16)
     ap.add_argument("--max-samples", type=int, default=None, help="Cap pairs (canary)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
