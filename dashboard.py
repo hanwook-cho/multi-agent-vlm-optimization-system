@@ -148,6 +148,34 @@ def load_phase2() -> tuple[pd.DataFrame, pd.DataFrame]:
     return clip_n50, mcq
 
 
+@st.cache_data
+def load_phase2_distill() -> pd.DataFrame:
+    """Distillation pilot (P2-D1): baseline LFM2-VL-450M vs the caption-distilled
+    student on POPE/RealWorldQA/MMBench, same path. Rows=benchmark, cols=model."""
+    if not DB_PATH.exists():
+        return pd.DataFrame()
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        d = pd.read_sql(
+            """
+            SELECT model_key, benchmark, value FROM phase2_distill
+            WHERE (benchmark='POPE'           AND metric='Overall')
+               OR (benchmark='RealWorldQA'    AND metric='Overall')
+               OR (benchmark='MMBench_DEV_EN' AND metric='Overall')
+            """, conn)
+    except Exception:
+        d = pd.DataFrame()
+    conn.close()
+    if d.empty:
+        return d
+    d.loc[d["benchmark"] != "POPE", "value"] *= 100
+    piv = d.pivot_table(index="benchmark", columns="model_key", values="value")
+    cols = [c for c in ["LFM2-VL-450M", "LFM2-VL-450M-distill"] if c in piv.columns]
+    piv = piv.reindex(columns=cols)
+    piv = piv.reindex(index=[b for b in ["POPE", "RealWorldQA", "MMBench_DEV_EN"] if b in piv.index])
+    return piv
+
+
 # ── Page setup ────────────────────────────────────────────────────────────────
 
 st.set_page_config(
@@ -172,6 +200,7 @@ if not DB_PATH.exists():
 
 iphone_df, quality_df, clip_df = load_db()
 clip_n50_df, mcq_decomp_df = load_phase2()
+distill_df = load_phase2_distill()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
@@ -571,6 +600,53 @@ with tab4:
                 "**Quant Δ ≤ 5 pts** (POPE −1.5, MMBench 0, RWQA −5) → the deployable "
                 "Q4_K_M teacher is faithful. **Methodology rule:** hold the inference path "
                 "constant for cross-model quality comparisons."
+            )
+
+    st.divider()
+
+    # ── C. Distillation pilot — what didn't work (P2-D1) ─────────────────────
+    st.markdown("### P2-D1 — Caption-only distillation REGRESSED the student (negative result)")
+    st.caption(
+        "LFM2-VL-450M (the benchmark) vs the same model LoRA-distilled on 5K Qwen captions, "
+        "same fp16 path. LFM2 is the BENCHMARK, not a valid student — this pilot tested the "
+        "distillation method and showed caption-only data hurts the measured MCQ skill (ADR-0011)."
+    )
+    if distill_df.empty:
+        st.info("No distillation pilot data — see artifacts/phase2_distill/ and rebuild metrics.db.")
+    else:
+        d_l, d_r = st.columns([3, 2])
+        with d_l:
+            rows = []
+            for bench, row in distill_df.iterrows():
+                for model, val in row.items():
+                    label = "baseline" if model == "LFM2-VL-450M" else "caption-distilled"
+                    rows.append({"Benchmark": bench.replace("_DEV_EN", ""),
+                                 "Model": label, "Score %": val})
+            figd = px.bar(
+                pd.DataFrame(rows), x="Benchmark", y="Score %", color="Model",
+                barmode="group", height=360, text="Score %",
+                color_discrete_map={"baseline": "#1f77b4", "caption-distilled": "#d62728"},
+            )
+            figd.update_traces(texttemplate="%{text:.0f}", textposition="outside")
+            figd.update_layout(yaxis_range=[0, 105], margin=dict(t=10, b=10),
+                               legend=dict(orientation="h", yanchor="bottom", y=1.02))
+            st.plotly_chart(figd, use_container_width=True)
+        with d_r:
+            disp = distill_df.copy()
+            if disp.shape[1] == 2:
+                disp["Δ"] = disp.iloc[:, 1] - disp.iloc[:, 0]
+            disp.index = [i.replace("_DEV_EN", "") for i in disp.index]
+            disp.columns = ["baseline", "distilled", "Δ"][: disp.shape[1]]
+            st.dataframe(
+                disp.style.format("{:.1f}")
+                          .background_gradient(subset=["Δ"], cmap="RdYlGn"),
+                use_container_width=True,
+            )
+            st.markdown(
+                "**POPE 86.2 → 38.5.** Answers stay well-formed but wrong — caption-only "
+                "LoRA caused task interference / forgetting of grounding. Fix (P2-D2): "
+                "distill the measured skill (grounded Q&A) + rehearsal. The eventual student "
+                "must derive from Qwen2.5-VL-3B (P2-B1), not LFM2."
             )
 
 

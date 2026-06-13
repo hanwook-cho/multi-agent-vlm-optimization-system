@@ -1,10 +1,20 @@
 # VLM Optimization — Phase 2 Detailed Plan
 
 **Phase:** Phase 2 — Full System + Qwen2.5-VL-3B → Edge Model  
-**Status:** Draft v1 (written at Phase 1 closeout, 2026-06-08)  
+**Status:** Draft v1 (written 2026-06-08) — **CORRECTED 2026-06-13, see banner**  
 **Planned duration:** 7–9 weeks  
 **Starting point:** Phase 1 Pareto frontier; Qwen2.5-VL-3B as unoptimized teacher  
 **Exit gate:** A ≤450M-class edge model derived from Qwen2.5-VL-3B running on iPhone 16 Pro (and Pi 5), competitive with at least two Phase 0 reference models, produced without manual configuration tweaks after setup
+
+> **⚠️ CORRECTION (2026-06-13) — read before Strategy B/C below. See [ADR-0011](decisions/0011-phase2-strategy-correction.md).**
+> This draft's **Strategy B distilled *into* LFM2-VL-450M / SmolVLM-500M as students — that is wrong.**
+> Per Goals S3, LFM2-VL-450M is the **BENCHMARK** (the bar to match), not a student; the edge model's
+> lineage must be **Qwen2.5-VL-3B**. Empirically, distilling into LFM2 **regressed** (POPE 86.2→38.5).
+> Corrected approach (driven by the Search Strategist's hypotheses):
+> - **P2-D2** — task-aligned distillation (teacher grounded-Q&A, not captions) + rehearsal. *Method validation only.*
+> - **P2-B1** (primary) — assemble a right-sized open student (Qwen2.5-0.5B LM + small SigLIP) + distill from the 3B.
+> - **P2-C1** — hard-prune the 3B (collapses toward P2-B1: vision 669M + embed 311M > 450M budget).
+> The "Success targets" and "Strategy" sections below are superseded where they name LFM2/SmolVLM as students.
 
 ---
 

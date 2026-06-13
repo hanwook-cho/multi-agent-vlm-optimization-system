@@ -269,6 +269,45 @@ def load_phase2_mcq(db: sqlite3.Connection) -> int:
     return rows
 
 
+def load_phase2_distill(db: sqlite3.Connection) -> int:
+    """Load the distillation pilot eval (P2-D1) from artifacts/phase2_distill/.
+
+    Baseline LFM2-VL-450M vs the caption-distilled LFM2-VL-450M-distill on the same
+    fp16 path — shows the regression (negative result).
+    """
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS phase2_distill (
+            model_key TEXT NOT NULL, benchmark TEXT NOT NULL,
+            metric TEXT NOT NULL, value REAL, experiment_id TEXT
+        )
+    """)
+    db.execute("DELETE FROM phase2_distill")
+    BENCHMARK_SUFFIXES = ("_POPE", "_RealWorldQA", "_MMBench_DEV_EN")
+    rows = 0
+    src = PROJECT_ROOT / "artifacts/phase2_distill"
+    if not src.exists():
+        return 0
+    for path in sorted(src.glob("*.json")):
+        if "_config" in path.name:
+            continue
+        stem = path.stem
+        benchmark = model_key = None
+        for suf in BENCHMARK_SUFFIXES:
+            if stem.endswith(suf):
+                benchmark, model_key = suf.lstrip("_"), stem[: -len(suf)]
+                break
+        if not model_key:
+            continue
+        data = json.loads(path.read_text())
+        for qs in data.get("quality_scores", []):
+            db.execute("INSERT INTO phase2_distill VALUES (?,?,?,?,?)",
+                       (model_key, benchmark, qs.get("metric"), qs.get("value"),
+                        data.get("experiment_id")))
+            rows += 1
+    db.commit()
+    return rows
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -285,12 +324,14 @@ def main():
     n_clip     = load_clip_scores(db)
     n_clip50   = load_clip_scores_n50(db)
     n_p2_mcq   = load_phase2_mcq(db)
+    n_p2_dist  = load_phase2_distill(db)
 
     print(f"  iphone_perf     : {n_iphone} rows")
     print(f"  mac_quality     : {n_quality} rows")
     print(f"  clip_scores     : {n_clip} rows")
     print(f"  clip_scores_n50 : {n_clip50} rows")
     print(f"  phase2_mcq      : {n_p2_mcq} rows")
+    print(f"  phase2_distill  : {n_p2_dist} rows")
     print(f"Done → {db_path}")
     db.close()
 

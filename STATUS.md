@@ -1,9 +1,22 @@
 # Project Status
 
-**Last updated:** 2026-06-10  
-**Phase:** Phase 1 → Phase 2 transition  
+**Last updated:** 2026-06-13  
+**Phase:** Phase 2 — in progress (Strategy B distillation)  
 **Phase 0 status:** ✅ COMPLETE (9/10 exit criteria met; Pi skipped deliberately)
 **Phase 1 status:** ✅ COMPLETE (6/7 exit criteria met; criterion 1.7 pending repo flip)
+
+> **Ultimate goal reminder:** the deliverable is the **multi-agent VLM optimization system**;
+> a competitive edge model is the proof-of-work. Phase 2 must demonstrate the *system*
+> producing an edge model from Qwen2.5-VL-3B — not a human hand-tuning one.
+
+---
+
+## Phase 2 framing (corrected 2026-06-13 — see [ADR-0011](docs/decisions/0011-phase2-strategy-correction.md))
+
+- **Goal:** from the open **Qwen2.5-VL-3B** (general, not edge-optimized), produce a ~450M-class edge model competitive with the **LFM2-VL-450M benchmark**.
+- **LFM2-VL-450M is the BENCHMARK/yardstick, NOT a student.** Same-path bar to beat: POPE 86.2, RealWorldQA 42, MMBench 74. (Distilling *into* LFM2 was a mistake — it violates Goals S3 and regressed; that work belongs in Phase 3's "squeeze" claim.)
+- **The edge model's lineage must be Qwen2.5-VL-3B** (compress the 3B, or assemble a right-sized open student + distill from it). Architecture budget: the 3B's vision encoder 669M + embeddings 311M = 980M alone > 2× the 450M target → can't just prune the LM.
+- **The system chooses the approach.** Candidate approaches live in the Search Strategist's hypothesis table (P2-D1/D2/C1/B1); the agent proposes & sequences, the human implements Tier-2 builds.
 
 ---
 
@@ -32,7 +45,14 @@
 - `runners/finetune_vlm.py` — LoRA student trainer (default LFM2-VL-450M, H-P2-005; r=16/α=32, q/v/o proj). Requires `peft` (added to requirements-dev.txt).
 - **Decisions locked:** local compute (M4 runs Qwen fp16 — no cloud GPU needed); **pilot-first** (small cache → validate distill→fine-tune→eval loop before the 50K overnight run).
 - **Pilot run COMPLETE — negative result (informative):** distilled LFM2-VL-450M from a 5K Qwen caption cache → **regressed on every MCQ benchmark** (POPE 86.2→**38.5**, RWQA 42→36, MMBench 74→57). Answers stay well-formed but wrong (POPE recall 33% — under-detecting objects): caption-only LoRA caused **task interference / catastrophic forgetting** of grounding. We distilled captioning (the teacher's *weak*, misaligned skill per P2-1.1) instead of the MCQ skill we measure. The pilot caught this for ~3hr compute, before the full 50K/3-seed run. See [observation](docs/observations/2026-06-13-distill-pilot-caption-only-regresses.md).
-- **Strategy B v2 (next):** align distillation data to the target skill — teacher answers **grounded VQA / yes-no / MCQ** prompts (not open captions) + rehearsal to prevent forgetting; re-baseline same-path each change. Pipeline reusable; only the teacher prompt/target format changes.
+### The loop closed — the system proposed the next experiment
+
+- **Fed the Phase 2 design space into the Search Strategist** (hypothesis table P2-D1 REGRESSED / P2-D2 / P2-C1 / P2-B1 + the LFM2-is-benchmark and architecture-budget constraints). The agent **read the P2-D1 regression and proposed P2-D2 (task-aligned distillation)**, citing the regression as the reason. That is the multi-agent loop working — a prior failure driving the next proposal (P1: no human config-picking). Commit `b96ed00`.
+
+### P2-D2 (task-aligned distillation) — capability built, run in progress
+
+- **`distillation_pipeline.py` gained `mode=qa`** — teacher generates grounded Q&A pairs (incl. yes/no object-presence), the skill the MCQ benchmarks measure. `finetune_vlm.py` gained unified caption+QA training + `--rehearse-cache` (mix caption data to prevent the forgetting that broke P2-D1). Validated on a canary. Commit `7e8488a`.
+- **Running:** 5K-image QA cache → rehearsal fine-tune → same-path MCQ eval, to test whether task-aligned distillation + rehearsal fixes the P2-D1 regression. **Caveat:** this validates the *method* on the fast LFM2 loop — per [ADR-0011](docs/decisions/0011-phase2-strategy-correction.md) the final student must derive from Qwen2.5-VL-3B (P2-B1), since LFM2 is the benchmark.
 
 ---
 

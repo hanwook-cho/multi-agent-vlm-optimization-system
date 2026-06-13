@@ -46,6 +46,9 @@ artifacts/clip_scores_n50/*
 !artifacts/phase2_mcq/
 artifacts/phase2_mcq/*
 !artifacts/phase2_mcq/*.json
+!artifacts/phase2_distill/
+artifacts/phase2_distill/*
+!artifacts/phase2_distill/*.json
 !artifacts/experiment_ledger/
 artifacts/experiment_ledger/*
 !artifacts/experiment_ledger/*.json
