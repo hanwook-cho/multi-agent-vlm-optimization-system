@@ -18,6 +18,7 @@ import streamlit as st
 
 from services import run_control as rc
 from services import console_data as cd
+from services import console_chat as cc
 
 ROOT = Path(__file__).parent
 
@@ -35,12 +36,24 @@ bar[1].markdown(f"**state** · {_STATE_ICON.get(state, state)}")
 bar[2].markdown(f"**backend** · {'local · Qwen2.5-7B' if backend == 'local' else 'api · frontier'}")
 bar[3].markdown(f"**approvals** · :bell: {n_pending}")
 
-# ── Chat dock (H2b placeholder — available on every tab once built) ────────────
+# ── Chat dock (H2b) — one strategist session, available on every tab ───────────
+if "chat" not in st.session_state:
+    st.session_state.chat = []
+
 with st.sidebar:
     st.markdown("### Chat — strategist")
-    st.caption(f"{'local · Qwen2.5-7B' if backend == 'local' else 'api · frontier'}")
-    st.text_input("ask / steer", placeholder="wired in H2b…", disabled=True, key="chat_in")
-    st.caption("Dock placeholder. Proposes & explains; gated actions still need approval.")
+    st.caption(f"{'local · Qwen2.5-7B' if backend == 'local' else 'api · frontier'} · proposes & explains; gated actions need approval")
+    for m in st.session_state.chat:
+        st.chat_message(m["role"]).write(m["content"])
+    with st.form("chat_form", clear_on_submit=True):
+        msg = st.text_input("ask / steer the strategist", key="chat_in")
+        sent = st.form_submit_button("send", width="stretch")
+    if sent and msg.strip():
+        st.session_state.chat.append({"role": "user", "content": msg.strip()})
+        reply = cc.chat_reply(msg.strip(), history=st.session_state.chat[:-1],
+                              backend=backend)
+        st.session_state.chat.append({"role": "assistant", "content": reply})
+        st.rerun()
     st.divider()
     log_path = st.text_input("run log", value="/tmp/b13_build.log")
     if st.button("↻ refresh", width="stretch"):

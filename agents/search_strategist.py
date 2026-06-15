@@ -737,6 +737,13 @@ class _AnthropicBackend:
         stop = "tool_use" if response.stop_reason == "tool_use" else "done"
         return stop, "\n".join(text_parts), tool_calls
 
+    def chat_text(self, messages: list[dict], system: str) -> str:
+        """Plain text completion (no tools) — for the operator chat dock."""
+        response = self.client.messages.create(
+            model=self.model, max_tokens=1024, system=system, messages=messages,
+        )
+        return "\n".join(b.text for b in response.content if b.type == "text").strip()
+
     def append_assistant(self, messages: list[dict], text: str, tool_calls: list[dict],
                          _raw_response=None):
         """Append the assistant turn in Anthropic message format."""
@@ -872,6 +879,12 @@ class _OpenAICompatibleBackend:
                 tool_calls.append({"id": tc.id, "name": tc.function.name, "input": inp})
         stop = "tool_use" if tool_calls else "done"
         return stop, text, tool_calls
+
+    def chat_text(self, messages: list[dict], system: str) -> str:
+        """Plain text completion (no tools) — for the operator chat dock."""
+        msgs = [{"role": "system", "content": system}] + messages
+        response = self.client.chat.completions.create(model=self.model, messages=msgs)
+        return (response.choices[0].message.content or "").strip()
 
     def _chat_react(self, msgs: list[dict]):
         """
@@ -1033,6 +1046,27 @@ class SearchStrategist:
             raise ValueError(f"Unknown backend: {backend!r}. Use 'anthropic', 'ollama', or 'openai_compat'.")
 
     # ── Public API ────────────────────────────────────────────────────────────
+
+    _CHAT_SYSTEM = (
+        "You are the Search Strategist for a multi-agent VLM optimization system, "
+        "talking to the operator in the console. Explain your reasoning, the state of "
+        "the hypotheses, and what you would propose next — concisely. You do NOT execute "
+        "actions here: gated decisions (deploy, eval-set change, Mode-B escalation, "
+        "running a constructed-student spec) require the operator's approval through the "
+        "approvals queue. Propose and explain; never claim to have done a gated action."
+    )
+
+    def _chat_context(self) -> str:
+        open_h = [h for h in HYPOTHESIS_TABLE if h["status"] not in _CLOSED_STATUSES]
+        lines = [f"- {h['id']} [{h['status']}]: {h['technique']}" for h in open_h]
+        return "Open hypotheses:\n" + "\n".join(lines) if lines else ""
+
+    def chat(self, message: str, history: list[dict] | None = None) -> str:
+        """Operator chat dock (ADR-0013 H2b): a plain-text reply from the configured
+        backend (local by default). No tools, no side effects — explain/propose only."""
+        system = self._CHAT_SYSTEM + ("\n\n" + self._chat_context() if self._chat_context() else "")
+        msgs = list(history or []) + [{"role": "user", "content": message}]
+        return self._backend.chat_text(msgs, system)
 
     def propose_next(self) -> ExperimentProposal:
         """
