@@ -47,7 +47,7 @@ def test_propose_student_is_registered_as_a_tool():
 
 # ── construction loop (queue → build → ledger) ──────────────────────────────
 
-def _fake_build(spec, out_dir, smoke):
+def _fake_build(spec, out_dir, smoke, **_kw):
     """Stand in for runners.build_student.build (no torch/model load)."""
     return {
         "experiment_id": spec.content_hash(),

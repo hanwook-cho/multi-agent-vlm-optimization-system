@@ -81,6 +81,13 @@ def _resolve_data(key: str) -> tuple[Path, Path]:
 
 # ── Assembled student ─────────────────────────────────────────────────────────
 
+class _Proc:
+    """Tiny holder so StudentVLM.infer() can reach its tokenizer + image processor."""
+    def __init__(self, tokenizer, image_processor):
+        self.tok = tokenizer
+        self.image = image_processor
+
+
 class StudentVLM(nn.Module):
     """A VLM assembled from a pretrained vision encoder + a fresh MLP projector +
     a pretrained causal LM. Image patch features are projected into the LM
@@ -126,6 +133,25 @@ class StudentVLM(nn.Module):
         attn = torch.cat([img_mask, attention_mask], dim=1)
         return self.lm.generate(inputs_embeds=inputs_embeds, attention_mask=attn, **kw)
 
+    @torch.no_grad()
+    def infer(self, image_path: str, question: str, is_mcq: bool) -> str:
+        """Eval interface matching eval_vlmeval's model protocol (same-path scoring)."""
+        from runners.eval_vlmeval import MCQ_PROMPT_SUFFIX, POPE_PROMPT_SUFFIX
+        device = next(self.lm.parameters()).device
+        image = Image.open(image_path).convert("RGB")
+        pixel_values = self._proc.image(images=image, return_tensors="pt").pixel_values.to(device)
+        text = question + (MCQ_PROMPT_SUFFIX if is_mcq else POPE_PROMPT_SUFFIX)
+        msg = [{"role": "user", "content": text}]
+        prompt = self._proc.tok.apply_chat_template(msg, tokenize=False, add_generation_prompt=True)
+        enc = self._proc.tok(prompt, return_tensors="pt").to(device)
+        out = self.generate(input_ids=enc.input_ids, attention_mask=enc.attention_mask,
+                            pixel_values=pixel_values, max_new_tokens=32, do_sample=False)
+        # generate(inputs_embeds=...) returns ONLY new tokens (no prompt prefix).
+        return self._proc.tok.decode(out[0], skip_special_tokens=True).strip()
+
+    # set by assemble()/load_student so infer() can reach the processors
+    _proc = None
+
 
 def assemble(spec: StudentSpec, device: str) -> tuple[StudentVLM, object, object]:
     """Build the StudentVLM from the spec. Returns (model, tokenizer, image_processor)."""
@@ -158,6 +184,7 @@ def assemble(spec: StudentSpec, device: str) -> tuple[StudentVLM, object, object
     projector = nn.Sequential(*layers)
 
     model = StudentVLM(vision, projector, lm).to(device)
+    model._proc = _Proc(tokenizer, image_processor)
     n_proj = sum(x.numel() for x in projector.parameters())
     print(f"  assembled : vdim={vdim} → H={h}, projector params={n_proj:,}")
     return model, tokenizer, image_processor
@@ -260,27 +287,78 @@ def generate_sanity(model, spec, tokenizer, image_processor, device, n):
     return outs
 
 
+# ── Persistence (so the trained student can be reloaded for eval) ────────────
+
+def save_student(model: StudentVLM, spec: StudentSpec, out_dir: Path) -> Path:
+    """Persist the trained student: projector weights + LoRA adapter + processors + spec.
+    Vision + LM base weights are reloaded from HF (spec.lm/spec.vision), so only the
+    *learned* parts are stored."""
+    sdir = out_dir / "student"
+    sdir.mkdir(parents=True, exist_ok=True)
+    torch.save(model.projector.state_dict(), sdir / "projector.pt")
+    # LoRA adapter (model.lm is a PeftModel after distill)
+    if hasattr(model.lm, "save_pretrained"):
+        try:
+            model.lm.save_pretrained(str(sdir / "lora_adapter"))
+        except Exception as exc:
+            print(f"  WARN: could not save LoRA adapter: {exc}")
+    model._proc.tok.save_pretrained(str(sdir / "processor"))
+    model._proc.image.save_pretrained(str(sdir / "processor"))
+    (sdir / "spec.json").write_text(spec.model_dump_json(indent=2))
+    print(f"  saved student → {sdir}")
+    return sdir
+
+
+def load_student(build_dir: Path, device: str | None = None) -> StudentVLM:
+    """Reconstruct a saved StudentVLM (projector weights + LoRA adapter) for eval."""
+    from peft import PeftModel
+    device = device or _device()
+    sdir = build_dir / "student" if (build_dir / "student").exists() else build_dir
+    spec = StudentSpec.model_validate_json((sdir / "spec.json").read_text())
+    model, tokenizer, image_processor = assemble(spec, device)
+    model.projector.load_state_dict(torch.load(sdir / "projector.pt", map_location=device))
+    adapter = sdir / "lora_adapter"
+    if adapter.exists():
+        model.lm = PeftModel.from_pretrained(model.lm, str(adapter)).to(device)
+    model._proc = _Proc(tokenizer, image_processor)
+    model.eval()
+    return model
+
+
 # ── Orchestration ──────────────────────────────────────────────────────────
 
-def build(spec: StudentSpec, out_dir: Path, smoke: bool) -> dict:
-    """Run the full pipeline for a spec. Returns a run record (also written to disk)."""
+def build(spec: StudentSpec, out_dir: Path, smoke: bool,
+          align_steps: int | None = None, distill_steps: int | None = None,
+          max_samples: int | None = None, save: bool | None = None) -> dict:
+    """Run the full pipeline for a spec. Returns a run record (also written to disk).
+
+    Budgets: smoke uses tiny fixed budgets; a real run uses the spec's align.steps and
+    a distill-step count derived from epochs × dataset size (overridable via args).
+    """
     device = _device()
     out_dir.mkdir(parents=True, exist_ok=True)
     exp_id = spec.content_hash()
     started = datetime.now(timezone.utc)
     print(f"▶ build_student  spec={exp_id[:12]}  device={device}  smoke={smoke}")
 
-    # Smoke uses tiny budgets; real runs use the spec's.
-    align_steps = 2 if smoke else spec.align.steps
-    distill_steps = 2 if smoke else None  # real distill-step count derived in B1.3
-    eval_n = 3 if smoke else spec.eval.n
-    data_limit = 8 if smoke else None
+    if smoke:
+        align_steps, distill_steps_eff, eval_n, data_limit = 2, 2, 3, 8
+    else:
+        align_steps = align_steps or spec.align.steps
+        data_limit = max_samples
+        n_distill_rows = len(_load_rows(spec.distill.data, data_limit))
+        distill_steps_eff = distill_steps or (spec.distill.epochs * n_distill_rows)
+        eval_n = spec.eval.n
 
     model, tokenizer, image_processor = assemble(spec, device)
     align_losses = align(model, spec, tokenizer, image_processor, device, align_steps, limit=data_limit)
     distill_losses = distill(model, spec, tokenizer, image_processor, device,
-                             distill_steps or 2, limit=data_limit)
-    gens = generate_sanity(model, spec, tokenizer, image_processor, device, eval_n)
+                             distill_steps_eff, limit=data_limit)
+    gens = generate_sanity(model, spec, tokenizer, image_processor, device, eval_n if smoke else 3)
+
+    saved_dir = None
+    if save if save is not None else (not smoke):
+        saved_dir = str(save_student(model, spec, out_dir))
 
     completed = datetime.now(timezone.utc)
     record = {
@@ -290,12 +368,13 @@ def build(spec: StudentSpec, out_dir: Path, smoke: bool) -> dict:
         "status": "smoke_ok" if smoke else "built",
         "started_at": started.isoformat(),
         "completed_at": completed.isoformat(),
+        "align_steps": align_steps, "distill_steps": distill_steps_eff,
         "align_losses": align_losses,
         "distill_losses": distill_losses,
         "generations": gens,
-        "note": ("B1.0 smoke — assemble+align+distill+generate wired end-to-end. "
-                 "Full VLMEvalKit eval is B1.3." if smoke else
-                 "Built; same-path eval integration pending B1.3."),
+        "student_dir": saved_dir,
+        "note": ("smoke — assemble+align+distill+generate wired end-to-end."
+                 if smoke else "built; run runners/eval_student.py for same-path scores."),
     }
     (out_dir / "build_record.json").write_text(json.dumps(record, indent=2))
     print(f"  ✅ {record['status']} → {out_dir/'build_record.json'}")
@@ -307,11 +386,15 @@ def main():
     ap.add_argument("--spec", required=True, help="Path to a StudentSpec JSON")
     ap.add_argument("--out", default=None, help="Output dir (default: artifacts/students/<hash12>)")
     ap.add_argument("--smoke", action="store_true", help="Tiny end-to-end smoke (proves the wiring)")
+    ap.add_argument("--align-steps", type=int, default=None, help="Override align steps")
+    ap.add_argument("--distill-steps", type=int, default=None, help="Override distill steps")
+    ap.add_argument("--max-samples", type=int, default=None, help="Cap distill/align rows")
     args = ap.parse_args()
 
     spec = StudentSpec.model_validate_json(Path(args.spec).read_text())
     out = Path(args.out) if args.out else PROJECT_ROOT / "artifacts/students" / f"build_{spec.content_hash()[:12]}"
-    build(spec, out, smoke=args.smoke)
+    build(spec, out, smoke=args.smoke, align_steps=args.align_steps,
+          distill_steps=args.distill_steps, max_samples=args.max_samples)
 
 
 if __name__ == "__main__":

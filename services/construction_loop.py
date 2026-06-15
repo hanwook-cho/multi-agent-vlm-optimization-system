@@ -83,13 +83,27 @@ def _ledger_entry(spec: StudentSpec, record: dict, queue_entry: dict | None) -> 
 
 
 def run_once(spec: StudentSpec, smoke: bool, queue_entry: dict | None = None,
-             out_dir: Path | None = None) -> dict:
-    """Build the spec and write a ledger entry. Returns the ledger entry."""
+             out_dir: Path | None = None, eval_after: bool = False,
+             eval_n: int | None = None, align_steps: int | None = None,
+             distill_steps: int | None = None, max_samples: int | None = None) -> dict:
+    """Build the spec, optionally run the same-path eval, write a ledger entry."""
     from runners.build_student import build  # lazy: pulls torch/transformers
 
     out_dir = out_dir or (PROJECT_ROOT / "artifacts" / "students" /
                           f"build_{spec.content_hash()[:12]}")
-    record = build(spec, out_dir, smoke=smoke)
+    record = build(spec, out_dir, smoke=smoke, align_steps=align_steps,
+                   distill_steps=distill_steps, max_samples=max_samples)
+
+    # B1.3: score the constructed student on the same path as the LFM2 benchmark.
+    if eval_after and not smoke and record.get("student_dir"):
+        from runners.eval_student import evaluate
+        eval_out = out_dir / "eval"
+        results = evaluate(out_dir, spec.eval.benchmarks, eval_n or spec.eval.n, eval_out)
+        record["quality_scores"] = [
+            {"benchmark": b, "metric": "Overall", "value": r["scores"].get("Overall"),
+             "delta_vs_benchmark": r["delta_vs_benchmark"]}
+            for b, r in results.items()
+        ]
 
     entry = _ledger_entry(spec, record, queue_entry)
     LEDGER_DIR.mkdir(parents=True, exist_ok=True)
@@ -111,6 +125,11 @@ def main():
     ap = argparse.ArgumentParser(description="Run the next queued student construction (ADR-0012 B1.2)")
     ap.add_argument("--spec", default=None, help="Explicit StudentSpec JSON (overrides the queue)")
     ap.add_argument("--smoke", action="store_true", help="Tiny end-to-end build (proves the loop)")
+    ap.add_argument("--eval", action="store_true", help="Run same-path MCQ eval after a real build (B1.3)")
+    ap.add_argument("--eval-n", type=int, default=None, help="Override eval samples per benchmark")
+    ap.add_argument("--align-steps", type=int, default=None, help="Cap align steps (real run budget)")
+    ap.add_argument("--distill-steps", type=int, default=None, help="Cap distill steps (real run budget)")
+    ap.add_argument("--max-samples", type=int, default=None, help="Cap train rows")
     args = ap.parse_args()
 
     if args.spec:
@@ -121,7 +140,10 @@ def main():
         src = "agent queue" if entry else "default P2-B1 spec (queue empty)"
         print(f"▶ construction_loop  source={src}  spec={spec.content_hash()[:12]}")
 
-    run_once(spec, smoke=args.smoke, queue_entry=entry)
+    run_once(spec, smoke=args.smoke, queue_entry=entry,
+             eval_after=args.eval, eval_n=args.eval_n,
+             align_steps=args.align_steps, distill_steps=args.distill_steps,
+             max_samples=args.max_samples)
 
 
 if __name__ == "__main__":
