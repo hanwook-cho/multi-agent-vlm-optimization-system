@@ -618,7 +618,7 @@ def _build_system_prompt(hypothesis_table: list[dict] | None = None) -> str:
     )
 
     baselines_json = json.dumps(PHASE0_BASELINES, indent=2)
-    return f"""You are the Search Strategist Agent for a multi-agent VLM optimization system.
+    return f"""You are the Search Strategist Agent for a multi-agent system for VLM optimization.
 
 Your job is to propose the single best next experiment to run, given:
 1. The Phase 0 baselines (what we started with)
@@ -1048,7 +1048,7 @@ class SearchStrategist:
     # ── Public API ────────────────────────────────────────────────────────────
 
     _CHAT_SYSTEM = (
-        "You are the Search Strategist for a multi-agent VLM optimization system, "
+        "You are the Search Strategist for a multi-agent system for VLM optimization, "
         "talking to the operator in the console. Explain your reasoning, the state of "
         "the hypotheses, and what you would propose next — concisely. You do NOT execute "
         "actions here: gated decisions (deploy, eval-set change, Mode-B escalation, "

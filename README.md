@@ -1,4 +1,4 @@
-# Multi-Agent VLM Optimization System
+# Multi-Agent System for VLM Optimization
 
 An autonomous agent system that compresses the time required to produce a competitive edge vision-language model — from the team-months of focused expert work that produced models like LFM2-VL-450M, SmolVLM-500M, and MiniCPM-V, to solo-developer-months using the system as the optimization tool.
 

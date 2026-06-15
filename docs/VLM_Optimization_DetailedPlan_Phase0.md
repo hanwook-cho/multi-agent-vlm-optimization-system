@@ -1,4 +1,4 @@
-# Multi-Agent VLM Optimization System — Detailed Plan, Phase 0
+# Multi-Agent System for VLM Optimization — Detailed Plan, Phase 0
 
 *Phase 0: Foundations and reference baselines. The first of five phase plans. Subsequent plans (Phase 1, 2, 3, 4) will be written after Phase 0 is reviewed and locked.*
 

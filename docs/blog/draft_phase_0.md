@@ -1,4 +1,4 @@
-# Building a Multi-Agent VLM Optimization System — Phase 0 Complete
+# Building a Multi-Agent System for VLM Optimization — Phase 0 Complete
 
 *Draft — to be published with Phase 1 reveal when the repository goes public.*
 

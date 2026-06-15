@@ -1,4 +1,4 @@
-# Multi-Agent VLM Optimization System — Goals (v3)
+# Multi-Agent System for VLM Optimization — Goals (v3)
 
 *Goal hierarchy for the project, from the ultimate aim down to per-phase objectives and deliverables. Revision v3 sharpens the central claim from "produce a competitive model" to "compress the time required to produce a competitive edge VLM from team-months to solo-months" — and shifts the Phase 1-2 starting point from already-optimized LFM2.5-VL-450M to a general-purpose Qwen2.5-VL-3B so the optimization journey being demonstrated is meaningful.*
 

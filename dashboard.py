@@ -664,7 +664,7 @@ with tab4:
 with tab5:
     st.subheader("About this dashboard")
     st.markdown(f"""
-**Project:** Multi-Agent VLM Optimization System
+**Project:** Multi-Agent System for VLM Optimization
 **Phase:** Phase 0 — Reference Baselines
 **Database:** `{DB_PATH.name}` (built by `tools/build_metrics_db.py`)
 **Last built:** {DB_PATH.stat().st_mtime if DB_PATH.exists() else 'N/A'}

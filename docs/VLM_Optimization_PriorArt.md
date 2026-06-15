@@ -1,4 +1,4 @@
-# Multi-Agent VLM Optimization System — Prior Art Analysis
+# Multi-Agent System for VLM Optimization — Prior Art Analysis
 
 *A survey of existing research and tools that overlap with this project's goals, and an honest assessment of where this project is novel, where it duplicates prior work, and where it might benefit from existing tooling.*
 

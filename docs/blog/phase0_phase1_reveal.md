@@ -1,4 +1,4 @@
-# Building a Multi-Agent VLM Optimization System — Phase 0 + 1 Complete
+# Building a Multi-Agent System for VLM Optimization — Phase 0 + 1 Complete
 
 *The repository is now public. This post covers both phases: the measurement foundation (Phase 0) and the first optimization loop (Phase 1).*
 

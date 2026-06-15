@@ -5,7 +5,7 @@
 **Phase 0 status:** ✅ COMPLETE (9/10 exit criteria met; Pi skipped deliberately)
 **Phase 1 status:** ✅ COMPLETE (6/7 exit criteria met; criterion 1.7 pending repo flip)
 
-> **Ultimate goal reminder:** the deliverable is the **multi-agent VLM optimization system**;
+> **Ultimate goal reminder:** the deliverable is the **multi-agent system for VLM optimization**;
 > a competitive edge model is the proof-of-work. Phase 2 must demonstrate the *system*
 > producing an edge model from Qwen2.5-VL-3B — not a human hand-tuning one.
 

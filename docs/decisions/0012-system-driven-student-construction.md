@@ -8,7 +8,7 @@
 
 ## Context
 
-The deliverable of this project is the **multi-agent VLM optimization system**, not any single model. A competitive model is **proof-of-work** (Goals §5). Two Phase-2 results (P2-D1, P2-D2) already demonstrated the system's *reasoning* loop — propose → test → record → re-route, with no human config-picking (P1). What they did **not** exercise is the system's *construction* ability: both were distillation runs *into an existing* model.
+The deliverable of this project is the **multi-agent system for VLM optimization**, not any single model. A competitive model is **proof-of-work** (Goals §5). Two Phase-2 results (P2-D1, P2-D2) already demonstrated the system's *reasoning* loop — propose → test → record → re-route, with no human config-picking (P1). What they did **not** exercise is the system's *construction* ability: both were distillation runs *into an existing* model.
 
 P2-B1 (assemble Qwen2.5-0.5B LM + small SigLIP vision + projector, then distill from the 3B) is classified as **Tier-2** (code, human-implemented per HLD §6.3). If a human hand-builds it as a one-off, the result advances the *model* but tests the *human's* engineering — not the system's autonomy. That is the failure mode this project must avoid: doing model work and calling it system work.
 

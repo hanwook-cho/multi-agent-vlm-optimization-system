@@ -1,6 +1,6 @@
-# Multi-Agent VLM Optimization System — High-Level Design
+# Multi-Agent System for VLM Optimization — High-Level Design
 
-*Zero-based derivation of the system architecture from the ultimate goal. Companion to "Multi-Agent VLM Optimization System — Goals." The Goals document defines what we're trying to achieve; this document derives the system that achieves it. A subsequent Detailed Plan document will cover phase-by-phase execution.*
+*Zero-based derivation of the system architecture from the ultimate goal. Companion to "Multi-Agent System for VLM Optimization — Goals." The Goals document defines what we're trying to achieve; this document derives the system that achieves it. A subsequent Detailed Plan document will cover phase-by-phase execution.*
 
 **Audience.** Project owner, future collaborators, external reviewers.
 **Status.** Draft v1 + Amendment A (§6.5).
@@ -211,7 +211,7 @@ These keep the human out of the decision loop for repetitive judgments while sti
 
 This is what falls out of §§2–5. Some components are agents (LLM-driven), others are services (deterministic). The count is deliberately smaller than the five-agent design in earlier drafts.
 
-![Multi-agent VLM optimization system architecture](assets/architecture.svg)
+![Multi-agent system for VLM optimization — architecture](assets/architecture.svg)
 
 *Figure 1 — system architecture, color-coded by implementation status (built / partial / planned) as of June 2026. The top band is the **operator console** (§5.4): the human frames the work at the start (goal & scope intake), watches it (status dashboard), gates the consequential decisions (approvals & gates), and can intervene (run controls: pause/stop/kill). Today that console is **this chat + the CLI**; a unified GUI is planned. Partially built so far: the metrics dashboard (`dashboard.py`), the goal/scope intake (`run.yaml`), and run controls (pause/stop/kill via `services.run_control`, ADR-0013 H1). Approvals & gates remain planned. The built core below is the Mode A loop: the Search Strategist proposes either a config experiment or a student-construction spec (§6.5 / ADR-0012), deterministic services run and evaluate it on a held-constant path, results land in the experiment ledger, and the Pareto Tracker drives the agent's re-route. The Research Analyst and Technique Registry (§6.5.3 seam) are planned (Mode B / Phase 3); the Threshold Monitor + Decision Dossier are a scaffold; the Deployment Dispatcher is partial (the Experiment Runner writes an iPhone-ready flag for the manual hand-off, but the export-pipeline service is not built). The human-interface design is detailed in ADR-0013.*
 
@@ -463,4 +463,4 @@ The system is meaningfully simpler than earlier drafts, and the parts that remai
 
 ---
 
-*Next document: "Multi-Agent VLM Optimization System — Detailed Plan," to be written after the Goals doc is revised per §9 and the open design questions in §10 are addressed.*
+*Next document: "Multi-Agent System for VLM Optimization — Detailed Plan," to be written after the Goals doc is revised per §9 and the open design questions in §10 are addressed.*
