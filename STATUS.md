@@ -67,7 +67,11 @@ Per user directive ("system should do, not human implement"), P2-B1 is built as 
 
 ### Operator interface (ADR-0013) — H1 done
 
-The architecture review surfaced that human interaction wasn't visible or built (gap B2). [ADR-0013](docs/decisions/0013-human-interface-operator-console.md) designs the operator console (intake / status / approvals / controls across chat + GUI + CLI), now shown as the top band of the [architecture figure](docs/assets/architecture.svg). **H1 ✅:** `services/run_control.py` gives the operator pause/stop/kill over long runs — the build/distill/eval loops poll a control file at each checkpoint (stop = graceful save, kill = abort, ≤1 step lost), driven by `python -m services.run_control {pause,resume,stop,kill,status}`. Plus `run.yaml` intake (`schemas/run_config.py` + `configs/run.example.yaml`) stamped into the build record. Approvals inbox (H3) + dashboard run-status (H2) remain planned.
+The architecture review surfaced that human interaction wasn't visible or built (gap B2). [ADR-0013](docs/decisions/0013-human-interface-operator-console.md) (Accepted) designs the operator console (intake / status / approvals / controls across chat + GUI + CLI), now shown as the top band of the [architecture figure](docs/assets/architecture.svg).
+
+- **H1 ✅:** `services/run_control.py` — operator pause/stop/kill over long runs; the build/distill/eval loops poll a control file at each checkpoint (stop = graceful save, kill = abort, ≤1 step lost), via `python -m services.run_control {pause,resume,stop,kill,status}`. Plus `run.yaml` intake (`schemas/run_config.py` + `configs/run.example.yaml`). Agent/chat backend configurable, **default local** (`_resolve_backend_name`; API opt-in only).
+- **H2 ✅:** `operator_console.py` (Streamlit) — live browser console: `streamlit run operator_console.py`. Monitor tab shows current run (stage/step/loss), queue depth, recent constructed-student scores, live log tail, and **working pause/stop/kill buttons** wired to run_control; Setup + Approvals tabs + chat-dock placeholder. Data layer in `services/console_data.py` (tested); verified via Streamlit AppTest.
+- **Next:** H2b chat dock → H3 approvals queue → H4 setup form + rationale.
 
 ---
 
