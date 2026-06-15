@@ -113,14 +113,16 @@ MODEL_REGISTRY: dict[str, dict] = {
         "runtime": Runtime.PYTORCH_MPS,
     },
     "LFM2-VL-450M-distill": {
-        # Phase 2 Strategy B pilot student: base LFM2-VL-450M + LoRA adapter
-        # distilled from the Qwen2.5-VL-3B teacher (5K COCO caption cache).
+        # Phase 2 P2-D2 student: base LFM2-VL-450M + LoRA adapter distilled from the
+        # Qwen2.5-VL-3B teacher using TASK-ALIGNED Q&A targets (11.2K pairs) + 20%
+        # caption rehearsal. Supersedes the P2-D1 caption-only pilot
+        # (artifacts/students/lfm2vl_distill_pilot_s0), which regressed POPE 86.2->38.5.
         # Evaluated on the SAME fp16 transformers path as the LFM2-VL-450M baseline.
         "hf_id": "LiquidAI/LFM2-VL-450M",
         "family": "lfm2vl_distill",
         "dtype": WeightDtype.FP16,
         "runtime": Runtime.PYTORCH_MPS,
-        "adapter_path": "artifacts/students/lfm2vl_distill_pilot_s0/adapter",
+        "adapter_path": "artifacts/students/lfm2vl_qa_distill_s0/adapter",
     },
 }
 

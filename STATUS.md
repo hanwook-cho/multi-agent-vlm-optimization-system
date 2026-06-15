@@ -49,10 +49,16 @@
 
 - **Fed the Phase 2 design space into the Search Strategist** (hypothesis table P2-D1 REGRESSED / P2-D2 / P2-C1 / P2-B1 + the LFM2-is-benchmark and architecture-budget constraints). The agent **read the P2-D1 regression and proposed P2-D2 (task-aligned distillation)**, citing the regression as the reason. That is the multi-agent loop working — a prior failure driving the next proposal (P1: no human config-picking). Commit `b96ed00`.
 
-### P2-D2 (task-aligned distillation) — capability built, run in progress
+### P2-D2 (task-aligned distillation) — COMPLETE, also a negative result
 
 - **`distillation_pipeline.py` gained `mode=qa`** — teacher generates grounded Q&A pairs (incl. yes/no object-presence), the skill the MCQ benchmarks measure. `finetune_vlm.py` gained unified caption+QA training + `--rehearse-cache` (mix caption data to prevent the forgetting that broke P2-D1). Validated on a canary. Commit `7e8488a`.
-- **Running:** 5K-image QA cache → rehearsal fine-tune → same-path MCQ eval, to test whether task-aligned distillation + rehearsal fixes the P2-D1 regression. **Caveat:** this validates the *method* on the fast LFM2 loop — per [ADR-0011](docs/decisions/0011-phase2-strategy-correction.md) the final student must derive from Qwen2.5-VL-3B (P2-B1), since LFM2 is the benchmark.
+- **Run COMPLETE — negative result (informative):** 11.2K teacher Q&A + 20% caption rehearsal, LoRA into LFM2-VL-450M (3 epochs). **Still regressed on every MCQ** (same-path, n=100): POPE 87.7→**66.7**, RWQA 42→37, MMBench 74→51. The POPE failure mode **flipped** vs P2-D1: now an *always-"Yes"* collapse (acc 50/prec 50/recall 100) — the teacher Q&A asked mostly about objects that ARE present → presence-bias prior (data-balance defect, needs hard negatives). See [observation](docs/observations/2026-06-14-p2d2-task-aligned-distill-still-regresses.md).
+- **The deeper lesson:** both D-series pilots distilled *into* LFM2 and both regressed → confirms [ADR-0011](docs/decisions/0011-phase2-strategy-correction.md) — **LFM2 is already edge-optimized, so any LoRA only moves it off its tuned optimum.** Distillation INTO the benchmark is a dead end; distillation must *add* capability to an under-trained, right-sized student.
+- **The loop re-routed:** P2-D2 → REGRESSED in the hypothesis table; the Search Strategist's open Phase-2 set is now **{P2-C1, P2-B1}**, and P2-C1 collapses into P2-B1 by the architecture budget → **next move is P2-B1** (assemble a ~450–600M student from Qwen2.5-0.5B LM + small SigLIP, distill from the 3B). Two negative results drove the pivot with no human config-picking.
+
+### P2-B1 (next) — assemble a right-sized student from the 3B lineage
+
+- The corrected primary path (ADR-0011): build the student so distillation **adds** the teacher's MCQ skill instead of overwriting a tuned base. Same-family LM (Qwen2.5-0.5B ← 3B) shares tokenizer/embedding space; small SigLIP fits the vision budget the 3B's 669M ViT cannot. Not yet started.
 
 ---
 

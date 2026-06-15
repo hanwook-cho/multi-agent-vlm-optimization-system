@@ -170,7 +170,8 @@ def load_phase2_distill() -> pd.DataFrame:
         return d
     d.loc[d["benchmark"] != "POPE", "value"] *= 100
     piv = d.pivot_table(index="benchmark", columns="model_key", values="value")
-    cols = [c for c in ["LFM2-VL-450M", "LFM2-VL-450M-distill"] if c in piv.columns]
+    cols = [c for c in ["LFM2-VL-450M", "LFM2-VL-450M-distill", "LFM2-VL-450M-qadistill"]
+            if c in piv.columns]
     piv = piv.reindex(columns=cols)
     piv = piv.reindex(index=[b for b in ["POPE", "RealWorldQA", "MMBench_DEV_EN"] if b in piv.index])
     return piv
@@ -604,13 +605,20 @@ with tab4:
 
     st.divider()
 
-    # ── C. Distillation pilot — what didn't work (P2-D1) ─────────────────────
-    st.markdown("### P2-D1 — Caption-only distillation REGRESSED the student (negative result)")
+    # ── C. Distillation pilots — what didn't work (P2-D1 + P2-D2) ────────────
+    st.markdown("### P2-D1 & P2-D2 — distilling INTO the benchmark REGRESSED both times (negative results)")
     st.caption(
-        "LFM2-VL-450M (the benchmark) vs the same model LoRA-distilled on 5K Qwen captions, "
-        "same fp16 path. LFM2 is the BENCHMARK, not a valid student — this pilot tested the "
-        "distillation method and showed caption-only data hurts the measured MCQ skill (ADR-0011)."
+        "LFM2-VL-450M (the BENCHMARK) vs the same model LoRA-distilled from the Qwen2.5-VL-3B "
+        "teacher, same fp16 path. Two objectives tested: P2-D1 = 5K captions; P2-D2 = 11.2K "
+        "task-aligned Q&A + rehearsal (the agent's proposed fix). Both regressed — LFM2 is already "
+        "edge-optimized, so any LoRA only moves it off its tuned optimum (ADR-0011). Pivot: P2-B1."
     )
+    _LABELS = {
+        "LFM2-VL-450M": "baseline",
+        "LFM2-VL-450M-distill": "P2-D1 caption",
+        "LFM2-VL-450M-qadistill": "P2-D2 task-aligned",
+    }
+    _COLORS = {"baseline": "#1f77b4", "P2-D1 caption": "#d62728", "P2-D2 task-aligned": "#ff7f0e"}
     if distill_df.empty:
         st.info("No distillation pilot data — see artifacts/phase2_distill/ and rebuild metrics.db.")
     else:
@@ -619,13 +627,12 @@ with tab4:
             rows = []
             for bench, row in distill_df.iterrows():
                 for model, val in row.items():
-                    label = "baseline" if model == "LFM2-VL-450M" else "caption-distilled"
                     rows.append({"Benchmark": bench.replace("_DEV_EN", ""),
-                                 "Model": label, "Score %": val})
+                                 "Model": _LABELS.get(model, model), "Score %": val})
             figd = px.bar(
                 pd.DataFrame(rows), x="Benchmark", y="Score %", color="Model",
                 barmode="group", height=360, text="Score %",
-                color_discrete_map={"baseline": "#1f77b4", "caption-distilled": "#d62728"},
+                color_discrete_map=_COLORS,
             )
             figd.update_traces(texttemplate="%{text:.0f}", textposition="outside")
             figd.update_layout(yaxis_range=[0, 105], margin=dict(t=10, b=10),
@@ -633,20 +640,23 @@ with tab4:
             st.plotly_chart(figd, use_container_width=True)
         with d_r:
             disp = distill_df.copy()
-            if disp.shape[1] == 2:
-                disp["Δ"] = disp.iloc[:, 1] - disp.iloc[:, 0]
             disp.index = [i.replace("_DEV_EN", "") for i in disp.index]
-            disp.columns = ["baseline", "distilled", "Δ"][: disp.shape[1]]
+            disp.columns = [_LABELS.get(c, c) for c in disp.columns]
+            if "baseline" in disp.columns:
+                for c in [c for c in disp.columns if c != "baseline"]:
+                    disp[f"Δ {c}"] = disp[c] - disp["baseline"]
+            delta_cols = [c for c in disp.columns if c.startswith("Δ ")]
             st.dataframe(
                 disp.style.format("{:.1f}")
-                          .background_gradient(subset=["Δ"], cmap="RdYlGn"),
+                          .background_gradient(subset=delta_cols, cmap="RdYlGn"),
                 use_container_width=True,
             )
             st.markdown(
-                "**POPE 86.2 → 38.5.** Answers stay well-formed but wrong — caption-only "
-                "LoRA caused task interference / forgetting of grounding. Fix (P2-D2): "
-                "distill the measured skill (grounded Q&A) + rehearsal. The eventual student "
-                "must derive from Qwen2.5-VL-3B (P2-B1), not LFM2."
+                "**Both regressed, with mirror-image failures.** P2-D1 (caption) → POPE 86→38, "
+                "under-detects (\"No\" bias). P2-D2 (task-aligned Q&A) → POPE 88→67, *always-\"Yes\"* "
+                "collapse (acc 50/prec 50/recall 100) from presence-biased teacher Q&A. "
+                "Lesson: distillation can't beat a base that's already at its task optimum. "
+                "The eventual student must derive from Qwen2.5-VL-3B (P2-B1), not LFM2."
             )
 
 

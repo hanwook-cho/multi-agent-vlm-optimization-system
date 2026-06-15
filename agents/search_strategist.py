@@ -180,13 +180,25 @@ HYPOTHESIS_TABLE = [
     {
         "id": "P2-D2",
         "technique": "Task-aligned distillation (teacher answers grounded VQA/yes-no/MCQ → student) + rehearsal",
-        "model": "open small student derived from Qwen2.5-VL-3B",
+        "model": "LFM2-VL-450M (method-validation pilot base)",
         "expected_gain": "lift POPE/RWQA/MMBench toward teacher without forgetting",
         "gain_axis": "quality",
-        "status": "NOT_TRIED",
+        "status": "REGRESSED",
         "phase": 2,
         "tier": "code",
-        "result_summary": "Direct fix for P2-D1: align the distillation target to the measured task; mix instruction-following data to prevent forgetting.",
+        "result_summary": (
+            "11.2K task-aligned teacher Q&A (yes-no + open) + 20% caption rehearsal, LoRA into "
+            "LFM2-VL-450M, 3 epochs. STILL REGRESSED on every MCQ (same-path, n=100): "
+            "POPE 87.7→66.7, RWQA 42→37, MMBench 74→51. The POPE failure mode FLIPPED vs P2-D1: "
+            "student now answers 'Yes' to ~every presence question (acc 50/prec 50/recall 100 = "
+            "always-yes collapse), because the teacher Q&A asked mostly about objects that ARE "
+            "present → presence-bias prior. Two lessons: (a) naive teacher-generated Q&A is "
+            "data-imbalanced — needs balanced hard negatives (absent-object questions) before it "
+            "can teach grounding; (b) the whole D-series (distill INTO LFM2) is exhausted as a way "
+            "to BEAT the benchmark — LFM2 is already edge-optimized, so any LoRA perturbation only "
+            "moves it off its tuned optimum. Pivot to building a RIGHT-SIZED student from the 3B "
+            "(P2-B1), where distillation adds capability instead of overwriting it."
+        ),
     },
     {
         "id": "P2-C1",

@@ -1,0 +1,106 @@
+{
+  "experiment_id": "a3dd34abeeaa470f34fa96a64d8377a18d3aab0857c30297221df10b5389e2fb",
+  "device_id": "mac_mini_m4_16gb",
+  "status": "completed",
+  "error_message": null,
+  "started_at": "2026-06-15T04:40:29.742250Z",
+  "completed_at": "2026-06-15T04:40:51.089560Z",
+  "hardware_fingerprint": {
+    "os_version": "macOS 26.5.1",
+    "available_ram_mb": 6582.484375,
+    "thermal_state": null,
+    "swap_used_mb": 2531.875
+  },
+  "ttft_ms": null,
+  "decode_tokens_per_sec": null,
+  "peak_memory_mb": null,
+  "on_disk_size_mb": null,
+  "energy_j": null,
+  "quality_scores": [
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "Overall",
+      "value": 0.51
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "AR",
+      "value": 0.5588235294117647
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "CP",
+      "value": 0.3888888888888889
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "FP-C",
+      "value": 1.0
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "FP-S",
+      "value": 0.75
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "LR",
+      "value": 0.3333333333333333
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "action_recognition",
+      "value": 1.0
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "attribute_recognition",
+      "value": 0.75
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "function_reasoning",
+      "value": 0.3333333333333333
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "future_prediction",
+      "value": 0.0
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "identity_reasoning",
+      "value": 1.0
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "image_quality",
+      "value": 0.3870967741935484
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "image_scene",
+      "value": 0.4
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "object_localization",
+      "value": 0.75
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "physical_property_reasoning",
+      "value": 0.5769230769230769
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "spatial_relationship",
+      "value": 1.0
+    },
+    {
+      "benchmark": "MMBench_DEV_EN",
+      "metric": "structuralized_imagetext_understanding",
+      "value": 0.36363636363636365
+    }
+  ]
+}
