@@ -57,10 +57,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from schemas.experiments import ExperimentConfig, CompressionSpec
+from schemas.students import StudentSpec
 from services.pareto_tracker import ParetoTracker, PHASE0_BASELINES, DEFAULT_AXES
 
 LEDGER_DIR  = PROJECT_ROOT / "artifacts" / "experiment_ledger"
 QUEUE_FILE  = PROJECT_ROOT / "artifacts" / "experiment_queue.json"
+# Tier-2 student-construction proposals (P2-B1, ADR-0012) queue here; the
+# construction loop (services/construction_loop.py) consumes and builds them.
+CONSTRUCTION_QUEUE = PROJECT_ROOT / "artifacts" / "construction_queue.json"
 
 STAGE_A_HASH = "e2128ae022b3720375d7c866a037b6d8ec4b399ff92cb59e6065ec9fb7f3e29f"
 
@@ -384,16 +388,84 @@ def _model_id_for_key(key: str) -> str:
     return key  # assume already an HF model ID
 
 
-def _append_to_queue(payload: dict) -> None:
-    QUEUE_FILE.parent.mkdir(parents=True, exist_ok=True)
+def _append_to(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     queue = []
-    if QUEUE_FILE.exists():
+    if path.exists():
         try:
-            queue = json.loads(QUEUE_FILE.read_text())
+            queue = json.loads(path.read_text())
         except Exception:
             queue = []
     queue.append(payload)
-    QUEUE_FILE.write_text(json.dumps(queue, indent=2))
+    path.write_text(json.dumps(queue, indent=2))
+
+
+def _append_to_queue(payload: dict) -> None:
+    _append_to(QUEUE_FILE, payload)
+
+
+def _tool_propose_student(
+    hypothesis_id: str = "",
+    lm: str = "",
+    vision: str = "",
+    rationale: str = "",
+    projector_depth: int = 2,
+    projector_hidden: int = 2048,
+    init: str = "scratch",
+    align_data: str = "coco_caption_5k",
+    align_steps: int = 2000,
+    distill_teacher: str = "Qwen2.5-VL-3B",
+    distill_data: str = "qa_balanced_5k",
+    distill_lora_r: int = 16,
+    distill_epochs: int = 3,
+    eval_n: int = 100,
+    notes: str | None = None,
+    **_extra,
+) -> str:
+    """Validate and enqueue a Tier-2 student-CONSTRUCTION proposal (P2-B1, ADR-0012).
+
+    Unlike propose_experiment (a compression config over an existing model), this
+    proposes assembling a NEW right-sized student from parts and distilling it. The
+    construction loop builds it and writes the result to the ledger.
+    """
+    _required = {"hypothesis_id": hypothesis_id, "lm": lm, "vision": vision}
+    missing = [name for name, val in _required.items() if not val]
+    if missing:
+        return json.dumps({
+            "status": "error",
+            "message": (
+                f"Missing required fields: {missing}. Call propose_student again with "
+                "at least hypothesis_id, lm, vision (HF ids), and a rationale."
+            ),
+        })
+    try:
+        spec = StudentSpec(
+            lm=lm, vision=vision,
+            projector={"type": "mlp", "depth": projector_depth, "hidden": projector_hidden},
+            init=init,
+            align={"data": align_data, "steps": align_steps},
+            distill={"teacher": distill_teacher, "data": distill_data,
+                     "lora_r": distill_lora_r, "epochs": distill_epochs},
+            eval={"n": eval_n},
+            notes=notes or f"{hypothesis_id}: {rationale[:80]}",
+        )
+        _append_to(CONSTRUCTION_QUEUE, {
+            "proposed_at":   datetime.now(timezone.utc).isoformat(),
+            "hypothesis_id": hypothesis_id,
+            "rationale":     rationale,
+            "experiment_id": spec.content_hash(),
+            "spec":          json.loads(spec.model_dump_json()),
+        })
+        return json.dumps({
+            "status":        "queued",
+            "experiment_id": spec.content_hash()[:16] + "…",
+            "message": (
+                f"Student-construction proposal {hypothesis_id} "
+                f"({lm} + {vision}) validated and queued for the construction loop."
+            ),
+        })
+    except Exception as exc:
+        return json.dumps({"status": "error", "message": str(exc)})
 
 
 # ── Tool schemas (for Claude API) ────────────────────────────────────────────
@@ -454,6 +526,38 @@ TOOLS = [
                 "hypothesis_id", "technique", "model", "rationale",
                 "expected_gain", "gain_axis", "weight_dtype", "runtime_backend",
             ],
+        },
+    },
+    {
+        "name": "propose_student",
+        "description": (
+            "Propose and enqueue a Tier-2 student-CONSTRUCTION experiment (ADR-0012): "
+            "assemble a NEW right-sized VLM from a language-model backbone + a vision "
+            "encoder + a projector, then distill it from the teacher. Use this for "
+            "construction hypotheses like P2-B1 (the deliverable must derive from the "
+            "Qwen2.5-VL-3B lineage, NOT from the LFM2 benchmark). The construction loop "
+            "builds the spec and records the result. Call ONCE when decided."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "hypothesis_id":    {"type": "string", "description": "e.g. P2-B1"},
+                "lm":               {"type": "string", "description": "HF id of the LM backbone, e.g. Qwen/Qwen2.5-0.5B-Instruct (same-family as the teacher eases distillation)"},
+                "vision":           {"type": "string", "description": "HF id of the vision encoder, e.g. google/siglip-base-patch16-224"},
+                "rationale":        {"type": "string", "description": "Why this architecture/recipe next, grounded in the ledger"},
+                "projector_depth":  {"type": "integer", "description": "Projector MLP depth (1-4)"},
+                "projector_hidden": {"type": "integer", "description": "Projector MLP hidden width"},
+                "init":             {"type": "string", "description": "'scratch' or 'adapt:<hf_id>'"},
+                "align_data":       {"type": "string", "description": "Alignment data key, e.g. coco_caption_5k"},
+                "align_steps":      {"type": "integer", "description": "Projector alignment steps"},
+                "distill_teacher":  {"type": "string", "description": "Teacher, e.g. Qwen2.5-VL-3B"},
+                "distill_data":     {"type": "string", "description": "Distill data key, e.g. qa_balanced_5k (task-aligned + hard negatives, the P2-D2 fix)"},
+                "distill_lora_r":   {"type": "integer", "description": "LoRA rank"},
+                "distill_epochs":   {"type": "integer", "description": "Distillation epochs"},
+                "eval_n":           {"type": "integer", "description": "Samples per benchmark slice"},
+                "notes":            {"type": ["string", "null"], "description": "Optional extra context"},
+            },
+            "required": ["hypothesis_id", "lm", "vision", "rationale"],
         },
     },
 ]
@@ -524,12 +628,19 @@ lower priority now.
 5. Avoid re-proposing any closed hypothesis (CONFIRMED/NULL_RESULT/BLOCKED/REGRESSED).
 
 ## Tier-2 (code-requiring) hypotheses — Phase 2
-All Phase 2 hypotheses are Tier-2: they require human implementation (new training/
-architecture code), not just a config change (HLD §6.3). Your job is to recommend
-the single best next Tier-2 hypothesis with a concrete rationale grounded in the ledger;
-the human implements it. When calling propose_experiment for a Tier-2 hypothesis, set
-weight_dtype/runtime_backend to the intended DEPLOY target (e.g. int4 / llamacpp_gguf)
-and put the technique + rationale in the corresponding fields.
+All Phase 2 hypotheses are Tier-2 (new training/architecture code, HLD §6.3). There
+are now TWO kinds, with different tools:
+
+- **CONSTRUCTION hypotheses (e.g. P2-B1) → call `propose_student`.** Per ADR-0012 the
+  system now BUILDS students: you emit a StudentSpec (lm + vision + projector + align +
+  distill + eval) and the construction loop assembles and distills it automatically.
+  The deliverable must derive from the Qwen2.5-VL-3B lineage (e.g. lm=Qwen/Qwen2.5-0.5B-
+  Instruct, vision=google/siglip-base-patch16-224), NOT from the LFM2 benchmark. Use
+  distill_data=qa_balanced_5k (task-aligned + balanced hard negatives — the P2-D2 fix).
+- **Other Tier-2 hypotheses → call `propose_experiment`** with weight_dtype/runtime_backend
+  set to the intended DEPLOY target and the technique + rationale in their fields.
+
+Recommend the single best next hypothesis with a concrete rationale grounded in the ledger.
 
 ## Quality Gates (any proposal must expect to pass these)
 - POPE accuracy ≥ 89.0% (must not regress below the LFM2 benchmark 86.2 — see P2-D1)
@@ -980,6 +1091,23 @@ class SearchStrategist:
                                 rationale=tool_input.get("rationale", ""),
                                 expected_gain=tool_input.get("expected_gain", ""),
                                 gain_axis=tool_input.get("gain_axis", ""),
+                                config=None,
+                                consecutive_non_improvements=consecutive_non_improvements,
+                                reasoning_trace=reasoning_trace,
+                            )
+                    except Exception:
+                        pass
+                elif tool_name == "propose_student":
+                    result = _tool_propose_student(**tool_input)
+                    try:
+                        if json.loads(result).get("status") == "queued":
+                            proposed = ExperimentProposal(
+                                hypothesis_id=tool_input.get("hypothesis_id", "?"),
+                                technique="student-construction (ADR-0012)",
+                                model=f"{tool_input.get('lm','?')} + {tool_input.get('vision','?')}",
+                                rationale=tool_input.get("rationale", ""),
+                                expected_gain="edge-size student derived from the 3B lineage",
+                                gain_axis="size+quality",
                                 config=None,
                                 consecutive_non_improvements=consecutive_non_improvements,
                                 reasoning_trace=reasoning_trace,
