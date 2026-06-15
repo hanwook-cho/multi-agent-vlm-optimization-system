@@ -82,6 +82,53 @@ def test_run_once_writes_ledger_entry(tmp_path, monkeypatch):
     assert written["report"]["distill_final_loss"] == 10.8
 
 
+def test_require_approval_blocks_and_aborts_on_reject(tmp_path, monkeypatch):
+    import runners.build_student as bs
+    from services import approvals
+    built = {"called": False}
+
+    def _spy_build(spec, out_dir, smoke, **kw):
+        built["called"] = True
+        return _fake_build(spec, out_dir, smoke, **kw)
+
+    monkeypatch.setattr(bs, "build", _spy_build)
+    monkeypatch.setattr(approvals, "request_approval", lambda **kw: "ap123")
+    monkeypatch.setattr(approvals, "wait_for_approval", lambda *a, **k: "rejected")
+
+    spec = StudentSpec.model_validate_json(cl.DEFAULT_SPEC.read_text())
+    rec = cl.run_once(spec, smoke=False, require_approval=True, out_dir=tmp_path / "o")
+    assert built["called"] is False                 # rejected → never built
+    assert rec["status"] == "approval_rejected"
+
+
+def test_require_approval_proceeds_on_approve(tmp_path, monkeypatch):
+    import runners.build_student as bs
+    from services import approvals
+    monkeypatch.setattr(bs, "build", _fake_build)
+    monkeypatch.setattr(approvals, "request_approval", lambda **kw: "ap123")
+    monkeypatch.setattr(approvals, "wait_for_approval", lambda *a, **k: "approved")
+    monkeypatch.setattr(cl, "LEDGER_DIR", tmp_path / "ledger")
+
+    spec = StudentSpec.model_validate_json(cl.DEFAULT_SPEC.read_text())
+    rec = cl.run_once(spec, smoke=False, require_approval=True, out_dir=tmp_path / "o")
+    assert rec["report"]["status"] == "built"        # approved → built + recorded
+
+
+def test_smoke_run_is_not_gated(tmp_path, monkeypatch):
+    import runners.build_student as bs
+    from services import approvals
+    monkeypatch.setattr(bs, "build", _fake_build)
+    monkeypatch.setattr(cl, "LEDGER_DIR", tmp_path / "ledger")
+
+    def _boom(**kw):
+        raise AssertionError("smoke must not request approval")
+
+    monkeypatch.setattr(approvals, "request_approval", _boom)
+    spec = StudentSpec.model_validate_json(cl.DEFAULT_SPEC.read_text())
+    rec = cl.run_once(spec, smoke=True, require_approval=True, out_dir=tmp_path / "o")
+    assert rec["report"]["status"] == "smoke_ok"
+
+
 def test_next_proposed_spec_prefers_queue_then_falls_back(tmp_path, monkeypatch):
     q = tmp_path / "cq.json"
     monkeypatch.setattr(cl, "CONSTRUCTION_QUEUE", q)

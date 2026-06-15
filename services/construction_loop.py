@@ -85,8 +85,34 @@ def _ledger_entry(spec: StudentSpec, record: dict, queue_entry: dict | None) -> 
 def run_once(spec: StudentSpec, smoke: bool, queue_entry: dict | None = None,
              out_dir: Path | None = None, eval_after: bool = False,
              eval_n: int | None = None, align_steps: int | None = None,
-             distill_steps: int | None = None, max_samples: int | None = None) -> dict:
-    """Build the spec, optionally run the same-path eval, write a ledger entry."""
+             distill_steps: int | None = None, max_samples: int | None = None,
+             require_approval: bool = False) -> dict:
+    """Build the spec, optionally run the same-path eval, write a ledger entry.
+
+    require_approval gates a REAL (non-smoke) run behind the operator approval queue
+    (HLD §5.1, large compute): the run requests approval and BLOCKS until the operator
+    approves/rejects in the console (or via `python -m services.approvals`).
+    """
+    exp = spec.content_hash()
+
+    if require_approval and not smoke:
+        from services import approvals
+        hyp = (queue_entry or {}).get("hypothesis_id", "P2-B1")
+        aid = approvals.request_approval(
+            kind="construction_run",
+            summary=f"Real build+eval of {exp[:12]} ({hyp}) — large compute",
+            detail={"lm": spec.lm, "vision": spec.vision,
+                    "align_steps": align_steps, "distill_steps": distill_steps},
+            by="construction_loop")
+        print(f"  ⏸ awaiting operator approval (id {aid}) — approve in the console's "
+              f"Approvals tab, or: python -m services.approvals approve {aid}")
+        decision = approvals.wait_for_approval(aid)
+        if decision != "approved":
+            print(f"  ✗ run {decision} by operator — aborting (nothing built).")
+            return {"experiment_id": exp, "status": f"approval_{decision}",
+                    "hypothesis_id": (queue_entry or {}).get("hypothesis_id", "P2-B1")}
+        print(f"  ✓ approved — proceeding with the build.")
+
     from runners.build_student import build  # lazy: pulls torch/transformers
 
     out_dir = out_dir or (PROJECT_ROOT / "artifacts" / "students" /
@@ -133,6 +159,8 @@ def main():
     ap.add_argument("--align-steps", type=int, default=None, help="Cap align steps (real run budget)")
     ap.add_argument("--distill-steps", type=int, default=None, help="Cap distill steps (real run budget)")
     ap.add_argument("--max-samples", type=int, default=None, help="Cap train rows")
+    ap.add_argument("--require-approval", action="store_true",
+                    help="Gate a real run behind the operator approval queue (blocks until approved)")
     args = ap.parse_args()
 
     if args.spec:
@@ -146,7 +174,7 @@ def main():
     run_once(spec, smoke=args.smoke, queue_entry=entry,
              eval_after=args.eval, eval_n=args.eval_n,
              align_steps=args.align_steps, distill_steps=args.distill_steps,
-             max_samples=args.max_samples)
+             max_samples=args.max_samples, require_approval=args.require_approval)
 
 
 if __name__ == "__main__":
