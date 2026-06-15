@@ -1,7 +1,7 @@
 # ADR-0013: Human Interface — the Operator Console
 
 **Date:** 2026-06-15
-**Status:** Proposed (for review)
+**Status:** Accepted (design finalized 2026-06-15; phased build H1–H4, H1 done)
 **Context:** For the system to be *useful*, a human needs a real way to interact with it — frame the work at the start, watch progress and logs, approve the gated decisions, and intervene (pause/stop/kill). The HLD specified only a "Human Approval Queue" (§6.1 #8) and left the rest implicit, so the human-interaction story is currently invisible in the architecture and largely unbuilt (gap **B2**). This ADR proposes the interface. HLD §5.4 + Figure 1 are the summary; this is the design.
 
 ---
@@ -31,6 +31,23 @@ Cross-cutting:
 
 ---
 
+## Console information architecture (finalized 2026-06-15)
+
+The four surfaces above map onto this layout, validated against mockups:
+
+- **Tabs:** `Setup` · `Monitor` · `Approvals`.
+  - `Setup` — the new-optimization form; writes `run.yaml` (the `RunConfig` intake).
+  - `Monitor` — live run status, scores vs benchmark, log tail, and the pause/stop/kill controls.
+  - `Approvals` — the full inbox: pending gated decisions, history, and Decision Dossier detail.
+- **Global chrome (present on every tab):**
+  - **Chat dock** — a collapsible side drawer holding *one* continuous Search Strategist session, toggled from the top bar. Chat is **not** a tab — you steer/ask while looking at any view.
+  - **Approvals bell** — a badge with the pending count, on every tab; opens the inbox.
+  - **Backend indicator** — shows local vs api (the configurable, default-local backend).
+- **Approvals = one queue, three surfaces.** A single approval log is surfaced as (1) the global bell, (2) an inline card on `Monitor` for the item blocking the active run, and (3) the `Approvals` tab. Urgent/blocking decisions additionally raise a slide-over + push notification. The three surfaces share one backend — they are not separate windows or separate state.
+- **Single source of truth, no separate windows.** One chat session, one approval log, one run-control state; every surface is a view of those. Nothing opens a separate browser window — only drawers and tabs within the one app.
+
+This keeps state unified and matches the HLD §7.1 model (queue + DB + approval queue): the console is just readers/writers of shared state.
+
 ## Chat: ownership, backend, and deployment (added 2026-06-15)
 
 **Who owns the chat.** "Chat" is three jobs with three owners:
@@ -55,11 +72,12 @@ Cross-cutting:
 **Build (phased, smallest-useful-first):**
 
 - **H1 — Run config + controls (highest value, smallest). ✅ DONE (2026-06-15).** `services/run_control.py` — pause/stop/kill via a control file the long loops poll at each checkpoint (`rc.checkpoint()` in `build_student._train_loop` and the eval loop; a `TrainerCallback` in `finetune_vlm`). stop = graceful (caller saves), kill = abort, pause = block until resume; a halted run costs ≤1 step (consistent with §7.4). CLI: `python -m services.run_control {status,pause,resume,stop,kill,clear}`. Intake: `schemas/run_config.py` + `configs/run.example.yaml` (`run.yaml` → goal, criteria, device, eval set, allowed hypotheses), stamped into the build record. Enforcing `allowed_hypotheses` against the strategist's proposals is deferred to a later step. 11 tests.
-- **H2 — Live status on the dashboard.** Extend `dashboard.py` with a "Runs" tab: queue depth, current experiment, last-N ledger rows, live log tail, and a kill button wired to H1's control flag.
-- **H3 — Approvals inbox.** A persisted append-only approval queue (the HLD §6.1 #8 component) surfaced as a dashboard tab + notification; gated actions block on it. Decision Dossiers (§4.2) render here.
-- **H4 — Strategist rationale view.** Surface the agent's proposal rationale + the hypothesis table state read-only, so the human understands *why* before approving.
+- **H2 — Console shell + Monitor + controls.** The app shell (Setup/Monitor/Approvals tabs + global bar with the chat-dock toggle, approvals bell, backend indicator) and the `Monitor` tab: queue depth, current run (stage/step/loss), last-N ledger rows, live log tail, and working pause/stop/kill buttons wired to H1's control flag. Built on `dashboard.py` (Streamlit).
+- **H2b — Chat dock.** The global collapsible drawer holding one Search Strategist session (local backend by default), available on every tab.
+- **H3 — Approvals (one queue, three surfaces).** A persisted append-only approval log (the HLD §6.1 #8 component); gated actions block on it. Surfaced as the global bell, the inline Monitor card, and the `Approvals` tab; Decision Dossiers (§4.2) render there; urgent items raise a slide-over + push.
+- **H4 — Setup form + rationale.** The `Setup` tab writes `run.yaml` from the UI (vs hand-editing); surface the strategist's proposal rationale + hypothesis-table state so approvals come with context.
 
-H1 is the one to do first: it is small, removes a real safety gap (stop/kill), and makes unattended overnight runs (like the B1.3 chain) controllable.
+H1 (done) removed the real safety gap (stop/kill). **H2 is next** — the shell + Monitor + controls give a live browser UI to watch and halt real runs, the highest-value piece for using the UI during development.
 
 ---
 
@@ -72,8 +90,12 @@ H1 is the one to do first: it is small, removes a real safety gap (stop/kill), a
 
 ---
 
+## Resolved at finalization (2026-06-15)
+
+- **GUI framework → Streamlit** through Phase 2 (fast, already in use, single-operator). Revisit only if remote/multi-user is needed, alongside the §7.3 Mac-bridge upgrade.
+- **Intake → both:** a `Setup` form (writes `run.yaml`) for the durable scope, plus the chat dock for conversational framing/steering.
+- **Layout → tabs + global chrome** (see Console information architecture above); single source of truth per surface; no separate windows.
+
 ## Open questions
 
-- **GUI framework:** stay on Streamlit (fast, already in use, fine for a single operator) or move to a small FastAPI + web UI when multi-user/remote becomes a need? Recommendation: stay on Streamlit through Phase 2; revisit with the §7.3 Mac-bridge upgrade.
 - **Auth / multi-operator:** out of scope while it's a single-owner project; the append-only approval log should still record *who* approved for when that changes.
-- **How much of intake is chat vs. form:** start chat-first (lowest friction), promote the settled fields into `run.yaml` as they stabilize.
