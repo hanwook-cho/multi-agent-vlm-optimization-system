@@ -221,10 +221,20 @@ HYPOTHESIS_TABLE = [
         "model": "assembled ~450–600M VLM",
         "expected_gain": "edge-size model matching the LFM2 benchmark; right-sized architecture from the start",
         "gain_axis": "size+quality",
-        "status": "NOT_TRIED",
+        "status": "IN_PROGRESS",
         "phase": 2,
         "tier": "code",
-        "result_summary": "Same-family LM (Qwen2.5-0.5B ← Qwen2.5-3B) shares tokenizer/embedding space → easier distillation; small SigLIP gives the lean vision budget the 3B's 669M ViT cannot.",
+        "result_summary": (
+            "FIRST constructed student built end-to-end by the system (ADR-0012 B1.3, spec df64c49b): "
+            "Qwen2.5-0.5B + SigLIP-base, fresh MLP projector, align 200 + distill 1000 steps on the "
+            "481-img balanced cache. Result: DEGENERATE — POPE Overall null, RWQA 0.0, MMBench 0.0; "
+            "greedy output gibberish. Root cause: alignment never converged (align loss stayed ~2.38) "
+            "— 200 steps on a fresh projector is far too few, so projected vision tokens are noise and "
+            "the LM garbles. The loop works; the recipe needs SCALE-UP. Next spec: (1) many more align "
+            "steps until align loss actually drops (use the full coco_caption_5k, not the capped 481), "
+            "(2) larger balanced cache, (3) consider init=adapt:<small VLM> to skip projector cold-start. "
+            "Keep refining this hypothesis — do NOT abandon it."
+        ),
     },
 ]
 
@@ -599,7 +609,7 @@ Your job is to propose the single best next experiment to run, given:
 ## Phase 0 Baselines
 {baselines_json}
 
-## Open Hypotheses (NOT_TRIED — choose from these only)
+## Open Hypotheses (actionable — NOT_TRIED or IN_PROGRESS; choose from these only)
 {open_json}
 
 {closed_block}

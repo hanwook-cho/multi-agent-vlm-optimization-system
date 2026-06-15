@@ -242,8 +242,11 @@ class TestBuildSystemPrompt:
         )
         assert open_section_match
         open_json = json.loads(open_section_match.group(1))
+        # Open = actionable = NOT closed. NOT_TRIED and IN_PROGRESS (a hypothesis
+        # tried once but still being refined, e.g. P2-B1) are both valid here.
+        closed = {"CONFIRMED", "NULL_RESULT", "BLOCKED", "REGRESSED", "DEFERRED"}
         for h in open_json:
-            assert h["status"] == "NOT_TRIED"
+            assert h["status"] not in closed
 
     def test_closed_hypotheses_appear_in_closed_block(self):
         prompt = _build_system_prompt()

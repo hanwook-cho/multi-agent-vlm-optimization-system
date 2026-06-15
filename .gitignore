@@ -96,4 +96,5 @@ vendor/ml-fastvlm/
 *.xcuserstate
 xcuserdata/
 artifacts/experiment_queue.json
+artifacts/construction_queue.json
 artifacts/dossiers/

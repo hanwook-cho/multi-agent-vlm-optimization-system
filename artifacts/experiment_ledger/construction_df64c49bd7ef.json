@@ -1,0 +1,68 @@
+{
+  "experiment_id": "df64c49bd7ef57f0066051076ae50b0bff25a53d64ccdd689a77fff29a57c10a",
+  "kind": "student_construction",
+  "hypothesis_id": "P2-B1",
+  "rationale": "P2-D1/D2 both regressed distilling INTO LFM2 (already edge-optimized). Assemble a right-sized student from the Qwen2.5-VL-3B lineage so distillation ADDS capability; use qa_balanced_5k to avoid the P2-D2 presence-bias.",
+  "spec": {
+    "lm": "Qwen/Qwen2.5-0.5B-Instruct",
+    "vision": "google/siglip-base-patch16-224",
+    "projector": {
+      "type": "mlp",
+      "depth": 2,
+      "hidden": 2048
+    },
+    "init": "scratch",
+    "align": {
+      "data": "coco_caption_5k",
+      "steps": 2000
+    },
+    "distill": {
+      "teacher": "Qwen2.5-VL-3B",
+      "data": "qa_balanced_5k",
+      "lora_r": 16,
+      "epochs": 3,
+      "rehearse_frac": 0.2
+    },
+    "eval": {
+      "benchmarks": [
+        "POPE",
+        "RealWorldQA",
+        "MMBench_DEV_EN"
+      ],
+      "n": 100
+    },
+    "target_device_id": "mac_mini_m4_16gb",
+    "notes": "P2-B1: P2-D1/D2 both regressed distilling INTO LFM2 (already edge-optimized). Assemble "
+  },
+  "report": {
+    "experiment_id": "df64c49bd7ef57f0066051076ae50b0bff25a53d64ccdd689a77fff29a57c10a",
+    "status": "built",
+    "device_id": "mac_mini_m4_16gb",
+    "started_at": "2026-06-15T14:34:56.618699+00:00",
+    "completed_at": "2026-06-15T14:41:27.117554+00:00",
+    "align_final_loss": 2.3783981800079346,
+    "distill_final_loss": 0.7650077939033508,
+    "quality_scores": [
+      {
+        "benchmark": "POPE",
+        "metric": "Overall",
+        "value": null,
+        "delta_vs_benchmark": null
+      },
+      {
+        "benchmark": "RealWorldQA",
+        "metric": "Overall",
+        "value": 0.0,
+        "delta_vs_benchmark": -0.42
+      },
+      {
+        "benchmark": "MMBench_DEV_EN",
+        "metric": "Overall",
+        "value": 0.0,
+        "delta_vs_benchmark": -0.74
+      }
+    ],
+    "note": "built; run runners/eval_student.py for same-path scores."
+  },
+  "recorded_at": "2026-06-15T14:42:28.725335+00:00"
+}

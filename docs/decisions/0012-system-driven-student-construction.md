@@ -78,7 +78,9 @@ The distillation data recipe must support **balanced hard negatives** (yes/no qu
 - **B1.0 ✅ Generic builder skeleton + smoke.** `schemas/students.py` (`StudentSpec`, content-addressable) + `schemas/student_spec.schema.json` + `runners/build_student.py` assembling a `StudentVLM` (vision + MLP projector + LM, LLaVA-style prepend) and running assemble → align → distill → generate. Smoke verified on the 16GB Mac (SigLIP-base + Qwen2.5-0.5B). *(Human scaffold, once.)*
 - **B1.1 ✅ Balanced hard-negative QA recipe.** `distillation_pipeline.py` `--mode qa_balanced` emits grounded ~50/50 present("Yes")/absent("No") presence questions + open Q&A. Pilot: 6Y/6N balanced, grounded. *(The P2-D2 fix, parameterized; full cache is compute-gated.)*
 - **B1.2 ✅ Agent drives the builder.** `propose_student` tool on the Search Strategist emits a `StudentSpec`; `services/construction_loop.py` consumes it, runs `build_student`, and writes a `student_construction` ledger entry → next `propose_next()` re-routes. Verified live end-to-end (agent-enqueued P2-B1 spec → real assemble → smoke build → ledger). The construction loop is closed.
-- **B1.3 — First real construction run.** The agent runs its first P2-B1 spec (generate the balanced cache, build a real student); same-path MCQ eval vs the LFM2-VL-450M benchmark (bar: POPE ≥ ~86, no regression). Record; the agent proposes the next spec on the outcome.
+- **B1.3 ✅ First real construction run (proof-of-loop).** Agent-proposed spec `df64c49b` built end-to-end (assemble → align 200 + distill 1000 on the 481-img balanced cache → same-path eval → ledger). Result degenerate (POPE null, RWQA/MMBench 0.0) — expected for a capped run; alignment never converged (align loss ~2.38). The construction loop is proven; P2-B1 stays open with the result for the agent to refine (scale-up align/cache, or `init=adapt:`). See observation 2026-06-15-b13-first-constructed-student.md.
+
+## Status: B1.0–B1.3 complete — the system constructs students autonomously. Next is recipe scale-up (more alignment + larger cache), driven by the agent re-proposing P2-B1.
 
 ---
 
