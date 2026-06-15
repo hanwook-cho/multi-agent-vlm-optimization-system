@@ -70,8 +70,10 @@ Per user directive ("system should do, not human implement"), P2-B1 is built as 
 The architecture review surfaced that human interaction wasn't visible or built (gap B2). [ADR-0013](docs/decisions/0013-human-interface-operator-console.md) (Accepted) designs the operator console (intake / status / approvals / controls across chat + GUI + CLI), now shown as the top band of the [architecture figure](docs/assets/architecture.svg).
 
 - **H1 ✅:** `services/run_control.py` — operator pause/stop/kill over long runs; the build/distill/eval loops poll a control file at each checkpoint (stop = graceful save, kill = abort, ≤1 step lost), via `python -m services.run_control {pause,resume,stop,kill,status}`. Plus `run.yaml` intake (`schemas/run_config.py` + `configs/run.example.yaml`). Agent/chat backend configurable, **default local** (`_resolve_backend_name`; API opt-in only).
-- **H2 ✅:** `operator_console.py` (Streamlit) — live browser console: `streamlit run operator_console.py`. Monitor tab shows current run (stage/step/loss), queue depth, recent constructed-student scores, live log tail, and **working pause/stop/kill buttons** wired to run_control; Setup + Approvals tabs + chat-dock placeholder. Data layer in `services/console_data.py` (tested); verified via Streamlit AppTest.
-- **Next:** H2b chat dock → H3 approvals queue → H4 setup form + rationale.
+- **H2 ✅:** `operator_console.py` (Streamlit) — live browser console: `streamlit run operator_console.py`. Monitor tab shows current run (stage/step/loss), queue depth, recent constructed-student scores, live log tail, and **working pause/stop/kill buttons** wired to run_control. Data layer in `services/console_data.py` (tested); verified via Streamlit AppTest.
+- **H2b ✅:** chat dock wired to the Search Strategist (`SearchStrategist.chat` + `services/console_chat.py`, default-local, graceful offline) — one strategist session in the sidebar on every tab; explains/proposes, no gated action from chat.
+- **H3 ✅:** `services/approvals.py` — append-only approval queue (`request_approval`/`decide`/`wait_for_approval` + CLI), surfaced three ways (global bell, inline Monitor card, Approvals tab with history). One log, single source of truth.
+- **Next:** H4 setup form + rationale view; wire specific gates (deploy/escalate) to create approval requests.
 
 ---
 
