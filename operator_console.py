@@ -47,13 +47,30 @@ with st.sidebar:
     sel = st.radio("backend", ["local", "api"],
                    index=0 if _default_backend == "local" else 1,
                    key="backend_sel", horizontal=True)
+
+    # Resolve the effective backend + credentials passed to the strategist.
+    eff_backend, api_key, base_url, model = "local", None, None, None
     if sel == "local":
         if cd.local_server_up():
             st.caption("🟢 local · Qwen2.5-7B online")
         else:
             st.caption("🔴 local server offline — run scripts/start_strategist_llm.sh")
     else:
-        st.caption("api · frontier (needs ANTHROPIC_API_KEY)")
+        with st.expander("api configuration", expanded=True):
+            api_type = st.selectbox("type", ["anthropic", "openai-compatible"], key="api_type")
+            eff_backend = "anthropic" if api_type == "anthropic" else "openai_compat"
+            model = st.text_input(
+                "model", key="api_model",
+                value="claude-sonnet-4-5" if api_type == "anthropic" else "") or None
+            if api_type == "openai-compatible":
+                base_url = st.text_input("base url", key="api_base_url",
+                                         placeholder="https://api.example.com/v1") or None
+            api_key = st.text_input("api key", type="password", key="api_key",
+                                    placeholder="sk-…  (session only, not saved)") or None
+            st.caption("Key is held in this session only — never written to disk or logs."
+                       + ("  Falls back to ANTHROPIC_API_KEY if left blank."
+                          if api_type == "anthropic" else ""))
+
     for m in st.session_state.chat:
         st.chat_message(m["role"]).write(m["content"])
     with st.form("chat_form", clear_on_submit=True):
@@ -62,7 +79,8 @@ with st.sidebar:
     if sent and msg.strip():
         st.session_state.chat.append({"role": "user", "content": msg.strip()})
         reply = cc.chat_reply(msg.strip(), history=st.session_state.chat[:-1],
-                              backend=sel)
+                              backend=eff_backend, api_key=api_key,
+                              base_url=base_url, model=model)
         st.session_state.chat.append({"role": "assistant", "content": reply})
         st.rerun()
     st.caption("proposes & explains; gated actions need approval")

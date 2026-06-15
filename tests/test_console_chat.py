@@ -8,15 +8,16 @@ import types
 import services.console_chat as cc
 
 
+_CAPTURED = {}
+
+
 def _install_fake_strategist(monkeypatch, reply=None, raises=None):
     mod = types.ModuleType("agents.search_strategist")
 
     class FakeStrategist:
-        def __init__(self, backend=None, verbose=True):
-            self.backend = backend
-            if raises:
-                # raise at construction to simulate import/connect failure
-                pass
+        def __init__(self, **kwargs):
+            _CAPTURED.clear()
+            _CAPTURED.update(kwargs)
 
         def chat(self, message, history=None):
             if raises:
@@ -42,3 +43,20 @@ def test_chat_reply_handles_offline_gracefully(monkeypatch):
 def test_chat_reply_empty_reply_falls_back(monkeypatch):
     _install_fake_strategist(monkeypatch, reply="")
     assert cc.chat_reply("hi") == "(no reply)"
+
+
+def test_chat_reply_forwards_api_credentials(monkeypatch):
+    _install_fake_strategist(monkeypatch, reply="ok")
+    cc.chat_reply("hi", backend="openai_compat", api_key="sk-test",
+                  base_url="https://x/v1", model="gpt-x")
+    assert _CAPTURED["backend"] == "openai_compat"
+    assert _CAPTURED["api_key"] == "sk-test"
+    assert _CAPTURED["base_url"] == "https://x/v1"
+    assert _CAPTURED["model"] == "gpt-x"
+
+
+def test_chat_reply_anthropic_key_falls_back_to_env(monkeypatch):
+    _install_fake_strategist(monkeypatch, reply="ok")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-env")
+    cc.chat_reply("hi", backend="anthropic")  # no key passed → env fallback
+    assert _CAPTURED["api_key"] == "sk-env"
