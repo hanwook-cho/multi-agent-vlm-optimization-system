@@ -61,9 +61,9 @@
 Per user directive ("system should do, not human implement"), P2-B1 is built as a **system capability**, not a hand-made model: the human writes one generic builder; the agent constructs every student by proposing a declarative `StudentSpec`. See [ADR-0012](docs/decisions/0012-system-driven-student-construction.md). Sequenced B1.0 → B1.3:
 
 - **B1.0 ✅ — generic builder skeleton + end-to-end smoke.** `schemas/students.py` (`StudentSpec`, content-addressable like `ExperimentConfig`) + `schemas/student_spec.schema.json` (+ fixture, in the schema-consistency suite). `runners/build_student.py` assembles a `StudentVLM` (vision encoder + fresh MLP projector + causal LM, LLaVA-style prepend) and runs **assemble → align (projector-only) → distill (LoRA + projector) → generate**. Smoke verified on the 16GB Mac: SigLIP-base (vdim 768) + Qwen2.5-0.5B (H 896), projector 3.4M params, all stages ran, forward+decode works (output gibberish as expected after 2 steps — wiring, not quality). 62/62 tests pass.
-- **B1.1 (next)** — balanced hard-negative QA recipe (absent-object questions, the P2-D2 fix) as a `distill.data` option.
-- **B1.2** — Search Strategist proposes a `StudentSpec` → builder runs → ledger → re-route (construction loop closed).
-- **B1.3** — first real construction run; wire the assembled student into the same-path VLMEvalKit eval; score vs the LFM2-VL-450M benchmark (POPE ≥ ~86).
+- **B1.1 ✅ — balanced hard-negative QA recipe (the P2-D2 fix).** `services/distillation_pipeline.py` gained `--mode qa_balanced`: per image it (1) keeps the open attribute/spatial Q&A, (2) gets the teacher's grounded list of *present* objects → "Yes", (3) confirms a sample of COCO-80 objects are *absent* → "No", emitting `min(#present, #absent, k)` of EACH so presence is **~50/50** — directly preventing the always-"Yes" collapse. Pilot (6 images): presence **6Y/6N** balanced, grounded (Yes=tennis racket/chair/cat/knife; No=traffic light/couch/boat/stop sign) + open kept. Parsing helpers unit-tested (CI-safe). Full balanced cache is a compute-gated B1.3 step.
+- **B1.2 (next)** — Search Strategist proposes a `StudentSpec` → builder runs → ledger → re-route (construction loop closed).
+- **B1.3** — first real construction run (generate the balanced cache, build a real student); wire the assembled student into the same-path VLMEvalKit eval; score vs the LFM2-VL-450M benchmark (POPE ≥ ~86).
 
 ---
 

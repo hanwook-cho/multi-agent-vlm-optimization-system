@@ -49,7 +49,11 @@ from schemas.students import StudentSpec  # noqa: E402
 DATA_REGISTRY: dict[str, tuple[str, str]] = {
     "coco_caption_5k": ("datasets/caption_cache/qwen25_3b_coco5k.jsonl", "datasets/coco_train2017"),
     "qa_5k":           ("datasets/caption_cache/qwen25_3b_qa5k.jsonl",   "datasets/coco_train2017"),
-    "qa_balanced_5k":  ("datasets/caption_cache/qwen25_3b_qa5k.jsonl",   "datasets/coco_train2017"),  # B1.1 will swap in the balanced cache
+    # B1.1 balanced hard-negative recipe exists (services/distillation_pipeline.py
+    # --mode qa_balanced). The full balanced cache is a compute-gated B1.3 step;
+    # until generated, this key falls back to the plain qa5k cache so the smoke runs.
+    "qa_balanced_5k":  ("datasets/caption_cache/qwen25_3b_qa_balanced5k.jsonl", "datasets/coco_train2017"),
+    "qa_balanced_5k_fallback": ("datasets/caption_cache/qwen25_3b_qa5k.jsonl",  "datasets/coco_train2017"),
     "canary":          ("datasets/caption_cache/canary.jsonl",          "datasets/coco_train2017"),
 }
 
@@ -64,7 +68,15 @@ def _resolve_data(key: str) -> tuple[Path, Path]:
     if key not in DATA_REGISTRY:
         raise SystemExit(f"unknown data key '{key}' — known: {sorted(DATA_REGISTRY)}")
     cache, images = DATA_REGISTRY[key]
-    return PROJECT_ROOT / cache, PROJECT_ROOT / images
+    cache_p, images_p = PROJECT_ROOT / cache, PROJECT_ROOT / images
+    # If the primary cache isn't generated yet but a '<key>_fallback' exists, use it.
+    if not cache_p.exists() and f"{key}_fallback" in DATA_REGISTRY:
+        fb_cache, fb_images = DATA_REGISTRY[f"{key}_fallback"]
+        fb_cache_p = PROJECT_ROOT / fb_cache
+        if fb_cache_p.exists():
+            print(f"  note: '{key}' cache not built yet → falling back to '{key}_fallback'")
+            return fb_cache_p, PROJECT_ROOT / fb_images
+    return cache_p, images_p
 
 
 # ── Assembled student ─────────────────────────────────────────────────────────

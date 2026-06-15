@@ -88,6 +88,74 @@ def _parse_qa(text: str) -> list[tuple[str, str]]:
     return pairs
 
 
+# ── B1.1: balanced hard-negative QA (the P2-D2 fix) ──────────────────────────
+# P2-D2 regressed because the teacher Q&A asked mostly about objects that ARE
+# present → the student learned an always-"Yes" presence prior (POPE acc 50,
+# recall 100). The fix is to teach grounded *absence* too: emit equal numbers of
+# present-object ("Yes") and confirmed-absent-object ("No") presence questions,
+# the exact balance POPE measures. Labels stay grounded in the teacher (it lists
+# what it sees and confirms what it doesn't), not in random sampling.
+
+# COCO-80 thing classes — the candidate pool for plausible hard negatives.
+COCO80 = [
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck",
+    "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench",
+    "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra",
+    "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove",
+    "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup",
+    "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange",
+    "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse",
+    "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink",
+    "refrigerator", "book", "clock", "vase", "scissors", "teddy bear",
+    "hair drier", "toothbrush",
+]
+
+VISIBLE_PROBE = (
+    "List every distinct object you can clearly see in this image as lowercase "
+    "singular nouns, comma-separated. Only list what is actually visible."
+)
+ABSENCE_PROBE_TMPL = (
+    "For EACH object in this list, say whether it is clearly visible in the image. "
+    "Answer with exactly one line per object in the form '<object>: yes' or "
+    "'<object>: no'.\nObjects: {cands}"
+)
+
+
+def _is_yesno(answer: str) -> bool:
+    return answer.strip().lower().rstrip(".") in {"yes", "no"}
+
+
+def _parse_object_list(text: str) -> list[str]:
+    """Parse a comma/newline-separated object list into normalized lowercase nouns."""
+    raw = text.replace("\n", ",").split(",")
+    objs: list[str] = []
+    for tok in raw:
+        t = tok.strip().lower().strip(".-•* ")
+        # drop leading articles / numbering noise
+        for pre in ("a ", "an ", "the "):
+            if t.startswith(pre):
+                t = t[len(pre):]
+        if t and t.replace(" ", "").isalpha() and len(t) <= 20:
+            objs.append(t)
+    return objs
+
+
+def _parse_presence_labels(text: str) -> dict[str, bool]:
+    """Parse '<object>: yes/no' lines → {object: present?}."""
+    labels: dict[str, bool] = {}
+    for line in text.splitlines():
+        if ":" not in line:
+            continue
+        obj, _, val = line.partition(":")
+        v = val.strip().lower().rstrip(".")
+        obj = obj.strip().lower().strip("-•* ")
+        if obj and v in {"yes", "no"}:
+            labels[obj] = (v == "yes")
+    return labels
+
+
 def _load_done(out_path: Path) -> set[str]:
     """Return the set of image filenames already present in the cache (for resume)."""
     done: set[str] = set()
@@ -219,18 +287,124 @@ def generate_qa_cache(
     return pairs_total
 
 
+def generate_balanced_qa_cache(
+    image_dir: Path,
+    out_path: Path,
+    limit: int | None = None,
+    pairs_per_image: int = 2,
+    seed: int = 0,
+    teacher_model_id: str = TEACHER_MODEL_ID,
+    device: str | None = None,
+) -> int:
+    """B1.1: task-aligned Q&A with BALANCED grounded presence questions (the P2-D2 fix).
+
+    Per image (3 teacher calls):
+      1. QA_GEN  → keep the OPEN (non yes/no) pairs for attribute/spatial skill.
+      2. VISIBLE → grounded list of present objects (positives → "Yes").
+      3. ABSENCE → confirm a sample of COCO-80 objects NOT in the visible list are
+                   absent (grounded negatives → "No").
+    Emits min(#present, #absent, pairs_per_image) of EACH presence class so the
+    yes/no balance is ~50/50 — preventing the always-"Yes" collapse that broke P2-D2.
+
+    Records carry a `kind`: "open" | "presence". Resumable at image granularity.
+    Compute note: 3 teacher calls/image (~3× the plain qa cache) — pilot with --limit.
+    """
+    import random
+    rng = random.Random(seed)
+    device = device or ("mps" if torch.backends.mps.is_available() else "cpu")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    names = list_images(image_dir, limit)
+    done = _load_done(out_path)
+    todo = [n for n in names if n not in done]
+
+    print(f"  teacher : {teacher_model_id}  (mode=qa_balanced)")
+    print(f"  images  : {len(names)} total, {len(done)} cached, {len(todo)} to do")
+    if not todo:
+        print("  nothing to do — cache already complete for this set.")
+        return 0
+
+    print(f"  loading teacher on {device} …")
+    model, processor = load_qwen25vl(device)
+
+    written = pairs_total = n_yes = n_no = n_open = 0
+    with out_path.open("a") as f:
+        for i, name in enumerate(todo):
+            try:
+                image = Image.open(image_dir / name).convert("RGB")
+                # 1. open QA (attribute/spatial — keep only non-yes/no)
+                open_pairs = [(q, a) for q, a in _parse_qa(
+                    infer_qwen25vl(model, processor, image, QA_GEN_PROMPT, device))
+                    if not _is_yesno(a)]
+                # 2. present objects (grounded positives)
+                present = _parse_object_list(
+                    infer_qwen25vl(model, processor, image, VISIBLE_PROBE, device))
+                present = [o for o in dict.fromkeys(present) if o in COCO80]
+                # 3. confirm grounded negatives from non-present COCO-80
+                cand_pool = [o for o in COCO80 if o not in present]
+                cands = rng.sample(cand_pool, min(8, len(cand_pool)))
+                labels = _parse_presence_labels(infer_qwen25vl(
+                    model, processor, image,
+                    ABSENCE_PROBE_TMPL.format(cands=", ".join(cands)), device))
+                absent = [o for o in cands if labels.get(o) is False]
+            except Exception as exc:
+                print(f"\n  WARN {name}: {exc}")
+                continue
+
+            rng.shuffle(present); rng.shuffle(absent)
+            m = min(len(present), len(absent), pairs_per_image)  # 50/50 presence
+            recs = []
+            for q, a in open_pairs:
+                recs.append({"prompt": q, "target": a, "kind": "open"})
+            for o in present[:m]:
+                recs.append({"prompt": f"Is there a {o} in the image?", "target": "Yes",
+                             "kind": "presence"})
+            for o in absent[:m]:
+                recs.append({"prompt": f"Is there a {o} in the image?", "target": "No",
+                             "kind": "presence"})
+
+            ts = datetime.now(timezone.utc).isoformat()
+            for r in recs:
+                f.write(json.dumps({"image": name, **r, "teacher": teacher_model_id,
+                                    "ts": ts}) + "\n")
+                pairs_total += 1
+                n_yes += r["target"] == "Yes" and r["kind"] == "presence"
+                n_no += r["target"] == "No" and r["kind"] == "presence"
+                n_open += r["kind"] == "open"
+            f.flush()
+            written += 1
+            if i % 10 == 0:
+                print(f"    [{i}/{len(todo)}] {name}: +{len(recs)} ({m}Y/{m}N presence, "
+                      f"{len(open_pairs)} open)")
+
+    print(f"  done — {pairs_total} pairs from {written} images "
+          f"(presence {n_yes}Y/{n_no}N, open {n_open}) → {out_path}")
+    return pairs_total
+
+
 def main():
     ap = argparse.ArgumentParser(description="Generate teacher distillation cache (Phase 2 Strategy B)")
     ap.add_argument("--images", required=True, help="Directory of training images")
     ap.add_argument("--out", required=True, help="Output JSONL cache path")
-    ap.add_argument("--mode", choices=["caption", "qa"], default="caption",
-                    help="caption (P2-D1) or qa = task-aligned grounded Q&A (P2-D2)")
+    ap.add_argument("--mode", choices=["caption", "qa", "qa_balanced"], default="caption",
+                    help="caption (P2-D1), qa = task-aligned Q&A (P2-D2), "
+                         "qa_balanced = grounded 50/50 yes/no presence + open (B1.1 fix)")
     ap.add_argument("--limit", type=int, default=None, help="Max images (use for the pilot, e.g. 50)")
+    ap.add_argument("--pairs-per-image", type=int, default=2,
+                    help="qa_balanced: max present/absent presence Qs per class per image")
     ap.add_argument("--prompt", default=CAPTION_PROMPT, help="Caption prompt (caption mode only)")
+    ap.add_argument("--seed", type=int, default=0, help="qa_balanced negative-sampling seed")
     ap.add_argument("--device", default=None, help="mps/cpu (auto-detected)")
     args = ap.parse_args()
 
-    if args.mode == "qa":
+    if args.mode == "qa_balanced":
+        n = generate_balanced_qa_cache(
+            image_dir=Path(args.images), out_path=Path(args.out),
+            limit=args.limit, pairs_per_image=args.pairs_per_image,
+            seed=args.seed, device=args.device,
+        )
+        print(f"\n✅ {n} pairs cached (task-aligned + balanced hard negatives, B1.1).")
+    elif args.mode == "qa":
         n = generate_qa_cache(
             image_dir=Path(args.images), out_path=Path(args.out),
             limit=args.limit, device=args.device,

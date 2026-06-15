@@ -75,10 +75,10 @@ The distillation data recipe must support **balanced hard negatives** (yes/no qu
 
 ## Plan (sequenced, each step independently verifiable)
 
-- **B1.0 — Generic builder skeleton + smoke.** `StudentSpec` schema + `build_student.py` that assembles the VLM (LM + vision + projector forward pass) and runs a *tiny* end-to-end smoke (1-step align, 1-step distill, 5-sample eval) on the 16GB Mac. Proves the pipeline wires together before any real run. *(Human scaffold, once.)*
-- **B1.1 — Balanced hard-negative QA recipe.** Extend `distillation_pipeline.py` `mode=qa` to generate ~50/50 present/absent object questions; expose as a `distill.data` option. *(The P2-D2 fix, parameterized.)*
+- **B1.0 ✅ Generic builder skeleton + smoke.** `schemas/students.py` (`StudentSpec`, content-addressable) + `schemas/student_spec.schema.json` + `runners/build_student.py` assembling a `StudentVLM` (vision + MLP projector + LM, LLaVA-style prepend) and running assemble → align → distill → generate. Smoke verified on the 16GB Mac (SigLIP-base + Qwen2.5-0.5B). *(Human scaffold, once.)*
+- **B1.1 ✅ Balanced hard-negative QA recipe.** `distillation_pipeline.py` `--mode qa_balanced` emits grounded ~50/50 present("Yes")/absent("No") presence questions + open Q&A. Pilot: 6Y/6N balanced, grounded. *(The P2-D2 fix, parameterized; full cache is compute-gated.)*
 - **B1.2 — Agent drives the builder.** Strategist proposes a `StudentSpec`; `build_student` executes; result → ledger → re-route. The construction loop is now closed.
-- **B1.3 — First real construction run.** The agent runs its first P2-B1 spec; same-path MCQ eval vs the LFM2-VL-450M benchmark (bar: POPE ≥ ~86, no regression). Record; the agent proposes the next spec on the outcome.
+- **B1.3 — First real construction run.** The agent runs its first P2-B1 spec (generate the balanced cache, build a real student); same-path MCQ eval vs the LFM2-VL-450M benchmark (bar: POPE ≥ ~86, no regression). Record; the agent proposes the next spec on the outcome.
 
 ---
 
