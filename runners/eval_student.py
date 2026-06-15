@@ -36,6 +36,7 @@ def evaluate(build_dir: Path, benchmarks: list[str], n: int, out_dir: Path) -> d
     from runners.eval_vlmeval import (
         get_dataset_slice, get_image_path, build_mcq_question, score_benchmark,
     )
+    from services import run_control as rc
 
     out_dir.mkdir(parents=True, exist_ok=True)
     scratch = out_dir / "_eval_scratch"; scratch.mkdir(exist_ok=True)
@@ -51,6 +52,11 @@ def evaluate(build_dir: Path, benchmarks: list[str], n: int, out_dir: Path) -> d
         for i, (_, row) in enumerate(df.iterrows()):
             if i % 10 == 0:
                 print(f"    [{i}/{n}] …", end="\r", flush=True)
+            try:
+                rc.check()  # operator stop/kill honored between samples
+            except rc.RunStopped as e:
+                print(f"\n    operator '{e.mode}' during eval — halting")
+                raise
             try:
                 question, is_mcq = build_mcq_question(row)
                 preds.append(model.infer(get_image_path(ds, row, bench), question, is_mcq))

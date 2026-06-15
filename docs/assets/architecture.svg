@@ -31,18 +31,18 @@
     <text x="102" y="108" text-anchor="middle" class="ts">you · chat/CLI today</text></g>
   <line class="arr" x1="164" y1="94" x2="206" y2="94" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
 
-  <g class="planned"><rect x="208" y="70" width="168" height="48" rx="6"/>
+  <g class="partial"><rect x="208" y="70" width="168" height="48" rx="6"/>
     <text x="292" y="91" text-anchor="middle" class="th">Goal &amp; scope intake</text>
-    <text x="292" y="108" text-anchor="middle" class="ts">start: goals, eval set</text></g>
+    <text x="292" y="108" text-anchor="middle" class="ts">run.yaml + chat</text></g>
   <g class="partial"><rect x="392" y="70" width="160" height="48" rx="6"/>
     <text x="472" y="91" text-anchor="middle" class="th">Status dashboard</text>
     <text x="472" y="108" text-anchor="middle" class="ts">progress · logs · Pareto</text></g>
   <g class="planned"><rect x="568" y="70" width="172" height="48" rx="6"/>
     <text x="654" y="91" text-anchor="middle" class="th">Approvals &amp; gates</text>
     <text x="654" y="108" text-anchor="middle" class="ts">deploy · spec · escalate</text></g>
-  <g class="planned"><rect x="756" y="70" width="170" height="48" rx="6"/>
+  <g class="partial"><rect x="756" y="70" width="170" height="48" rx="6"/>
     <text x="841" y="91" text-anchor="middle" class="th">Run controls</text>
-    <text x="841" y="108" text-anchor="middle" class="ts">pause · stop · kill</text></g>
+    <text x="841" y="108" text-anchor="middle" class="ts">pause · stop · kill (CLI)</text></g>
 
   <text x="567" y="140" text-anchor="middle" class="lbl">Operator console — chat + CLI today; unified GUI planned (the dashboard is partial)</text>
   <line class="div" x1="30" y1="156" x2="950" y2="156"/>

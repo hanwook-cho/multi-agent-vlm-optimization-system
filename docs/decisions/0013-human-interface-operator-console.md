@@ -41,7 +41,7 @@ Cross-cutting:
 
 **Build (phased, smallest-useful-first):**
 
-- **H1 — Run config + controls (highest value, smallest).** A `run.yaml` intake (goal, criteria, device, eval set, allowed search space) read by the loop; a control file/flag the runners poll so the human can `pause`/`stop`/`kill` (CLI writes it; runners check it between steps — the loops already checkpoint per step). This closes the "no kill switch" gap directly.
+- **H1 — Run config + controls (highest value, smallest). ✅ DONE (2026-06-15).** `services/run_control.py` — pause/stop/kill via a control file the long loops poll at each checkpoint (`rc.checkpoint()` in `build_student._train_loop` and the eval loop; a `TrainerCallback` in `finetune_vlm`). stop = graceful (caller saves), kill = abort, pause = block until resume; a halted run costs ≤1 step (consistent with §7.4). CLI: `python -m services.run_control {status,pause,resume,stop,kill,clear}`. Intake: `schemas/run_config.py` + `configs/run.example.yaml` (`run.yaml` → goal, criteria, device, eval set, allowed hypotheses), stamped into the build record. Enforcing `allowed_hypotheses` against the strategist's proposals is deferred to a later step. 11 tests.
 - **H2 — Live status on the dashboard.** Extend `dashboard.py` with a "Runs" tab: queue depth, current experiment, last-N ledger rows, live log tail, and a kill button wired to H1's control flag.
 - **H3 — Approvals inbox.** A persisted append-only approval queue (the HLD §6.1 #8 component) surfaced as a dashboard tab + notification; gated actions block on it. Decision Dossiers (§4.2) render here.
 - **H4 — Strategist rationale view.** Surface the agent's proposal rationale + the hypothesis table state read-only, so the human understands *why* before approving.

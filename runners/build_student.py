@@ -230,12 +230,25 @@ def _prompt_inputs(row: dict, tokenizer, image_processor, device: str):
 # ── Stages ──────────────────────────────────────────────────────────────────
 
 def _train_loop(model, rows, tokenizer, image_processor, device, steps, lr, label):
-    """Minimal batch-1 training loop over the given trainable params (already set)."""
+    """Minimal batch-1 training loop over the given trainable params (already set).
+
+    Polls the operator run control (ADR-0013 H1) between steps: pause blocks here,
+    stop ends the stage gracefully (caller still saves), kill aborts the build.
+    """
+    from services import run_control as rc
     params = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=lr)
     model.train()
     losses = []
     for i in range(steps):
+        try:
+            rc.checkpoint()
+        except rc.RunStopped as e:
+            print(f"    [{label}] operator '{e.mode}' at step {i+1}/{steps}"
+                  + (f" ({e.reason})" if e.reason else ""))
+            if e.mode == "kill":
+                raise
+            break  # stop: graceful — return what we have, caller saves
         row = rows[i % len(rows)]
         input_ids, attn, pixel_values, labels = _encode(row, tokenizer, image_processor, device)
         out = model(input_ids=input_ids, attention_mask=attn,
@@ -341,6 +354,17 @@ def build(spec: StudentSpec, out_dir: Path, smoke: bool,
     started = datetime.now(timezone.utc)
     print(f"▶ build_student  spec={exp_id[:12]}  device={device}  smoke={smoke}")
 
+    # Operator intake (ADR-0013 H1): stamp the authorized goal/scope if a run.yaml exists.
+    run_meta = None
+    run_yaml = PROJECT_ROOT / "run.yaml"
+    if run_yaml.exists():
+        try:
+            from schemas.run_config import load_run_config
+            run_meta = json.loads(load_run_config(run_yaml).model_dump_json())
+            print(f"  run.yaml  : {run_meta['goal'][:70]}")
+        except Exception as exc:
+            print(f"  WARN: run.yaml present but unreadable: {exc}")
+
     if smoke:
         align_steps, distill_steps_eff, eval_n, data_limit = 2, 2, 3, 8
     else:
@@ -373,6 +397,7 @@ def build(spec: StudentSpec, out_dir: Path, smoke: bool,
         "distill_losses": distill_losses,
         "generations": gens,
         "student_dir": saved_dir,
+        "run_config": run_meta,
         "note": ("smoke — assemble+align+distill+generate wired end-to-end."
                  if smoke else "built; run runners/eval_student.py for same-path scores."),
     }

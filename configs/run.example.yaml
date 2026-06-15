@@ -1,0 +1,24 @@
+# Operator run intake (ADR-0013 H1) — the "goal & scope" the human authorizes.
+# Copy to run.yaml and edit; the build/loop stamps it into the run record.
+# Controls (pause/stop/kill) are separate: `python -m services.run_control status`.
+
+goal: "Construct a ~450M edge VLM from the Qwen2.5-VL-3B lineage that matches the LFM2-VL-450M benchmark on MCQ."
+
+# Named numeric bars (same-path). Empty = qualitative only.
+success_criteria:
+  POPE: 86.0
+  RealWorldQA: 0.42
+  MMBench_DEV_EN: 0.74
+
+target_device: mac_mini_m4_16gb
+
+eval_set:
+  - POPE
+  - RealWorldQA
+  - MMBench_DEV_EN
+
+# Hypothesis ids the agent may pursue this run (empty list = all open hypotheses).
+allowed_hypotheses:
+  - P2-B1
+
+notes: "Phase 2 / ADR-0012 system-driven construction; scale-up after the B1.3 first run."

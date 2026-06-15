@@ -193,6 +193,23 @@ def finetune(
     print(f"  LoRA      : r={LORA_R} alpha={LORA_ALPHA} targets={LORA_TARGETS}")
     print(f"  schedule  : {epochs} epochs, lr={lr}, eff-batch={batch_size*grad_accum}, seed={seed}")
 
+    # Operator run controls (ADR-0013 H1): a callback polls the control flag each
+    # step — pause blocks, stop ends training gracefully (HF saves), kill aborts.
+    from transformers import TrainerCallback
+    from services import run_control as rc
+
+    class _RunControlCallback(TrainerCallback):
+        def on_step_end(self, args, state, control, **kwargs):
+            try:
+                rc.checkpoint()
+            except rc.RunStopped as e:
+                print(f"  operator '{e.mode}' at step {state.global_step}"
+                      + (f" ({e.reason})" if e.reason else ""))
+                if e.mode == "kill":
+                    raise
+                control.should_training_stop = True  # stop: graceful
+            return control
+
     processor = AutoProcessor.from_pretrained(base_model, trust_remote_code=True)
     model = AutoModelForImageTextToText.from_pretrained(
         base_model, torch_dtype=torch.float32, trust_remote_code=True
@@ -224,7 +241,8 @@ def finetune(
         seed=seed,
         # MPS is auto-detected in transformers 5.x (use_mps_device was removed).
     )
-    trainer = Trainer(model=model, args=args, train_dataset=ds, data_collator=collator)
+    trainer = Trainer(model=model, args=args, train_dataset=ds, data_collator=collator,
+                      callbacks=[_RunControlCallback()])
 
     started = datetime.now(timezone.utc)
     trainer.train()
