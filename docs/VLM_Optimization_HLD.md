@@ -200,7 +200,7 @@ This is what falls out of §§2–5. Some components are agents (LLM-driven), ot
 
 ![Multi-agent VLM optimization system architecture](assets/architecture.svg)
 
-*Figure 1 — system architecture, color-coded by implementation status (built / partial / planned) as of June 2026. The built core is the Mode A loop: the Search Strategist proposes either a config experiment or a student-construction spec (§6.5 / ADR-0012), deterministic services run and evaluate it on a held-constant path, results land in the experiment ledger, and the Pareto Tracker drives the agent's re-route. The Research Analyst, Technique Registry (§6.5.3 seam), Human Approval Queue, and Deployment Dispatcher are planned (Mode B / Phase 3). The Threshold Monitor + Decision Dossier exist as a scaffold.*
+*Figure 1 — system architecture, color-coded by implementation status (built / partial / planned) as of June 2026. The built core is the Mode A loop: the Search Strategist proposes either a config experiment or a student-construction spec (§6.5 / ADR-0012), deterministic services run and evaluate it on a held-constant path, results land in the experiment ledger, and the Pareto Tracker drives the agent's re-route. The Research Analyst, Technique Registry (§6.5.3 seam), and Human Approval Queue are planned (Mode B / Phase 3). The Threshold Monitor + Decision Dossier exist as a scaffold, and the Deployment Dispatcher is partial — the Experiment Runner already writes an iPhone-ready flag for the manual device hand-off, but the full export-pipeline service is not built.*
 
 ### 6.1 The components
 

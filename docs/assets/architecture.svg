@@ -77,9 +77,9 @@
   <g class="planned"><rect x="300" y="568" width="266" height="50" rx="6"/>
     <text x="433" y="591" text-anchor="middle" class="th">Human approval queue</text>
     <text x="433" y="609" text-anchor="middle" class="ts">gates: promote · deploy · escalate</text></g>
-  <g class="planned"><rect x="76" y="568" width="170" height="50" rx="6"/>
+  <g class="partial"><rect x="76" y="568" width="170" height="50" rx="6"/>
     <text x="161" y="591" text-anchor="middle" class="th">Deployment dispatcher</text>
-    <text x="161" y="609" text-anchor="middle" class="ts">export → device</text></g>
+    <text x="161" y="609" text-anchor="middle" class="ts">iPhone-ready flag · manual</text></g>
 
   <text x="480" y="664" text-anchor="middle" class="lbl">Mode A loop (built): propose → run / construct → eval same-path → ledger → Pareto → re-route</text>
   <text x="480" y="684" text-anchor="middle" class="lbl">Mode B (planned, phase 3): Research analyst → technique registry feeds the strategist's search space</text>
