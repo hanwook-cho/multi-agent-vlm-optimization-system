@@ -20,6 +20,7 @@ from services import run_control as rc
 from services import console_data as cd
 from services import console_chat as cc
 from services import approvals as ap
+from schemas.run_config import RunConfig, load_run_config, save_run_config
 
 ROOT = Path(__file__).parent
 
@@ -149,17 +150,53 @@ with tab_mon:
     # Auto-refresh the live panel without blocking the controls above.
     st.fragment(_live_monitor, run_every=f"{every}s" if auto else None)()
 
-# ── Setup (H4: form writes run.yaml; today shows the config) ────────────────────
+# ── Setup (H4) — form writes run.yaml ───────────────────────────────────────────
+_ALL_BENCH = ["POPE", "RealWorldQA", "MMBench_DEV_EN"]
 with tab_setup:
     st.markdown("#### Run configuration")
+    st.caption(f"Authorizes the run; writes {cd.RUN_YAML.name}. The agent proposes within this scope.")
+
+    # Prefill from run.yaml, else the example template.
+    try:
+        _src = cd.RUN_YAML if cd.RUN_YAML.exists() else (ROOT / "configs" / "run.example.yaml")
+        cur = load_run_config(_src)
+    except Exception:
+        cur = RunConfig(goal="")
+
+    _hyp_ids = [r["id"] for r in cd.hypothesis_rows()]
+    with st.form("setup_form"):
+        goal = st.text_area("goal", value=cur.goal, height=70)
+        sc = st.columns(3)
+        pope = sc[0].number_input("POPE ≥", value=float(cur.success_criteria.get("POPE", 86.0)), step=1.0)
+        rwqa = sc[1].number_input("RealWorldQA ≥", value=float(cur.success_criteria.get("RealWorldQA", 0.42)), step=0.01, format="%.2f")
+        mmb = sc[2].number_input("MMBench ≥", value=float(cur.success_criteria.get("MMBench_DEV_EN", 0.74)), step=0.01, format="%.2f")
+        c2 = st.columns(2)
+        device = c2[0].selectbox("target device", ["mac_mini_m4_16gb", "iphone16pro-001"],
+                                 index=0 if cur.target_device == "mac_mini_m4_16gb" else 1)
+        cbackend = c2[1].selectbox("chat backend (run default)", ["local", "api"],
+                                   index=0 if cur.chat_backend == "local" else 1)
+        eval_set = st.multiselect("eval set", _ALL_BENCH,
+                                  default=[b for b in cur.eval_set if b in _ALL_BENCH] or _ALL_BENCH)
+        allowed = st.multiselect("allowed hypotheses (empty = all open)", _hyp_ids or cur.allowed_hypotheses,
+                                 default=[h for h in cur.allowed_hypotheses if not _hyp_ids or h in _hyp_ids])
+        notes = st.text_input("notes", value=cur.notes or "")
+        saved = st.form_submit_button("save run.yaml", width="stretch")
+
+    if saved:
+        try:
+            crit = {"POPE": pope, "RealWorldQA": rwqa, "MMBench_DEV_EN": mmb}
+            cfg = RunConfig(goal=goal, success_criteria={k: v for k, v in crit.items() if k in eval_set},
+                            target_device=device, eval_set=eval_set, allowed_hypotheses=allowed,
+                            chat_backend=cbackend, notes=notes or None)
+            save_run_config(cfg, cd.RUN_YAML)
+            st.success(f"saved {cd.RUN_YAML.name}")
+            st.rerun()
+        except Exception as exc:
+            st.error(f"invalid config: {exc}")
+
     if cd.RUN_YAML.exists():
-        st.caption(f"Active intake — {cd.RUN_YAML}")
-        st.code(cd.RUN_YAML.read_text(), language="yaml")
-    else:
-        ex = ROOT / "configs" / "run.example.yaml"
-        st.info("No run.yaml yet. Copy the template below to run.yaml and edit (the form is H4).")
-        if ex.exists():
-            st.code(ex.read_text(), language="yaml")
+        with st.expander("current run.yaml"):
+            st.code(cd.RUN_YAML.read_text(), language="yaml")
 
 # ── Approvals (H3) — one queue, three surfaces (bell, Monitor card, here) ───────
 with tab_appr:
@@ -186,3 +223,16 @@ with tab_appr:
                 mark = "✓" if r["status"] == "approved" else "✗"
                 st.write(f"{mark} [{r['id']}] {r['kind']}: {r['summary']} — {r['status']}"
                          + (f" · {r['note']}" if r.get("note") else ""))
+
+    st.markdown("#### Strategy context")
+    st.caption("Why the agent is where it is — context for the decisions above.")
+    props = cd.latest_proposals()
+    if props:
+        for p in props:
+            st.markdown(f"**{p['hypothesis'] or p['kind']}** · {p['proposed_at'][:19]}")
+            if p["rationale"]:
+                st.caption(p["rationale"])
+    hrows = cd.hypothesis_rows()
+    if hrows:
+        with st.expander("hypothesis table"):
+            st.dataframe(hrows, width="stretch", hide_index=True)

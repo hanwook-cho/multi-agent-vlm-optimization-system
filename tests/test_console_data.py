@@ -91,3 +91,30 @@ def test_runlog_tee_writes_file(tmp_path, monkeypatch):
     with runlog.tee_stdout("myrun") as p:
         print("hello from the run")
     assert p.exists() and "hello from the run" in p.read_text()
+
+
+def test_latest_proposals(tmp_path, monkeypatch):
+    cq = tmp_path / "cq.json"
+    cq.write_text(json.dumps([{"hypothesis_id": "P2-B1", "rationale": "build from 3B",
+                               "proposed_at": "2026-06-15T09:00:00Z"}]))
+    monkeypatch.setattr(cd, "CONSTRUCTION_QUEUE", cq)
+    monkeypatch.setattr(cd, "EXPERIMENT_QUEUE", tmp_path / "missing.json")
+    props = cd.latest_proposals()
+    assert len(props) == 1 and props[0]["hypothesis"] == "P2-B1"
+    assert props[0]["kind"] == "construction" and props[0]["rationale"] == "build from 3B"
+
+
+def test_hypothesis_rows_includes_p2b1():
+    rows = cd.hypothesis_rows()
+    ids = {r["id"] for r in rows}
+    assert "P2-B1" in ids and all("status" in r for r in rows)
+
+
+def test_save_and_load_run_config_roundtrip(tmp_path):
+    from schemas.run_config import RunConfig, load_run_config, save_run_config
+    cfg = RunConfig(goal="match the benchmark", success_criteria={"POPE": 86.0},
+                    allowed_hypotheses=["P2-B1"], chat_backend="local")
+    p = save_run_config(cfg, tmp_path / "run.yaml")
+    back = load_run_config(p)
+    assert back.goal == "match the benchmark" and back.success_criteria["POPE"] == 86.0
+    assert back.allowed_hypotheses == ["P2-B1"] and back.chat_backend == "local"

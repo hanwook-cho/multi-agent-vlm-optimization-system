@@ -45,3 +45,11 @@ def load_run_config(path: str | Path) -> RunConfig:
     import yaml
     data = yaml.safe_load(Path(path).read_text()) or {}
     return RunConfig.model_validate(data)
+
+
+def save_run_config(cfg: RunConfig, path: str | Path) -> Path:
+    """Write a validated RunConfig to a run.yaml (the Setup form's output, H4)."""
+    import yaml
+    p = Path(path)
+    p.write_text(yaml.safe_dump(cfg.model_dump(), sort_keys=False, allow_unicode=True))
+    return p

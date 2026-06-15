@@ -73,7 +73,8 @@ The architecture review surfaced that human interaction wasn't visible or built 
 - **H2 ✅:** `operator_console.py` (Streamlit) — live browser console: `streamlit run operator_console.py`. Monitor tab shows current run (stage/step/loss), queue depth, recent constructed-student scores, live log tail, and **working pause/stop/kill buttons** wired to run_control. Data layer in `services/console_data.py` (tested); verified via Streamlit AppTest.
 - **H2b ✅:** chat dock wired to the Search Strategist (`SearchStrategist.chat` + `services/console_chat.py`, default-local, graceful offline) — one strategist session in the sidebar on every tab; explains/proposes, no gated action from chat.
 - **H3 ✅:** `services/approvals.py` — append-only approval queue (`request_approval`/`decide`/`wait_for_approval` + CLI), surfaced three ways (global bell, inline Monitor card, Approvals tab with history). One log, single source of truth.
-- **Next:** H4 setup form + rationale view; wire specific gates (deploy/escalate) to create approval requests.
+- **H4 ✅:** Setup tab is a form that validates as a `RunConfig` and writes `run.yaml` (no hand-editing); Approvals tab gained a "strategy context" section (recent proposals + rationale + hypothesis-table state). Chat backend also UI-configurable (local/api + key/base-url/model, session-only).
+- **Console build complete (H1–H4).** Remaining: wire specific gates (deploy/non-smoke build/escalation) to *create* approval requests and block via `wait_for_approval` so the queue enforces.
 
 ---
 

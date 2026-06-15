@@ -122,6 +122,37 @@ def local_server_up(host: str = "localhost", port: int = 8080, timeout: float = 
         return False
 
 
+def hypothesis_rows() -> list[dict]:
+    """The Search Strategist's hypothesis table, compact, for the rationale view (H4)."""
+    try:
+        from agents.search_strategist import HYPOTHESIS_TABLE
+    except Exception:
+        return []
+    return [{"id": h.get("id"), "status": h.get("status"), "phase": h.get("phase"),
+             "technique": h.get("technique")} for h in HYPOTHESIS_TABLE]
+
+
+def latest_proposals(n: int = 6) -> list[dict]:
+    """Recent agent proposals (with rationale) from the experiment + construction queues."""
+    out: list[dict] = []
+    for q, kind in ((CONSTRUCTION_QUEUE, "construction"), (EXPERIMENT_QUEUE, "experiment")):
+        if not q.exists():
+            continue
+        try:
+            items = json.loads(q.read_text())
+        except Exception:
+            items = []
+        for it in items if isinstance(items, list) else []:
+            out.append({
+                "hypothesis": it.get("hypothesis_id", ""),
+                "rationale": it.get("rationale", ""),
+                "proposed_at": it.get("proposed_at", ""),
+                "kind": kind,
+            })
+    out.sort(key=lambda r: r["proposed_at"], reverse=True)
+    return out[:n]
+
+
 def pending_approvals(path: Path = APPROVAL_LOG) -> list[dict]:
     """Pending items from the approval log (H3). Empty until that log exists."""
     if not path.exists():
