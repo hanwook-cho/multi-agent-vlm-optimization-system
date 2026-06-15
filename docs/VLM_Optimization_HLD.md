@@ -198,6 +198,10 @@ These keep the human out of the decision loop for repetitive judgments while sti
 
 This is what falls out of §§2–5. Some components are agents (LLM-driven), others are services (deterministic). The count is deliberately smaller than the five-agent design in earlier drafts.
 
+![Multi-agent VLM optimization system architecture](assets/architecture.svg)
+
+*Figure 1 — system architecture, color-coded by implementation status (built / partial / planned) as of June 2026. The built core is the Mode A loop: the Search Strategist proposes either a config experiment or a student-construction spec (§6.5 / ADR-0012), deterministic services run and evaluate it on a held-constant path, results land in the experiment ledger, and the Pareto Tracker drives the agent's re-route. The Research Analyst, Technique Registry (§6.5.3 seam), Human Approval Queue, and Deployment Dispatcher are planned (Mode B / Phase 3). The Threshold Monitor + Decision Dossier exist as a scaffold.*
+
 ### 6.1 The components
 
 **Agents (LLM-driven; require sandboxing, hallucination guards, decision logs):**

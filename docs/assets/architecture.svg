@@ -1,0 +1,86 @@
+<svg viewBox="0 0 960 760" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" role="img" aria-label="Multi-agent VLM optimization system architecture">
+  <title>Multi-agent VLM optimization system architecture</title>
+  <desc>The Search Strategist agent proposes experiments and student-construction specs; deterministic services run, evaluate same-path, and record to the experiment ledger; the Pareto tracker and threshold monitor read it and the agent re-routes. Mode B (Research Analyst, technique registry) and the human approval queue are planned.</desc>
+  <style>
+    .th{font-size:14px;font-weight:500}
+    .ts{font-size:12px}
+    .lbl{font-size:12px;fill:#5b6470}
+    .built rect{fill:#e6f4ea;stroke:#2f9e57;stroke-width:1.5}
+    .built .th{fill:#1b5e34}.built .ts{fill:#2f7d4d}
+    .partial rect{fill:#fbf0d6;stroke:#cf9a2c;stroke-width:1.5}
+    .partial .th{fill:#7a5a12}.partial .ts{fill:#8a6a1c}
+    .planned rect{fill:#eef0f2;stroke:#9aa3ad;stroke-width:1.5;stroke-dasharray:5 4}
+    .planned .th{fill:#3f4750}.planned .ts{fill:#5b6470}
+    .arr{fill:none;stroke:#6b7280;stroke-width:1.5}
+    .fb{fill:none;stroke:#9aa3ad;stroke-width:1.5;stroke-dasharray:5 4}
+  </style>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+  <g transform="translate(70,24)">
+    <rect x="0" y="0" width="14" height="14" rx="3" fill="#e6f4ea" stroke="#2f9e57" stroke-width="1.5"/><text x="20" y="12" class="lbl">built</text>
+    <rect x="118" y="0" width="14" height="14" rx="3" fill="#fbf0d6" stroke="#cf9a2c" stroke-width="1.5"/><text x="138" y="12" class="lbl">partial / scaffold</text>
+    <rect x="290" y="0" width="14" height="14" rx="3" fill="#eef0f2" stroke="#9aa3ad" stroke-width="1.5" stroke-dasharray="5 4"/><text x="310" y="12" class="lbl">planned</text>
+  </g>
+
+  <line class="arr" x1="408" y1="130" x2="338" y2="174" marker-end="url(#arrow)"/>
+  <line class="arr" x1="486" y1="130" x2="556" y2="174" marker-end="url(#arrow)"/>
+  <line class="arr" x1="332" y1="222" x2="332" y2="268" marker-end="url(#arrow)"/>
+  <line class="arr" x1="556" y1="222" x2="556" y2="268" marker-end="url(#arrow)"/>
+  <line class="arr" x1="338" y1="330" x2="418" y2="372" marker-end="url(#arrow)"/>
+  <line class="arr" x1="552" y1="330" x2="474" y2="372" marker-end="url(#arrow)"/>
+  <line class="arr" x1="445" y1="428" x2="445" y2="466" marker-end="url(#arrow)"/>
+  <line class="arr" x1="344" y1="494" x2="264" y2="494" marker-end="url(#arrow)"/>
+  <line class="arr" x1="546" y1="494" x2="636" y2="494" marker-end="url(#arrow)"/>
+  <line class="arr" x1="822" y1="130" x2="822" y2="170" marker-end="url(#arrow)"/>
+  <path class="arr" d="M714 190 L560 106" marker-end="url(#arrow)"/>
+  <path class="arr" d="M745 522 C 700 562, 600 568, 568 577" marker-end="url(#arrow)"/>
+  <line class="arr" x1="300" y1="593" x2="248" y2="593" marker-end="url(#arrow)"/>
+  <path class="fb" d="M175 468 C 150 322, 240 102, 342 101" marker-end="url(#arrow)"/>
+  <text x="146" y="300" class="lbl" transform="rotate(-90,146,300)">re-route</text>
+
+  <g class="built"><rect x="345" y="72" width="200" height="58" rx="6"/>
+    <text x="445" y="98" text-anchor="middle" class="th">Search strategist agent</text>
+    <text x="445" y="117" text-anchor="middle" class="ts">proposes experiments + specs</text></g>
+  <g class="planned"><rect x="715" y="72" width="215" height="58" rx="6"/>
+    <text x="822" y="98" text-anchor="middle" class="th">Research analyst agent</text>
+    <text x="822" y="117" text-anchor="middle" class="ts">mode B · phase 3</text></g>
+  <g class="planned"><rect x="715" y="170" width="215" height="52" rx="6"/>
+    <text x="822" y="194" text-anchor="middle" class="th">Technique registry</text>
+    <text x="822" y="212" text-anchor="middle" class="ts">search space · the seam</text></g>
+
+  <g class="built"><rect x="250" y="178" width="165" height="44" rx="6"/>
+    <text x="332" y="205" text-anchor="middle" class="th">Experiment queue</text></g>
+  <g class="built"><rect x="460" y="178" width="192" height="44" rx="6"/>
+    <text x="556" y="205" text-anchor="middle" class="th">Construction queue</text></g>
+
+  <g class="built"><rect x="250" y="268" width="165" height="60" rx="6"/>
+    <text x="332" y="294" text-anchor="middle" class="th">Experiment runner</text>
+    <text x="332" y="313" text-anchor="middle" class="ts">config → run → metrics</text></g>
+  <g class="built"><rect x="460" y="268" width="192" height="60" rx="6"/>
+    <text x="556" y="294" text-anchor="middle" class="th">Construction loop</text>
+    <text x="556" y="313" text-anchor="middle" class="ts">assemble · align · distill</text></g>
+
+  <g class="built"><rect x="345" y="372" width="200" height="54" rx="6"/>
+    <text x="445" y="398" text-anchor="middle" class="th">Evaluation harness</text>
+    <text x="445" y="417" text-anchor="middle" class="ts">same-path MCQ eval</text></g>
+
+  <g class="built"><rect x="345" y="466" width="200" height="54" rx="6"/>
+    <text x="445" y="491" text-anchor="middle" class="th">Experiment ledger</text>
+    <text x="445" y="510" text-anchor="middle" class="ts">metrics.db · content-addressed</text></g>
+  <g class="built"><rect x="90" y="468" width="170" height="52" rx="6"/>
+    <text x="175" y="492" text-anchor="middle" class="th">Pareto tracker</text>
+    <text x="175" y="511" text-anchor="middle" class="ts">per-device frontier</text></g>
+  <g class="partial"><rect x="636" y="468" width="217" height="52" rx="6"/>
+    <text x="744" y="492" text-anchor="middle" class="th">Threshold monitor</text>
+    <text x="744" y="511" text-anchor="middle" class="ts">+ decision dossier (scaffold)</text></g>
+
+  <g class="planned"><rect x="300" y="568" width="266" height="50" rx="6"/>
+    <text x="433" y="591" text-anchor="middle" class="th">Human approval queue</text>
+    <text x="433" y="609" text-anchor="middle" class="ts">gates: promote · deploy · escalate</text></g>
+  <g class="planned"><rect x="76" y="568" width="170" height="50" rx="6"/>
+    <text x="161" y="591" text-anchor="middle" class="th">Deployment dispatcher</text>
+    <text x="161" y="609" text-anchor="middle" class="ts">export → device</text></g>
+
+  <text x="480" y="664" text-anchor="middle" class="lbl">Mode A loop (built): propose → run / construct → eval same-path → ledger → Pareto → re-route</text>
+  <text x="480" y="684" text-anchor="middle" class="lbl">Mode B (planned, phase 3): Research analyst → technique registry feeds the strategist's search space</text>
+</svg>
