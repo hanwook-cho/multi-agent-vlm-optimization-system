@@ -12,7 +12,7 @@ See [`STATUS.md`](STATUS.md) for the detailed state and [`docs/VLM_Optimization_
 
 ## What this is
 
-The system, given a vision-language task and a target edge device (iPhone 16 Pro, Raspberry Pi 5), autonomously produces a deployable inference pipeline measured against real on-device latency, memory, and accuracy. It starts from well-known optimization techniques (Mode A) and can escalate to research-driven exploration (Mode B) when known techniques are exhausted. Humans gate consequential decisions (architecture changes, eval-metric changes, mode escalation, device deploys) — see [`docs/VLM_Optimization_HLD.md`](docs/VLM_Optimization_HLD.md) §5.
+The system, given a vision-language task and a target edge device (primarily iPhone 16 Pro / Apple Silicon; Raspberry Pi 5 was scoped but deferred), autonomously produces a deployable inference pipeline measured against real on-device latency, memory, and accuracy. It starts from well-known optimization techniques (Mode A) and can escalate to research-driven exploration (Mode B) when known techniques are exhausted. Humans gate consequential decisions (architecture changes, eval-metric changes, mode escalation, device deploys) — see [`docs/VLM_Optimization_HLD.md`](docs/VLM_Optimization_HLD.md) §5.
 
 ## Operator console
 
@@ -89,4 +89,4 @@ Runs tee their output to `artifacts/logs/`, and the operator console auto-points
 
 ## License
 
-Apache 2.0 (see [`LICENSE`](LICENSE)). Third-party models and datasets used by this project are governed by their own licenses.
+Apache 2.0 (see [`LICENSE`](LICENSE)) — applies to this project's source code only. The third-party models, datasets, and benchmarks the system *uses* (and does not redistribute) remain under their own licenses; see [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
