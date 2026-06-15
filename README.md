@@ -1,8 +1,10 @@
 # Multi-Agent System for VLM Optimization
 
-An autonomous agent system that compresses the time required to produce a competitive edge vision-language model — from the team-months of focused expert work that produced models like LFM2-VL-450M, SmolVLM-500M, and MiniCPM-V, to solo-developer-months using the system as the optimization tool.
+An autonomous multi-agent system whose **goal** is to compress the time required to produce a competitive edge vision-language model — from the team-months of focused expert work behind models like LFM2-VL-450M, SmolVLM-500M, and MiniCPM-V toward solo-developer-months, using the system itself as the optimization tool.
 
-**The system is the deliverable. The compressed time-to-result is the central claim. A competitive model is the proof-of-work.**
+**The system is the deliverable; the compressed time-to-result is the central claim; a competitive model is the proof-of-work.**
+
+> **Honest status (Phase 2, in progress):** the system is built and running — a closed agent loop that proposes, builds/distills, evaluates on-device-path, and re-routes. The headline *proof-of-work model is not yet achieved*: the construction loop works end-to-end but the latest constructed student is still under-trained. The interesting results so far are as much about what *didn't* work — see [`docs/observations/`](docs/observations/) for the documented negative results and how the system corrected course.
 
 ## Status
 

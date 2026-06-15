@@ -147,7 +147,7 @@ Score = 100 × max(0, cos_sim(CLIP_img, CLIP_txt)). Typical range for good capti
 - **ADR-0001** — Mac measurement methodology (`docs/decisions/0001-mac-measurement-methodology.md`)
 
 ### Week 3
-- **Task 3.1** — iOS developer provisioning: Xcode 26.5, team `9LVH98N9BS`, iPhone 16 Pro registered, smoke-test app deployed
+- **Task 3.1** — iOS developer provisioning: Xcode 26.5, team `<redacted>`, iPhone 16 Pro registered, smoke-test app deployed
 - **Task 3.2** — LFM2-VL-450M Q4_0 baseline on iPhone 16 Pro via llama.cpp/mtmd (Metal backend)
   - Harness: `ios_harness/VLMHarness.xcodeproj` (ObjC++ wrapper around libmtmd + libllama)
   - Archived: `artifacts/eval_task_3_2_20260605/LFM2-VL-450M_iphone16pro_20260605.json`
@@ -281,7 +281,7 @@ Consistency with published numbers: POPE scores match within ~2pp for all models
 **What was done:**
 - Cloned `apple/ml-fastvlm` → `vendor/ml-fastvlm/`
 - Model downloaded: `vendor/ml-fastvlm/app/FastVLM/model/` (0.5B FP16, MLX format, ~1 GB)
-- Signing fixed: `DEVELOPMENT_TEAM = 9LVH98N9BS`, bundle ID → `com.hwcho99.FastVLMBaseline`
+- Signing fixed: `DEVELOPMENT_TEAM = <redacted>`, bundle ID → `com.hwcho99.FastVLMBaseline`
 - Entitlements stripped to camera-only: `vendor/ml-fastvlm/app/FastVLM App/FastVLM.entitlements`
   - **Removed:** `increased-memory-limit`, `app-sandbox`, network, file-access
   - **Kept:** `com.apple.security.device.camera`
@@ -312,8 +312,8 @@ Consistency with published numbers: POPE scores match within ~2pp for all models
 
 **Week 3 provisioning details (Task 3.1):**
 - Xcode 26.5 / iOS 26.5 SDK on Mac mini M4 ✅
-- Apple Developer team: `9LVH98N9BS` (hwcho99@yahoo.com) ✅
-- Device: iPhone 16 Pro `4B5CB219-A5DE-59DF-81A5-7FBECBC17B90` (iPhone17,1, iOS 26.5) ✅
+- Apple Developer team: `<redacted>` ✅
+- Device: iPhone 16 Pro `<device-udid-redacted>` (iPhone17,1, iOS 26.5) ✅
 - Smoke-test app `VLMHarness` (`com.hwcho99.VLMHarness`) deployed and ran on device ✅
 - Xcode project: `ios_harness/VLMHarness.xcodeproj` (automatic signing)
 
