@@ -80,6 +80,11 @@ def test_default_log_path_picks_newest_then_falls_back(tmp_path, monkeypatch):
     assert cd.default_log_path().endswith("new.log")  # newest wins over legacy
 
 
+def test_local_server_up_false_on_closed_port():
+    # a port nothing is listening on → False, fast (no hang)
+    assert cd.local_server_up(port=59999, timeout=0.2) is False
+
+
 def test_runlog_tee_writes_file(tmp_path, monkeypatch):
     from services import runlog
     monkeypatch.setattr(runlog, "RUN_LOG_DIR", tmp_path / "logs")

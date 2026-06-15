@@ -28,7 +28,8 @@ st.set_page_config(page_title="Operator console", page_icon=":wrench:", layout="
 # ── Global bar ────────────────────────────────────────────────────────────────
 state = rc.get_state()["state"]
 _STATE_ICON = {"run": "🟢 running", "pause": "🟡 paused", "stop": "🔴 stopping", "kill": "⛔ killing"}
-backend = cd.backend_label(cd.RUN_YAML, dict(__import__("os").environ))
+_default_backend = cd.backend_label(cd.RUN_YAML, dict(__import__("os").environ))
+backend = st.session_state.get("backend_sel", _default_backend)  # UI selector wins
 n_pending = len(cd.pending_approvals())
 
 bar = st.columns([3, 2, 2, 2])
@@ -43,7 +44,16 @@ if "chat" not in st.session_state:
 
 with st.sidebar:
     st.markdown("### Chat — strategist")
-    st.caption(f"{'local · Qwen2.5-7B' if backend == 'local' else 'api · frontier'} · proposes & explains; gated actions need approval")
+    sel = st.radio("backend", ["local", "api"],
+                   index=0 if _default_backend == "local" else 1,
+                   key="backend_sel", horizontal=True)
+    if sel == "local":
+        if cd.local_server_up():
+            st.caption("🟢 local · Qwen2.5-7B online")
+        else:
+            st.caption("🔴 local server offline — run scripts/start_strategist_llm.sh")
+    else:
+        st.caption("api · frontier (needs ANTHROPIC_API_KEY)")
     for m in st.session_state.chat:
         st.chat_message(m["role"]).write(m["content"])
     with st.form("chat_form", clear_on_submit=True):
@@ -52,9 +62,10 @@ with st.sidebar:
     if sent and msg.strip():
         st.session_state.chat.append({"role": "user", "content": msg.strip()})
         reply = cc.chat_reply(msg.strip(), history=st.session_state.chat[:-1],
-                              backend=backend)
+                              backend=sel)
         st.session_state.chat.append({"role": "assistant", "content": reply})
         st.rerun()
+    st.caption("proposes & explains; gated actions need approval")
     st.divider()
     log_path = st.text_input("run log", value=cd.default_log_path(),
                              help="Auto-points at the newest run in artifacts/logs/.")

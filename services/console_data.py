@@ -112,6 +112,16 @@ def recent_constructions(ledger_dir: Path = LEDGER_DIR, n: int = 8) -> list[dict
     return rows[:n]
 
 
+def local_server_up(host: str = "localhost", port: int = 8080, timeout: float = 0.3) -> bool:
+    """True if the local strategist (llama.cpp) server is reachable on host:port."""
+    import socket
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
 def pending_approvals(path: Path = APPROVAL_LOG) -> list[dict]:
     """Pending items from the approval log (H3). Empty until that log exists."""
     if not path.exists():
