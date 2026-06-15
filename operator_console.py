@@ -56,7 +56,11 @@ with st.sidebar:
         st.session_state.chat.append({"role": "assistant", "content": reply})
         st.rerun()
     st.divider()
-    log_path = st.text_input("run log", value="/tmp/b13_build.log")
+    log_path = st.text_input("run log", value=cd.default_log_path(),
+                             help="Auto-points at the newest run in artifacts/logs/.")
+    rc1, rc2 = st.columns([1, 1])
+    auto = rc1.checkbox("auto", value=False, help="Auto-refresh the Monitor")
+    every = rc2.selectbox("every", [2, 5, 10, 30], index=1, label_visibility="collapsed")
     if st.button("↻ refresh", width="stretch"):
         st.rerun()
 
@@ -92,30 +96,29 @@ with tab_mon:
                 ap.decide(top["id"], "reject", by="console"); st.rerun()
             ac[2].caption("same item as the bell and the Approvals tab")
 
-    st.markdown("#### Current run")
-    prog = cd.parse_progress(cd.log_tail(Path(log_path), n=200))
-    m = st.columns(4)
-    if prog:
-        m[0].metric("stage", prog["stage"])
-        m[1].metric("step", f"{prog['step']}/{prog['total']}")
-        m[2].metric("loss", f"{prog['loss']:.3f}")
-    else:
-        m[0].metric("stage", "—")
-        m[1].metric("step", "—")
-        m[2].metric("loss", "—")
-    m[3].metric("queue", cd.queue_len(cd.CONSTRUCTION_QUEUE) + cd.queue_len(cd.EXPERIMENT_QUEUE))
+    def _live_monitor():
+        st.markdown("#### Current run")
+        prog = cd.parse_progress(cd.log_tail(Path(log_path), n=200)) if log_path else None
+        m = st.columns(4)
+        m[0].metric("stage", prog["stage"] if prog else "—")
+        m[1].metric("step", f"{prog['step']}/{prog['total']}" if prog else "—")
+        m[2].metric("loss", f"{prog['loss']:.3f}" if prog else "—")
+        m[3].metric("queue", cd.queue_len(cd.CONSTRUCTION_QUEUE) + cd.queue_len(cd.EXPERIMENT_QUEUE))
 
-    st.markdown("#### Recent constructed students")
-    rows = cd.recent_constructions()
-    if rows:
-        st.dataframe(rows, width="stretch", hide_index=True)
-        st.caption("Same-path Overall scores vs the LFM2-VL-450M benchmark: POPE 87.7 · RWQA 0.42 · MMBench 0.74.")
-    else:
-        st.info("No constructed-student runs in the ledger yet.")
+        st.markdown("#### Recent constructed students")
+        rows = cd.recent_constructions()
+        if rows:
+            st.dataframe(rows, width="stretch", hide_index=True)
+            st.caption("Same-path Overall vs the LFM2-VL-450M benchmark: POPE 87.7 · RWQA 0.42 · MMBench 0.74.")
+        else:
+            st.info("No constructed-student runs in the ledger yet.")
 
-    st.markdown("#### Live log")
-    tail = cd.log_tail(Path(log_path), n=24)
-    st.code(tail or f"(no log at {log_path})", language="text")
+        st.markdown("#### Live log")
+        tail = cd.log_tail(Path(log_path), n=24) if log_path else ""
+        st.code(tail or f"(no log at {log_path or 'artifacts/logs/'})", language="text")
+
+    # Auto-refresh the live panel without blocking the controls above.
+    st.fragment(_live_monitor, run_every=f"{every}s" if auto else None)()
 
 # ── Setup (H4: form writes run.yaml; today shows the config) ────────────────────
 with tab_setup:

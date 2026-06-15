@@ -418,8 +418,10 @@ def main():
 
     spec = StudentSpec.model_validate_json(Path(args.spec).read_text())
     out = Path(args.out) if args.out else PROJECT_ROOT / "artifacts/students" / f"build_{spec.content_hash()[:12]}"
-    build(spec, out, smoke=args.smoke, align_steps=args.align_steps,
-          distill_steps=args.distill_steps, max_samples=args.max_samples)
+    from services.runlog import tee_stdout
+    with tee_stdout(f"build_{spec.content_hash()[:12]}"):  # standard run log for the console
+        build(spec, out, smoke=args.smoke, align_steps=args.align_steps,
+              distill_steps=args.distill_steps, max_samples=args.max_samples)
 
 
 if __name__ == "__main__":

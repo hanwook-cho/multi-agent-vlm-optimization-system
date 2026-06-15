@@ -62,3 +62,27 @@ def test_recent_constructions(tmp_path):
 
 def test_pending_approvals_absent(tmp_path):
     assert cd.pending_approvals(tmp_path / "nope.json") == []
+
+
+def test_default_log_path_picks_newest_then_falls_back(tmp_path, monkeypatch):
+    logs = tmp_path / "logs"
+    monkeypatch.setattr(cd, "RUN_LOG_DIR", logs)
+    monkeypatch.setattr(cd, "_LEGACY_LOG", tmp_path / "legacy.log")
+    assert cd.default_log_path() == ""              # nothing yet
+    (tmp_path / "legacy.log").write_text("x")
+    assert cd.default_log_path().endswith("legacy.log")
+    logs.mkdir()
+    import os, time
+    (logs / "old.log").write_text("a")
+    time.sleep(0.01)
+    (logs / "new.log").write_text("b")
+    os.utime(logs / "new.log", None)
+    assert cd.default_log_path().endswith("new.log")  # newest wins over legacy
+
+
+def test_runlog_tee_writes_file(tmp_path, monkeypatch):
+    from services import runlog
+    monkeypatch.setattr(runlog, "RUN_LOG_DIR", tmp_path / "logs")
+    with runlog.tee_stdout("myrun") as p:
+        print("hello from the run")
+    assert p.exists() and "hello from the run" in p.read_text()

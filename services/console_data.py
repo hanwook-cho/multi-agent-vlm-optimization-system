@@ -21,6 +21,21 @@ CONSTRUCTION_QUEUE = PROJECT_ROOT / "artifacts" / "construction_queue.json"
 EXPERIMENT_QUEUE = PROJECT_ROOT / "artifacts" / "experiment_queue.json"
 APPROVAL_LOG = PROJECT_ROOT / "artifacts" / "approval_log.json"  # H3 — may not exist
 RUN_YAML = PROJECT_ROOT / "run.yaml"
+RUN_LOG_DIR = PROJECT_ROOT / "artifacts" / "logs"          # standard run logs (services.runlog)
+_LEGACY_LOG = Path("/tmp/b13_build.log")                    # earlier ad-hoc default
+
+
+def default_log_path() -> str:
+    """Newest run log in the standard dir; fall back to the legacy /tmp path or ''.
+
+    So the console points at the current run automatically (runs tee here via
+    services.runlog) without the operator wiring a path.
+    """
+    if RUN_LOG_DIR.exists():
+        logs = sorted(RUN_LOG_DIR.glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if logs:
+            return str(logs[0])
+    return str(_LEGACY_LOG) if _LEGACY_LOG.exists() else ""
 
 _PROGRESS_RE = re.compile(r"\[(align|distill)\]\s+step\s+(\d+)/(\d+).*?loss=([0-9.]+)")
 

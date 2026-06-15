@@ -69,6 +69,8 @@ python services/construction_loop.py --eval --align-steps 200 --distill-steps 10
 python runners/build_student.py --spec tests/fixtures/student_spec_p2b1_qwen05b_siglip.json --smoke
 ```
 
+Runs tee their output to `artifacts/logs/`, and the operator console auto-points at the newest one (with an optional auto-refresh) — so progress shows up on the Monitor tab without wiring a log path.
+
 `run.yaml` (see [`configs/run.example.yaml`](configs/run.example.yaml)) declares the authorized goal, success criteria, eval set, allowed hypotheses, and the agent/chat backend (`local` by default, `api` opt-in).
 
 ## Documentation

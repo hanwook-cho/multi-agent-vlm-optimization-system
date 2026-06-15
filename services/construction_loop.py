@@ -91,19 +91,22 @@ def run_once(spec: StudentSpec, smoke: bool, queue_entry: dict | None = None,
 
     out_dir = out_dir or (PROJECT_ROOT / "artifacts" / "students" /
                           f"build_{spec.content_hash()[:12]}")
-    record = build(spec, out_dir, smoke=smoke, align_steps=align_steps,
-                   distill_steps=distill_steps, max_samples=max_samples)
 
-    # B1.3: score the constructed student on the same path as the LFM2 benchmark.
-    if eval_after and not smoke and record.get("student_dir"):
-        from runners.eval_student import evaluate
-        eval_out = out_dir / "eval"
-        results = evaluate(out_dir, spec.eval.benchmarks, eval_n or spec.eval.n, eval_out)
-        record["quality_scores"] = [
-            {"benchmark": b, "metric": "Overall", "value": r["scores"].get("Overall"),
-             "delta_vs_benchmark": r["delta_vs_benchmark"]}
-            for b, r in results.items()
-        ]
+    from services.runlog import tee_stdout
+    with tee_stdout(f"construction_{spec.content_hash()[:12]}"):  # standard run log
+        record = build(spec, out_dir, smoke=smoke, align_steps=align_steps,
+                       distill_steps=distill_steps, max_samples=max_samples)
+
+        # B1.3: score the constructed student on the same path as the LFM2 benchmark.
+        if eval_after and not smoke and record.get("student_dir"):
+            from runners.eval_student import evaluate
+            eval_out = out_dir / "eval"
+            results = evaluate(out_dir, spec.eval.benchmarks, eval_n or spec.eval.n, eval_out)
+            record["quality_scores"] = [
+                {"benchmark": b, "metric": "Overall", "value": r["scores"].get("Overall"),
+                 "delta_vs_benchmark": r["delta_vs_benchmark"]}
+                for b, r in results.items()
+            ]
 
     entry = _ledger_entry(spec, record, queue_entry)
     LEDGER_DIR.mkdir(parents=True, exist_ok=True)
