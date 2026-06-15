@@ -442,9 +442,13 @@ class ExperimentRunner:
         project_root: Path | None = None,
         mac_device: str | None = None,
         max_images: int | None = None,
+        require_deploy_approval: bool = False,
     ):
         self.project_root = Path(project_root) if project_root else PROJECT_ROOT
         self.max_images   = max_images
+        # When True, writing the device-ready flag (the deploy hand-off, HLD §5.1)
+        # blocks on the operator approval queue.
+        self.require_deploy_approval = require_deploy_approval
 
         if mac_device is None:
             if torch.backends.mps.is_available():
@@ -546,7 +550,13 @@ class ExperimentRunner:
             preds_path.write_text(json.dumps(raw_preds, indent=2))
             print(f"  Preds  → {preds_path}")
 
-            # ── 8. iPhone-ready flag ──────────────────────────────────────
+            # ── 8. iPhone-ready flag (deploy hand-off — gated, HLD §5.1) ──
+            if self.require_deploy_approval:
+                from services import gates
+                if gates.gate_deploy(config.model_id, config.target_device_id,
+                                     experiment_id=experiment_id[:12]) != "approved":
+                    print("  Deploy not approved — skipping device-ready flag.")
+                    return report
             flag_path = _write_device_ready_flag(config, experiment_id)
             print(f"  Ready  → {flag_path}")
 

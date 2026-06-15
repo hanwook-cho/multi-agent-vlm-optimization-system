@@ -75,7 +75,7 @@ The architecture review surfaced that human interaction wasn't visible or built 
 - **H3 ✅:** `services/approvals.py` — append-only approval queue (`request_approval`/`decide`/`wait_for_approval` + CLI), surfaced three ways (global bell, inline Monitor card, Approvals tab with history). One log, single source of truth.
 - **H4 ✅:** Setup tab is a form that validates as a `RunConfig` and writes `run.yaml` (no hand-editing); Approvals tab gained a "strategy context" section (recent proposals + rationale + hypothesis-table state). Chat backend also UI-configurable (local/api + key/base-url/model, session-only).
 - **Console build complete (H1–H4).**
-- **First enforced gate wired:** a real (non-smoke) construction run gates behind the approval queue — `construction_loop ... --require-approval` calls `request_approval` and **blocks on `wait_for_approval`**; it shows in the console (bell + Approvals tab) and only builds once approved (reject aborts before any compute). The queue is now load-bearing, not just an inbox. Remaining gates to wire: deploy, eval-set change, Mode-B escalation.
+- **Gates enforced (HLD §5.1):** `services/gates.py` is one reusable gate (request → block on approval) + wrappers `gate_deploy` / `gate_eval_change` / `gate_mode_b_escalation` + CLI. Wired at the real touchpoints: construction run (`construction_loop --require-approval`, blocks), deploy (`ExperimentRunner(require_deploy_approval=True)`, blocks the device-ready hand-off), Mode-B escalation (`generate_dossier(request_escalation=True)`, posts per §4.2). All funnel through the one approval log, surfaced in the console. The queue is load-bearing.
 
 ---
 

@@ -96,22 +96,18 @@ def run_once(spec: StudentSpec, smoke: bool, queue_entry: dict | None = None,
     exp = spec.content_hash()
 
     if require_approval and not smoke:
-        from services import approvals
+        from services import gates
         hyp = (queue_entry or {}).get("hypothesis_id", "P2-B1")
-        aid = approvals.request_approval(
-            kind="construction_run",
+        decision = gates.gated(
+            "construction_run",
             summary=f"Real build+eval of {exp[:12]} ({hyp}) — large compute",
             detail={"lm": spec.lm, "vision": spec.vision,
                     "align_steps": align_steps, "distill_steps": distill_steps},
             by="construction_loop")
-        print(f"  ⏸ awaiting operator approval (id {aid}) — approve in the console's "
-              f"Approvals tab, or: python -m services.approvals approve {aid}")
-        decision = approvals.wait_for_approval(aid)
         if decision != "approved":
-            print(f"  ✗ run {decision} by operator — aborting (nothing built).")
+            print("  aborting (nothing built).")
             return {"experiment_id": exp, "status": f"approval_{decision}",
-                    "hypothesis_id": (queue_entry or {}).get("hypothesis_id", "P2-B1")}
-        print(f"  ✓ approved — proceeding with the build.")
+                    "hypothesis_id": hyp}
 
     from runners.build_student import build  # lazy: pulls torch/transformers
 

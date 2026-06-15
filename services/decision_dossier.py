@@ -168,6 +168,7 @@ def generate_dossier(
     candidate_actions: list[str] | None = None,
     recommendation: str = "(pending human review)",
     output_dir: Path | None = None,
+    request_escalation: bool = False,
 ) -> Path:
     """
     Generate a Decision Dossier markdown file and save it to disk.
@@ -266,6 +267,13 @@ def generate_dossier(
         recommendation=recommendation,
     )
     path.write_text(content)
+
+    # HLD §4.2: the dossier posts the Mode-A→Mode-B escalation to the approval queue.
+    if request_escalation:
+        from services import gates
+        gates.gate_mode_b_escalation(dossier_path=path, block=False,
+                                     consecutive=consecutive)
+
     return path
 
 

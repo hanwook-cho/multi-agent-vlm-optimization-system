@@ -79,7 +79,13 @@ This keeps state unified and matches the HLD §7.1 model (queue + DB + approval 
 
 H1–H4 are done — a live browser console (`streamlit run operator_console.py`): Setup form (writes `run.yaml`), Monitor (watch + stop/kill), chat dock (local/api), and Approvals (decide gated items, with strategy context).
 
-**Enforcement — first gate wired.** A real (non-smoke) construction run is now gated (HLD §5.1, large compute): `construction_loop.run_once(..., require_approval=True)` (CLI `--require-approval`) calls `approvals.request_approval` and **blocks on `wait_for_approval`** — the run appears in the console (bell + Approvals tab) and only proceeds when the operator approves; a reject aborts before any build. This makes the queue load-bearing, not just an inbox. Remaining gates to wire the same way: deploy, eval-set change, Mode-B escalation.
+**Enforcement — gates wired.** `services/gates.py` is the one reusable gate: `gated(kind, summary, detail, block)` posts to the approval queue and (when blocking) waits on `wait_for_approval`; convenience wrappers `gate_deploy` / `gate_eval_change` / `gate_mode_b_escalation` cover the HLD §5.1 decisions, plus a CLI (`python -m services.gates <kind> "<summary>"`). Wired at the real touchpoints:
+- **construction_run** — `construction_loop.run_once(require_approval=True)` (CLI `--require-approval`) blocks a real build until approved; reject aborts before any compute.
+- **deploy** — `ExperimentRunner(require_deploy_approval=True)` blocks the device-ready hand-off until approved.
+- **mode_b_escalation** — `decision_dossier.generate_dossier(request_escalation=True)` posts the Mode-A→Mode-B escalation to the queue (non-blocking, per §4.2 — the operator's approval is the escalation decision).
+- **eval_change** — `gates.gate_eval_change(old, new)` available for the standing eval-set change.
+
+All four funnel through one approval log, surfaced in the console (bell + Approvals tab + Monitor card). The queue is load-bearing, not an inbox.
 
 ---
 
