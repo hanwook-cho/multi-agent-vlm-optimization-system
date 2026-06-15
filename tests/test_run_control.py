@@ -101,3 +101,31 @@ def test_example_run_yaml_is_valid():
     root = Path(__file__).parent.parent
     c = load_run_config(root / "configs" / "run.example.yaml")
     assert "P2-B1" in c.allowed_hypotheses and c.success_criteria["POPE"] == 86.0
+
+
+def test_run_config_chat_backend_defaults_local():
+    assert RunConfig(goal="x").chat_backend == "local"
+    with pytest.raises(ValueError):
+        RunConfig(goal="x", chat_backend="cloud")  # only local|api allowed
+
+
+# ── agent backend resolution: default local, API opt-in (ADR-0013) ──────────
+
+def test_backend_defaults_to_local_even_with_api_key_present():
+    from agents.search_strategist import _resolve_backend_name
+    # ANTHROPIC_API_KEY present but no explicit opt-in → still local
+    env = {"ANTHROPIC_API_KEY": "sk-xxx"}
+    assert _resolve_backend_name("auto", env=env) == "llamacpp"
+
+
+def test_backend_env_opt_in_to_api():
+    from agents.search_strategist import _resolve_backend_name
+    assert _resolve_backend_name("auto", env={"STRATEGIST_BACKEND": "api"}) == "anthropic"
+    assert _resolve_backend_name("auto", env={"STRATEGIST_BACKEND": "local"}) == "llamacpp"
+
+
+def test_backend_explicit_arg_and_aliases():
+    from agents.search_strategist import _resolve_backend_name
+    assert _resolve_backend_name("local") == "llamacpp"
+    assert _resolve_backend_name("api") == "anthropic"
+    assert _resolve_backend_name("ollama", env={}) == "ollama"

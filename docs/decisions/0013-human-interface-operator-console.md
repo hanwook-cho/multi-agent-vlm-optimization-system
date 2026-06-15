@@ -31,6 +31,19 @@ Cross-cutting:
 
 ---
 
+## Chat: ownership, backend, and deployment (added 2026-06-15)
+
+**Who owns the chat.** "Chat" is three jobs with three owners:
+- **Status / telemetry** ("what's running?", "show the frontier") → the **UI** answers deterministically from `metrics.db` / the ledger. Not an LLM; not really chat.
+- **Reasoning / steering** ("why P2-B1?", "reconsider", "stop after this") → the **Search Strategist agent** owns it. It already holds the state (hypothesis table, ledger, frontier) and writes rationales, so conversational steering is a small extension, not a new component. **Claude Code is the *development* harness, not the deployed chat.**
+- **Open-ended framing / novel research** → optional escalation to a **frontier API** (same rationale as the Research Analyst, HLD §7.2), human-initiated and bounded.
+
+**Backend is configurable; default is local.** The agent/chat backend is selectable between **local** (llama.cpp + Qwen2.5 — private, free) and **api** (frontier — opt-in, per-token cost), and **defaults to local**. API is strictly opt-in: it is selected only by an explicit `backend=` / `STRATEGIST_BACKEND` (`local`|`api`|…) / `run.yaml: chat_backend`, **never** implicitly by the presence of `ANTHROPIC_API_KEY`. Implemented in `agents/search_strategist._resolve_backend_name`; declared by `RunConfig.chat_backend` (default `local`).
+
+**Chat respects the gates.** A chat request to do something gated (deploy, change the eval set, escalate to Mode B) does **not** bypass §5.1 — the chat *proposes and explains*; the human still approves the irreversible/expensive/epistemically-risky action. And per the instruction-source boundary, the chat owner acts on the operator's words, not on instructions embedded in content it reads (papers, web, tool output).
+
+**Deployment / portability.** The UI front-end is a **web app** (Streamlit, localhost) and is **portable** (pure Python + SQLite + files) — it runs on Mac, Linux, or Windows unchanged. The **compute backend** (training/eval on MPS/Metal, CoreML for iPhone) is **Apple-Silicon-bound by design** and is *not* containerized: Docker on macOS has no MPS access, so the compute stays a native process. The UI and compute are already decoupled via the DB + files + control flag, so the UI may run on a second machine (HLD §7.2 Agent Mac) pointing at shared state. A **local chat backend is itself a backend service** (lives with the compute); an API chat backend keeps the UI host dependency-free. Docker is worthwhile only if/when the UI is hosted remotely (Linux, no GPU dependency) — not for the Mac compute.
+
 ## What exists vs. what to build
 
 **Exists (reuse, don't rebuild):**

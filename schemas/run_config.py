@@ -15,13 +15,18 @@ allowed-search-space against the Search Strategist's proposals is a later step.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
 
 class RunConfig(BaseModel):
     goal: Annotated[str, Field(min_length=1, description="One-line objective for this run.")]
+    chat_backend: Annotated[Literal["local", "api"], Field(
+        default="local",
+        description="Which backend powers the agent/operator chat. 'local' = llama.cpp "
+                    "+ Qwen2.5 (private, free, default); 'api' = frontier API (opt-in, "
+                    "per-token cost). Maps to STRATEGIST_BACKEND (ADR-0013).")]
     success_criteria: Annotated[dict[str, float], Field(
         default_factory=dict,
         description="Named numeric bars, e.g. {'POPE': 86.0}. Empty = qualitative only.")]

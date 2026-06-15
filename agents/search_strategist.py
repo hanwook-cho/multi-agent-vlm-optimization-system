@@ -81,6 +81,26 @@ STAGE_A_HASH = "e2128ae022b3720375d7c866a037b6d8ec4b399ff92cb59e6065ec9fb7f3e29f
 LLAMACPP_BASE_URL = "http://localhost:8080/v1"
 LLAMACPP_MODEL    = "qwen2.5-7b-instruct"  # cosmetic — llama-server uses the loaded GGUF
 
+# Operator-facing backend aliases (ADR-0013): the operator thinks "local" vs "api".
+_BACKEND_ALIASES = {"local": "llamacpp", "api": "anthropic"}
+
+
+def _resolve_backend_name(backend: str = "auto", env: dict | None = None) -> str:
+    """Resolve the backend name. DEFAULT IS LOCAL (llama.cpp + Qwen2.5).
+
+    API backends are strictly OPT-IN — set STRATEGIST_BACKEND=api (or 'anthropic'),
+    or pass backend= explicitly. The mere presence of ANTHROPIC_API_KEY does NOT
+    switch to the API: runs stay local (private + free) unless the operator opts in
+    (ADR-0013 — chat/agent backend configurable, default local).
+    """
+    if backend and backend != "auto":
+        return _BACKEND_ALIASES.get(backend, backend)
+    env = env if env is not None else os.environ
+    choice = env.get("STRATEGIST_BACKEND", "").strip().lower()
+    if choice:
+        return _BACKEND_ALIASES.get(choice, choice)
+    return "llamacpp"
+
 # ── Hypothesis table (seed — matches Phase 1 plan) ───────────────────────────
 
 HYPOTHESIS_TABLE = [
@@ -950,9 +970,10 @@ class SearchStrategist:
                                 base_url="http://localhost:1234/v1")
 
     Args:
-        backend:    "auto" | "llamacpp" | "anthropic" | "ollama" | "openai_compat"
-                    "auto" uses Anthropic if ANTHROPIC_API_KEY is set, else
-                    falls back to llamacpp (local llama.cpp + Qwen2.5).
+        backend:    "auto" | "local"/"llamacpp" | "api"/"anthropic" | "ollama" | "openai_compat"
+                    DEFAULT IS LOCAL. "auto" resolves to llamacpp unless
+                    STRATEGIST_BACKEND is set (api/anthropic/ollama/...). API is
+                    opt-in — ANTHROPIC_API_KEY alone does NOT switch to it (ADR-0013).
         model:      Model name. Defaults: Anthropic → "claude-sonnet-4-5",
                     llamacpp → "qwen2.5-7b-instruct", Ollama → "gemma3".
         api_key:    Anthropic API key (falls back to ANTHROPIC_API_KEY env var).
@@ -975,12 +996,10 @@ class SearchStrategist:
         self.verbose    = verbose
         self._last_proposal: ExperimentProposal | None = None
 
-        # Resolve backend
-        if backend == "auto":
-            if api_key or os.environ.get("ANTHROPIC_API_KEY"):
-                backend = "anthropic"
-            else:
-                backend = "llamacpp"   # local default: llama.cpp + Qwen2.5
+        # Resolve backend — default LOCAL; API is opt-in via backend= or
+        # STRATEGIST_BACKEND env (ADR-0013). Presence of ANTHROPIC_API_KEY alone
+        # does NOT switch to the API.
+        backend = _resolve_backend_name(backend)
 
         if backend == "anthropic":
             key = api_key or os.environ.get("ANTHROPIC_API_KEY")
