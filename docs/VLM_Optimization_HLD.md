@@ -192,6 +192,19 @@ Some decisions warrant pre-approved policies rather than human review of each in
 
 These keep the human out of the decision loop for repetitive judgments while still keeping policy decisions visible.
 
+### 5.4 How the human interacts — the operator console (added 2026-06-15)
+
+§5.1–§5.3 say *when* the human acts; this says *how*. The original HLD specified only a "Human Approval Queue" (§6.1 #8) and left the rest of the human-facing surface implicit — which made the system's human-interaction story hard to see, especially at the **start** (the point of heaviest human involvement: setting goals, success criteria, target device, eval set, and authorizing the search space). We make the surface explicit as an **operator console** with four roles, shown as the top band of Figure 1:
+
+| Surface | Role | When | Modality |
+|---|---|---|---|
+| **Goal & scope intake** | Frame the problem; approve the search space the agent may explore | At the start; phase transitions | Chat (conversational framing) + a checked-in config |
+| **Status dashboard** | Progress, live run status, logs, Pareto frontier, ledger | Continuous, glanceable | GUI (the existing `dashboard.py` is the partial seed) |
+| **Approvals & gates** | The §5.1 gated decisions: deploy, big compute, eval-set change, Tier-2/spec approval, Mode-A→B escalation (Decision Dossier) | Per gated decision | GUI inbox + proactive notification; chat for context |
+| **Run controls** | Pause / resume / stop a run / kill a runaway experiment | Any time | GUI buttons + CLI |
+
+**Honest current state:** there is no unified console yet. The whole human interaction today is **this chat (Claude Code) plus the CLI**, with `dashboard.py` providing read-only status and `PushNotification` providing proactive alerts. The formal Approval Queue and Run Controls are unbuilt (gap **B2**). The full design — modality choices, what to build first, and how stop/kill is enforced — is **ADR-0013**.
+
 ---
 
 ## 6. Proposed component topology
@@ -200,7 +213,7 @@ This is what falls out of §§2–5. Some components are agents (LLM-driven), ot
 
 ![Multi-agent VLM optimization system architecture](assets/architecture.svg)
 
-*Figure 1 — system architecture, color-coded by implementation status (built / partial / planned) as of June 2026. The built core is the Mode A loop: the Search Strategist proposes either a config experiment or a student-construction spec (§6.5 / ADR-0012), deterministic services run and evaluate it on a held-constant path, results land in the experiment ledger, and the Pareto Tracker drives the agent's re-route. The Research Analyst, Technique Registry (§6.5.3 seam), and Human Approval Queue are planned (Mode B / Phase 3). The Threshold Monitor + Decision Dossier exist as a scaffold, and the Deployment Dispatcher is partial — the Experiment Runner already writes an iPhone-ready flag for the manual device hand-off, but the full export-pipeline service is not built.*
+*Figure 1 — system architecture, color-coded by implementation status (built / partial / planned) as of June 2026. The top band is the **operator console** (§5.4): the human frames the work at the start (goal & scope intake), watches it (status dashboard), gates the consequential decisions (approvals & gates), and can intervene (run controls: pause/stop/kill). Today that console is **this chat + the CLI**; a unified GUI is planned, and only the metrics dashboard is partially built. The built core below is the Mode A loop: the Search Strategist proposes either a config experiment or a student-construction spec (§6.5 / ADR-0012), deterministic services run and evaluate it on a held-constant path, results land in the experiment ledger, and the Pareto Tracker drives the agent's re-route. The Research Analyst and Technique Registry (§6.5.3 seam) are planned (Mode B / Phase 3); the Threshold Monitor + Decision Dossier are a scaffold; the Deployment Dispatcher is partial (the Experiment Runner writes an iPhone-ready flag for the manual hand-off, but the export-pipeline service is not built). The human-interface design is detailed in ADR-0013.*
 
 ### 6.1 The components
 
