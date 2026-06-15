@@ -70,6 +70,7 @@ The distillation data recipe must support **balanced hard negatives** (yes/no qu
 - Proof-of-work is still produced — but *through* the system (the agent runs the spec that yields a competitive student), which is what Goals §5 actually requires.
 - P2-C1 (hard-prune the 3B) and P2-B1 (assemble) become **two `StudentSpec` families** over the same builder, not two separate human builds — the agent can compare them.
 - Risk: the builder is real engineering and must run on the 16GB Mac (batch-1, staged, LoRA). Mitigated by an incremental smoke-first sequence (below).
+- **Composition with Mode B / the Research Analyst (Phase 3).** This capability is the **extension seam** for future literature-discovered schemes, not a closed box. A scheme the Research Analyst extracts (§6.2) becomes applicable in one of two ways: (a) it fits an existing spec dimension (new projector type, vision encoder, distillation objective, quantization scheme) → a new value/parameter in `StudentSpec`/the registry → Tier 1/1.5, the agent applies it by proposing a spec; or (b) no builder covers it → a human extends a builder *once* (Tier 2) so it becomes new spec parameters → thereafter Tier 1.5. **Design obligation:** the spec schema and the (future, HLD §8) Technique Registry must be extensible by *adding values/fields*, not by editing core logic, so Mode-B promotion is "register a new spec dimension." This is now recorded as **HLD Amendment A (§6.5)**, which revises the original §3/§6.3 "Tier-2 is human-implemented" boundary.
 
 ---
 

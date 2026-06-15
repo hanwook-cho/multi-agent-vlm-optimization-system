@@ -3,8 +3,8 @@
 *Zero-based derivation of the system architecture from the ultimate goal. Companion to "Multi-Agent VLM Optimization System — Goals." The Goals document defines what we're trying to achieve; this document derives the system that achieves it. A subsequent Detailed Plan document will cover phase-by-phase execution.*
 
 **Audience.** Project owner, future collaborators, external reviewers.
-**Status.** Draft v1.
-**Last updated.** May 11, 2026.
+**Status.** Draft v1 + Amendment A (§6.5).
+**Last updated.** June 15, 2026 (Amendment A — system-driven construction, per ADR-0012).
 
 ---
 
@@ -258,6 +258,8 @@ The confidence flags are particularly important: they make the LLM's uncertainty
 
 The human is the implementor, not the system. The LLM's job is to make the human's implementation work *as easy as possible*, not to replace it.
 
+> **Amended by §6.5 (ADR-0012, 2026-06-15).** Phase-2 experience refined this: Tier-2 human work should produce a *parameterized capability* the agent then drives (a generic builder + a declarative spec), not a one-off the human hand-builds each time. The "human is the implementor" rule still holds for the irreducible *machinery*; the agent constructs every *instance*. See §6.5 — and note that this is the same seam through which Mode B / Research-Analyst-discovered schemes become agent-applicable.
+
 ### 6.4 LLM-driven research failure modes and mitigations
 
 The Research Analyst Agent's failure modes are real and not fully solvable. The HLD addresses them explicitly because they're first-order concerns, not appendix material.
@@ -271,6 +273,43 @@ The Research Analyst Agent's failure modes are real and not fully solvable. The 
 | **Implementation drift** | Human implements Tier 2 technique, but it doesn't match the paper's description | The verbatim excerpts in the record let the human verify their implementation against the source. The system also runs the technique on a small reproducibility-check task before allowing it into the main search. |
 
 The takeaway: **the LLM is not trusted; it is verified.** Every output of the Research Analyst Agent passes through deterministic checks before reaching a human, and even then is presented with its uncertainty visible.
+
+---
+
+### 6.5 Amendment A — System-Driven Construction (revises §3 and §6.3; per ADR-0012, 2026-06-15)
+
+The original HLD drew the autonomy line at "Tier-2 = code-requiring → the human implements it." Phase-2 experience overruled that boundary as written. After two distillation pilots regressed (P2-D1 caption-only, P2-D2 task-aligned — both distilling *into* the LFM2 benchmark, see ADR-0011), the corrected approach was to **construct** a right-sized student from the Qwen2.5-VL-3B lineage. The decision (ADR-0012, your directive: *"system should do, not human implement"*) was to make model construction a **system capability**, not a human one-off. This section revises the tier model accordingly.
+
+#### 6.5.1 Revised principle
+
+> **Tier-2 human work produces a *parameterized capability*, not a one-off.** A human writes a generic builder **once** (the irreducible machinery — e.g. assembling a multimodal forward pass *is* code). Thereafter the agent constructs every *instance* by proposing a declarative, content-addressed spec, and a deterministic loop builds → trains → evaluates → records it. Construction becomes a search dimension, not a manual task.
+
+The §6.3 rule ("the human is the implementor") still holds — but for the **machinery**, not the **model**. The human's deliverable shifts from "a model" to "a new agent-drivable knob."
+
+#### 6.5.2 The tier model is now three-way
+
+| Tier | What | Who acts | Example |
+|---|---|---|---|
+| **Tier 1 — config** | Change a parameter of an existing technique | Agent (auto) | INT4 group size 64; vision-token budget 96 |
+| **Tier 1.5 — parameterized construction** *(new)* | Propose a content-addressed **spec**; a builder assembles/trains/evals/records it autonomously | **Agent (auto)** | `StudentSpec` → `build_student` → `construction_loop` (ADR-0012, B1.0–B1.3): assemble LM+vision+projector, align, distill, score same-path, write to the ledger |
+| **Tier 2 — new machinery** | A technique no existing builder covers | Human writes/extends the generic builder **once** → exposes it as new spec parameters → it *becomes* Tier 1.5 | A new projector architecture, a new compression scheme, a new vision encoder family |
+
+The crucial change: Tier 2 is now a **one-time conversion of "new code" into "new spec parameters,"** after which the agent drives it. We climbed this ladder in practice during B1.0–B1.3: a human wrote the generic `build_student` once (Tier 2), and the Search Strategist now proposes `StudentSpec`s (Tier 1.5) via its `propose_student` tool.
+
+#### 6.5.3 Composition with Mode B / the Research Analyst (the load-bearing part)
+
+This revision is **designed so research-discovered schemes remain applicable** — it must not turn construction into a closed box. A scheme extracted by the Research Analyst (§6.2, Mode B) flows into the system through the **spec schema as the extension seam**:
+
+- **If the scheme fits an existing spec dimension** (a new projector type, vision encoder, distillation objective, quantization scheme, alignment recipe) → it lands as a **new value/parameter** in the spec or Technique Registry → **Tier 1 / 1.5**: the Search Strategist applies it by proposing a spec. No new machinery.
+- **If no existing builder covers it** → the human extends a builder **once** (Tier 2) so the scheme becomes new spec parameters → thereafter Tier 1.5.
+
+So the §6.2 hypothesis record's **`implementation difficulty`** and **`proposed codebase insertion point`** fields now point precisely at this seam: the Research Analyst's job becomes *"map this paper's technique onto a spec parameter, or onto a builder extension."* Mode B **grows the space of buildable specs**; the Search Strategist **searches that space**. Construction (ADR-0012) and research-ingestion (Phase 3) thus compose by construction rather than colliding — the same `StudentSpec`/registry that the agent searches today is what tomorrow's literature techniques plug into.
+
+> **Design obligation this creates:** the spec schema and the (still-to-be-built, §8) Technique Registry must be **extensible by adding values/fields**, not by editing core logic. `StudentSpec` (schemas/students.py) is the first instance and should evolve toward the §8 `techniques/`-directory registry vision so that Mode-B promotion = "register a new spec dimension," not "patch the builder." This is the concrete link between Amendment A and the still-open §8 / Research-Analyst work.
+
+#### 6.5.4 Unchanged guards
+
+Everything in §5 (human gates) and §6.4 (verification, not trust) still applies. Every constructed artifact is content-addressed by spec hash, recorded in the experiment ledger, and scored on the same inference path as the benchmark (P2-1.3). **Promoting** a new builder or scheme into the *default* search space remains epistemically gated (§5.1) — the agent may construct and measure freely, but widening the standing toolkit is still a human decision.
 
 ---
 
@@ -401,6 +440,7 @@ For the reader comparing this against the earlier build-plan content:
 | Mode of LLM use for research | Implicit "Research Agent generates hypotheses" | Explicit: LLM-as-analyst, hypothesis records as implementation kits, Tier 1 / Tier 2 split, verbatim-excerpt-backed records, confidence flags |
 | Human-in-the-loop | Listed without principle | Derived from single principle (irreversible / expensive / epistemically risky) and applied systematically |
 | Escalation trigger | Implicit | Explicit: Threshold Monitor + Decision Dossier + human decision |
+| Tier-2 (code-requiring) work | Human implements each technique/model | **Amendment A (§6.5):** human writes a generic builder *once*; agent drives every instance via a declarative spec (Tier 1.5). Research-discovered schemes plug in as new spec parameters. |
 
 The system is meaningfully simpler than earlier drafts, and the parts that remain are better justified.
 
