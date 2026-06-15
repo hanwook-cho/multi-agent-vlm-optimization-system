@@ -23,6 +23,13 @@ from schemas.experiments import (
     MetricsReport,
     WeightDtype,
 )
+from schemas.students import (
+    AlignSpec,
+    DistillSpec,
+    EvalSpec,
+    ProjectorSpec,
+    StudentSpec,
+)
 
 __all__ = [
     "AgentDecision",
@@ -49,4 +56,9 @@ __all__ = [
     "KVCacheDtype",
     "MetricsReport",
     "WeightDtype",
+    "AlignSpec",
+    "DistillSpec",
+    "EvalSpec",
+    "ProjectorSpec",
+    "StudentSpec",
 ]

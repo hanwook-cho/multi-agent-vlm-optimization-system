@@ -1,0 +1,11 @@
+{
+  "lm": "Qwen/Qwen2.5-0.5B-Instruct",
+  "vision": "google/siglip-base-patch16-224",
+  "projector": {"type": "mlp", "depth": 2, "hidden": 2048},
+  "init": "scratch",
+  "align": {"data": "coco_caption_5k", "steps": 2000},
+  "distill": {"teacher": "Qwen2.5-VL-3B", "data": "qa_balanced_5k", "lora_r": 16, "epochs": 3, "rehearse_frac": 0.2},
+  "eval": {"benchmarks": ["POPE", "RealWorldQA", "MMBench_DEV_EN"], "n": 100},
+  "target_device_id": "mac_mini_m4_16gb",
+  "notes": "P2-B1 primary spec: right-sized student assembled from the Qwen2.5-VL-3B lineage (ADR-0012)."
+}

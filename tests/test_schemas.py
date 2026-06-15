@@ -33,6 +33,7 @@ from schemas import (
     ExperimentConfig,
     HypothesisRecord,
     MetricsReport,
+    StudentSpec,
 )
 
 # ---------------------------------------------------------------------------
@@ -54,6 +55,7 @@ SCHEMA_MODEL_MAP: dict[str, Any] = {
     "metrics_report": MetricsReport,
     "agent_decision": AgentDecision,
     "hypothesis_record": HypothesisRecord,
+    "student_spec": StudentSpec,
 }
 
 # ---------------------------------------------------------------------------

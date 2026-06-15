@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StudentSpec",
+  "description": "A declarative, content-addressable description of a VLM the system constructs (Phase 2, ADR-0012). The Search Strategist proposes a StudentSpec; runners/build_student.py assembles -> aligns -> distills -> evaluates it and records the result in the ledger keyed by the spec's SHA-256. Converts model construction from a Tier-2 human one-off into a Tier-1-style search point the agent drives.",
+  "type": "object",
+  "required": [
+    "lm",
+    "vision",
+    "align",
+    "distill"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "lm": {
+      "type": "string",
+      "description": "HF id of the language-model backbone (e.g. 'Qwen/Qwen2.5-0.5B-Instruct'). Same-family as the teacher eases distillation.",
+      "minLength": 1
+    },
+    "vision": {
+      "type": "string",
+      "description": "HF id of the vision encoder (e.g. 'google/siglip-base-patch16-224').",
+      "minLength": 1
+    },
+    "projector": {
+      "$ref": "#/$defs/ProjectorSpec"
+    },
+    "init": {
+      "type": "string",
+      "description": "'scratch' (random projector, pretrained LM+vision) or 'adapt:<hf_id>' to warm-start from an existing small VLM.",
+      "default": "scratch"
+    },
+    "align": {
+      "$ref": "#/$defs/AlignSpec"
+    },
+    "distill": {
+      "$ref": "#/$defs/DistillSpec"
+    },
+    "eval": {
+      "$ref": "#/$defs/EvalSpec"
+    },
+    "target_device_id": {
+      "type": "string",
+      "description": "Foreign key to DeviceDescriptor.device_id - where the build runs.",
+      "default": "mac_mini_m4_16gb",
+      "minLength": 1
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "description": "Free-form human/agent annotation. Excluded from the content hash.",
+      "default": null
+    }
+  },
+  "$defs": {
+    "ProjectorSpec": {
+      "type": "object",
+      "description": "The vision->LM bridge. An MLP mapping vision-encoder hidden states into the LM embedding space (the only newly-initialised module when init='scratch').",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["mlp"],
+          "default": "mlp",
+          "description": "Projector architecture. Only 'mlp' is supported today."
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 2,
+          "description": "Number of Linear layers in the projector MLP."
+        },
+        "hidden": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 8192,
+          "default": 2048,
+          "description": "Hidden width of the projector MLP."
+        }
+      }
+    },
+    "AlignSpec": {
+      "type": "object",
+      "description": "Stage-1: train ONLY the projector to connect the (frozen) modalities.",
+      "required": ["data"],
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "type": "string",
+          "description": "Named alignment dataset (e.g. a caption cache key like 'coco_caption_5k').",
+          "minLength": 1
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2000,
+          "description": "Optimizer steps for projector alignment."
+        }
+      }
+    },
+    "DistillSpec": {
+      "type": "object",
+      "description": "Stage-2: LoRA-distill the assembled student from the teacher on a task-aligned set.",
+      "required": ["data"],
+      "additionalProperties": false,
+      "properties": {
+        "teacher": {
+          "type": "string",
+          "default": "Qwen2.5-VL-3B",
+          "description": "Teacher model the targets came from."
+        },
+        "data": {
+          "type": "string",
+          "description": "Named distillation cache key (e.g. 'qa_balanced_5k' - task-aligned + hard negatives, the P2-D2 fix).",
+          "minLength": 1
+        },
+        "lora_r": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 16,
+          "description": "LoRA rank."
+        },
+        "epochs": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3,
+          "description": "Distillation epochs."
+        },
+        "rehearse_frac": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.2,
+          "description": "Fraction of caption/rehearsal data mixed in to fight forgetting (P2-D1/D2 lesson)."
+        }
+      }
+    },
+    "EvalSpec": {
+      "type": "object",
+      "description": "Same-path MCQ eval suite the constructed student is scored on (P2-1.3 methodology).",
+      "additionalProperties": false,
+      "properties": {
+        "benchmarks": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "default": ["POPE", "RealWorldQA", "MMBench_DEV_EN"],
+          "description": "Benchmarks to score against."
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 100,
+          "description": "Samples per benchmark slice."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,306 @@
+"""
+runners/build_student.py
+────────────────────────
+Phase 2 / ADR-0012 — the GENERIC student builder. The system constructs a VLM
+from a declarative StudentSpec; the human writes this harness once, and every
+*instance* of construction is a spec the Search Strategist proposes.
+
+Pipeline (per StudentSpec):
+    assemble  → wire vision encoder + projector + LM into one StudentVLM
+    align     → stage-1: train ONLY the projector to connect the modalities
+    distill   → stage-2: LoRA-distill the assembled student from the teacher cache
+    evaluate  → same-path MCQ eval (P2-1.3 methodology)   [full wiring: B1.3]
+    record    → MetricsReport-shaped record keyed by spec.content_hash()
+
+B1.0 scope: this is the SKELETON + an end-to-end SMOKE (`--smoke`) that proves the
+pipeline wires together on the 16GB Mac (assemble + 2-step align + 2-step distill +
+a few greedy generations). The full VLMEvalKit eval integration is B1.3; until then
+`evaluate()` runs a generation sanity check and marks the run accordingly.
+
+Usage
+-----
+    # end-to-end smoke (tiny, ~minutes) — proves the build wires together
+    python runners/build_student.py --spec tests/fixtures/student_spec_p2b1_qwen05b_siglip.json --smoke
+
+    # real construction run (compute-gated, multi-hour) — B1.3
+    python runners/build_student.py --spec <spec.json> --out artifacts/students/<name>
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import torch
+import torch.nn as nn
+from PIL import Image
+
+PROJECT_ROOT = Path(__file__).parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from schemas.students import StudentSpec  # noqa: E402
+
+# Named data keys → (cache JSONL, image dir). The agent selects a key in the spec;
+# the human maintains this registry as caches are produced (B1.1 adds qa_balanced).
+DATA_REGISTRY: dict[str, tuple[str, str]] = {
+    "coco_caption_5k": ("datasets/caption_cache/qwen25_3b_coco5k.jsonl", "datasets/coco_train2017"),
+    "qa_5k":           ("datasets/caption_cache/qwen25_3b_qa5k.jsonl",   "datasets/coco_train2017"),
+    "qa_balanced_5k":  ("datasets/caption_cache/qwen25_3b_qa5k.jsonl",   "datasets/coco_train2017"),  # B1.1 will swap in the balanced cache
+    "canary":          ("datasets/caption_cache/canary.jsonl",          "datasets/coco_train2017"),
+}
+
+CAPTION_PROMPT = "Describe this image in detail."
+
+
+def _device() -> str:
+    return "mps" if torch.backends.mps.is_available() else "cpu"
+
+
+def _resolve_data(key: str) -> tuple[Path, Path]:
+    if key not in DATA_REGISTRY:
+        raise SystemExit(f"unknown data key '{key}' — known: {sorted(DATA_REGISTRY)}")
+    cache, images = DATA_REGISTRY[key]
+    return PROJECT_ROOT / cache, PROJECT_ROOT / images
+
+
+# ── Assembled student ─────────────────────────────────────────────────────────
+
+class StudentVLM(nn.Module):
+    """A VLM assembled from a pretrained vision encoder + a fresh MLP projector +
+    a pretrained causal LM. Image patch features are projected into the LM
+    embedding space and PREPENDED to the text token embeddings (LLaVA-style),
+    so no special placeholder token is required in the tokenizer.
+
+    forward(input_ids, attention_mask, pixel_values, labels) → CausalLMOutput.
+    """
+
+    def __init__(self, vision: nn.Module, projector: nn.Module, lm: nn.Module):
+        super().__init__()
+        self.vision = vision
+        self.projector = projector
+        self.lm = lm
+
+    def _image_embeds(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        feats = self.vision(pixel_values=pixel_values).last_hidden_state  # [B, P, vdim]
+        return self.projector(feats)                                      # [B, P, H]
+
+    def forward(self, input_ids, attention_mask, pixel_values, labels=None):
+        text_embeds = self.lm.get_input_embeddings()(input_ids)           # [B, T, H]
+        img_embeds = self._image_embeds(pixel_values).to(text_embeds.dtype)
+        inputs_embeds = torch.cat([img_embeds, text_embeds], dim=1)       # [B, P+T, H]
+
+        b, p, _ = img_embeds.shape
+        img_mask = torch.ones(b, p, dtype=attention_mask.dtype, device=attention_mask.device)
+        attn = torch.cat([img_mask, attention_mask], dim=1)
+
+        full_labels = None
+        if labels is not None:
+            img_labels = torch.full((b, p), -100, dtype=labels.dtype, device=labels.device)
+            full_labels = torch.cat([img_labels, labels], dim=1)
+
+        return self.lm(inputs_embeds=inputs_embeds, attention_mask=attn, labels=full_labels)
+
+    @torch.no_grad()
+    def generate(self, input_ids, attention_mask, pixel_values, **kw):
+        text_embeds = self.lm.get_input_embeddings()(input_ids)
+        img_embeds = self._image_embeds(pixel_values).to(text_embeds.dtype)
+        inputs_embeds = torch.cat([img_embeds, text_embeds], dim=1)
+        b, p, _ = img_embeds.shape
+        img_mask = torch.ones(b, p, dtype=attention_mask.dtype, device=attention_mask.device)
+        attn = torch.cat([img_mask, attention_mask], dim=1)
+        return self.lm.generate(inputs_embeds=inputs_embeds, attention_mask=attn, **kw)
+
+
+def assemble(spec: StudentSpec, device: str) -> tuple[StudentVLM, object, object]:
+    """Build the StudentVLM from the spec. Returns (model, tokenizer, image_processor)."""
+    from transformers import (AutoImageProcessor, AutoModel,
+                              AutoModelForCausalLM, AutoTokenizer)
+
+    print(f"  assembling: vision={spec.vision}  lm={spec.lm}  projector={spec.projector}")
+    vision_full = AutoModel.from_pretrained(spec.vision, trust_remote_code=True)
+    vision = getattr(vision_full, "vision_model", vision_full)  # SigLIP/CLIP → vision tower
+    image_processor = AutoImageProcessor.from_pretrained(spec.vision)
+    vdim = vision.config.hidden_size
+
+    lm = AutoModelForCausalLM.from_pretrained(
+        spec.lm, torch_dtype=torch.float32, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(spec.lm, trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    h = lm.config.hidden_size
+
+    # Projector MLP: depth Linear layers (vdim → hidden → … → H), GELU between.
+    p = spec.projector
+    layers: list[nn.Module] = []
+    if p.depth == 1:
+        layers.append(nn.Linear(vdim, h))
+    else:
+        layers.append(nn.Linear(vdim, p.hidden))
+        for _ in range(p.depth - 2):
+            layers += [nn.GELU(), nn.Linear(p.hidden, p.hidden)]
+        layers += [nn.GELU(), nn.Linear(p.hidden, h)]
+    projector = nn.Sequential(*layers)
+
+    model = StudentVLM(vision, projector, lm).to(device)
+    n_proj = sum(x.numel() for x in projector.parameters())
+    print(f"  assembled : vdim={vdim} → H={h}, projector params={n_proj:,}")
+    return model, tokenizer, image_processor
+
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+
+def _load_rows(data_key: str, limit: int | None) -> list[dict]:
+    """Reuse the finetune cache loader → unified {image_path, prompt, target} rows."""
+    from runners.finetune_vlm import load_cache
+    cache, images = _resolve_data(data_key)
+    if not cache.exists():
+        raise SystemExit(f"data '{data_key}' cache missing: {cache}")
+    rows = load_cache(cache, images, max_samples=limit, default_prompt=CAPTION_PROMPT)
+    if not rows:
+        raise SystemExit(f"no usable rows in {cache}")
+    return rows
+
+
+def _encode(row: dict, tokenizer, image_processor, device: str):
+    """Batch-1 encode of (image, prompt, target) with prompt tokens masked to -100."""
+    image = Image.open(row["image_path"]).convert("RGB")
+    pixel_values = image_processor(images=image, return_tensors="pt").pixel_values.to(device)
+
+    prompt_ids = tokenizer(row["prompt"], add_special_tokens=True).input_ids
+    target_ids = tokenizer(" " + row["target"], add_special_tokens=False).input_ids
+    target_ids = target_ids + [tokenizer.eos_token_id]
+    input_ids = torch.tensor([prompt_ids + target_ids], device=device)
+    attention_mask = torch.ones_like(input_ids)
+    labels = input_ids.clone()
+    labels[0, : len(prompt_ids)] = -100
+    return input_ids, attention_mask, pixel_values, labels
+
+
+def _prompt_inputs(row: dict, tokenizer, image_processor, device: str):
+    """Encode the prompt only (for generation sanity)."""
+    image = Image.open(row["image_path"]).convert("RGB")
+    pixel_values = image_processor(images=image, return_tensors="pt").pixel_values.to(device)
+    enc = tokenizer(row["prompt"], return_tensors="pt").to(device)
+    return enc.input_ids, enc.attention_mask, pixel_values
+
+
+# ── Stages ──────────────────────────────────────────────────────────────────
+
+def _train_loop(model, rows, tokenizer, image_processor, device, steps, lr, label):
+    """Minimal batch-1 training loop over the given trainable params (already set)."""
+    params = [p for p in model.parameters() if p.requires_grad]
+    opt = torch.optim.AdamW(params, lr=lr)
+    model.train()
+    losses = []
+    for i in range(steps):
+        row = rows[i % len(rows)]
+        input_ids, attn, pixel_values, labels = _encode(row, tokenizer, image_processor, device)
+        out = model(input_ids=input_ids, attention_mask=attn,
+                    pixel_values=pixel_values, labels=labels)
+        out.loss.backward()
+        opt.step(); opt.zero_grad()
+        loss_val = out.loss.detach().item()
+        losses.append(loss_val)
+        print(f"    [{label}] step {i+1}/{steps}  loss={loss_val:.3f}")
+    return losses
+
+
+def align(model, spec, tokenizer, image_processor, device, steps, lr=1e-3, limit=None):
+    """Stage-1: freeze vision + LM, train ONLY the projector."""
+    for pm in model.vision.parameters(): pm.requires_grad = False
+    for pm in model.lm.parameters(): pm.requires_grad = False
+    for pm in model.projector.parameters(): pm.requires_grad = True
+    rows = _load_rows(spec.align.data, limit)
+    print(f"  align     : projector-only, {steps} steps on '{spec.align.data}' ({len(rows)} rows)")
+    return _train_loop(model, rows, tokenizer, image_processor, device, steps, lr, "align")
+
+
+def distill(model, spec, tokenizer, image_processor, device, steps, lr=2e-4, limit=None):
+    """Stage-2: LoRA-adapt the LM, keep training the projector, distill on the teacher cache."""
+    from peft import LoraConfig, get_peft_model
+    lora = LoraConfig(r=spec.distill.lora_r, lora_alpha=2 * spec.distill.lora_r,
+                      target_modules=["q_proj", "v_proj", "o_proj"],
+                      lora_dropout=0.05, bias="none", task_type="CAUSAL_LM")
+    model.lm = get_peft_model(model.lm, lora)
+    for pm in model.projector.parameters(): pm.requires_grad = True  # projector stays trainable
+    rows = _load_rows(spec.distill.data, limit)
+    print(f"  distill   : LoRA r={spec.distill.lora_r} + projector, {steps} steps on "
+          f"'{spec.distill.data}' ({len(rows)} rows)")
+    return _train_loop(model, rows, tokenizer, image_processor, device, steps, lr, "distill")
+
+
+def generate_sanity(model, spec, tokenizer, image_processor, device, n):
+    """Greedy-generate on n samples — proves the assembled forward+decode path works."""
+    rows = _load_rows(spec.eval.data if hasattr(spec.eval, "data") else spec.distill.data, n)
+    model.eval()
+    outs = []
+    for row in rows[:n]:
+        input_ids, attn, pixel_values = _prompt_inputs(row, tokenizer, image_processor, device)
+        gen = model.generate(input_ids=input_ids, attention_mask=attn,
+                             pixel_values=pixel_values, max_new_tokens=16, do_sample=False)
+        text = tokenizer.decode(gen[0], skip_special_tokens=True)
+        outs.append({"prompt": row["prompt"], "output": text})
+        print(f"    [gen] {row['prompt'][:40]!r} → {text[:60]!r}")
+    return outs
+
+
+# ── Orchestration ──────────────────────────────────────────────────────────
+
+def build(spec: StudentSpec, out_dir: Path, smoke: bool) -> dict:
+    """Run the full pipeline for a spec. Returns a run record (also written to disk)."""
+    device = _device()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    exp_id = spec.content_hash()
+    started = datetime.now(timezone.utc)
+    print(f"▶ build_student  spec={exp_id[:12]}  device={device}  smoke={smoke}")
+
+    # Smoke uses tiny budgets; real runs use the spec's.
+    align_steps = 2 if smoke else spec.align.steps
+    distill_steps = 2 if smoke else None  # real distill-step count derived in B1.3
+    eval_n = 3 if smoke else spec.eval.n
+    data_limit = 8 if smoke else None
+
+    model, tokenizer, image_processor = assemble(spec, device)
+    align_losses = align(model, spec, tokenizer, image_processor, device, align_steps, limit=data_limit)
+    distill_losses = distill(model, spec, tokenizer, image_processor, device,
+                             distill_steps or 2, limit=data_limit)
+    gens = generate_sanity(model, spec, tokenizer, image_processor, device, eval_n)
+
+    completed = datetime.now(timezone.utc)
+    record = {
+        "experiment_id": exp_id,
+        "spec": json.loads(spec.model_dump_json()),
+        "device_id": spec.target_device_id,
+        "status": "smoke_ok" if smoke else "built",
+        "started_at": started.isoformat(),
+        "completed_at": completed.isoformat(),
+        "align_losses": align_losses,
+        "distill_losses": distill_losses,
+        "generations": gens,
+        "note": ("B1.0 smoke — assemble+align+distill+generate wired end-to-end. "
+                 "Full VLMEvalKit eval is B1.3." if smoke else
+                 "Built; same-path eval integration pending B1.3."),
+    }
+    (out_dir / "build_record.json").write_text(json.dumps(record, indent=2))
+    print(f"  ✅ {record['status']} → {out_dir/'build_record.json'}")
+    return record
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Construct a VLM student from a StudentSpec (ADR-0012)")
+    ap.add_argument("--spec", required=True, help="Path to a StudentSpec JSON")
+    ap.add_argument("--out", default=None, help="Output dir (default: artifacts/students/<hash12>)")
+    ap.add_argument("--smoke", action="store_true", help="Tiny end-to-end smoke (proves the wiring)")
+    args = ap.parse_args()
+
+    spec = StudentSpec.model_validate_json(Path(args.spec).read_text())
+    out = Path(args.out) if args.out else PROJECT_ROOT / "artifacts/students" / f"build_{spec.content_hash()[:12]}"
+    build(spec, out, smoke=args.smoke)
+
+
+if __name__ == "__main__":
+    main()

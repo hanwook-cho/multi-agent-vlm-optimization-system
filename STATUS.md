@@ -56,9 +56,14 @@
 - **The deeper lesson:** both D-series pilots distilled *into* LFM2 and both regressed → confirms [ADR-0011](docs/decisions/0011-phase2-strategy-correction.md) — **LFM2 is already edge-optimized, so any LoRA only moves it off its tuned optimum.** Distillation INTO the benchmark is a dead end; distillation must *add* capability to an under-trained, right-sized student.
 - **The loop re-routed:** P2-D2 → REGRESSED in the hypothesis table; the Search Strategist's open Phase-2 set is now **{P2-C1, P2-B1}**, and P2-C1 collapses into P2-B1 by the architecture budget → **next move is P2-B1** (assemble a ~450–600M student from Qwen2.5-0.5B LM + small SigLIP, distill from the 3B). Two negative results drove the pivot with no human config-picking.
 
-### P2-B1 (next) — assemble a right-sized student from the 3B lineage
+### P2-B1 — the SYSTEM constructs the student (ADR-0012)
 
-- The corrected primary path (ADR-0011): build the student so distillation **adds** the teacher's MCQ skill instead of overwriting a tuned base. Same-family LM (Qwen2.5-0.5B ← 3B) shares tokenizer/embedding space; small SigLIP fits the vision budget the 3B's 669M ViT cannot. Not yet started.
+Per user directive ("system should do, not human implement"), P2-B1 is built as a **system capability**, not a hand-made model: the human writes one generic builder; the agent constructs every student by proposing a declarative `StudentSpec`. See [ADR-0012](docs/decisions/0012-system-driven-student-construction.md). Sequenced B1.0 → B1.3:
+
+- **B1.0 ✅ — generic builder skeleton + end-to-end smoke.** `schemas/students.py` (`StudentSpec`, content-addressable like `ExperimentConfig`) + `schemas/student_spec.schema.json` (+ fixture, in the schema-consistency suite). `runners/build_student.py` assembles a `StudentVLM` (vision encoder + fresh MLP projector + causal LM, LLaVA-style prepend) and runs **assemble → align (projector-only) → distill (LoRA + projector) → generate**. Smoke verified on the 16GB Mac: SigLIP-base (vdim 768) + Qwen2.5-0.5B (H 896), projector 3.4M params, all stages ran, forward+decode works (output gibberish as expected after 2 steps — wiring, not quality). 62/62 tests pass.
+- **B1.1 (next)** — balanced hard-negative QA recipe (absent-object questions, the P2-D2 fix) as a `distill.data` option.
+- **B1.2** — Search Strategist proposes a `StudentSpec` → builder runs → ledger → re-route (construction loop closed).
+- **B1.3** — first real construction run; wire the assembled student into the same-path VLMEvalKit eval; score vs the LFM2-VL-450M benchmark (POPE ≥ ~86).
 
 ---
 
