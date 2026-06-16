@@ -200,7 +200,7 @@ Images: sample1–5.jpg (same set for all models).
 | Qwen2.5-VL-3B | `Qwen/Qwen2.5-VL-3B-Instruct` | 96.7 | 55.0 | 66.0 |
 | FastVLM-0.5B | `apple/FastVLM-0.5B` | 86.7 | 37.0 | 53.0 |
 
-Consistency with published numbers: POPE scores match within ~2pp for all models where published scores exist (FastVLM paper: 87.4%, LFM2.5 blog: 86.9%). RealWorldQA and MMBench gaps vs. published are expected from 100-sample slice variance and exact-match-only scoring (no GPT fallback).
+Sanity-check against published numbers (NOT external validation): these are *reference models'* baselines on our 100-sample internal slices, used to confirm our harness is wired correctly — not a validation of any student's score. POPE lands within ~2pp for models with published figures (FastVLM paper: 87.4%, LFM2.5 blog: 86.9%); RealWorldQA and MMBench gaps vs. published are expected from 100-sample slice variance and exact-match-only scoring (no GPT fallback). These remain **internal-only** numbers per the trust caveat above — reproducing a baseline within a few points on a 100-sample slice is a wiring check, not an official-protocol reproduction.
 
 ---
 
