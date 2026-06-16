@@ -54,6 +54,11 @@ DATA_REGISTRY: dict[str, tuple[str, str]] = {
     # until generated, this key falls back to the plain qa5k cache so the smoke runs.
     "qa_balanced_5k":  ("datasets/caption_cache/qwen25_3b_qa_balanced5k.jsonl", "datasets/coco_train2017"),
     "qa_balanced_5k_fallback": ("datasets/caption_cache/qwen25_3b_qa5k.jsonl",  "datasets/coco_train2017"),
+    # P2-B1 next lever: balanced yes/no+open mixed with MCQ items so the student can
+    # do multiple-choice (off the MMBench floor). Built by combining the two caches.
+    "qa_balanced_mcq": ("datasets/caption_cache/qwen25_3b_qa_balanced_mcq.jsonl", "datasets/coco_train2017"),
+    "qa_balanced_mcq_fallback": ("datasets/caption_cache/qwen25_3b_qa_balanced5k.jsonl", "datasets/coco_train2017"),
+    "mcq":             ("datasets/caption_cache/qwen25_3b_mcq.jsonl",   "datasets/coco_train2017"),
     "canary":          ("datasets/caption_cache/canary.jsonl",          "datasets/coco_train2017"),
 }
 
