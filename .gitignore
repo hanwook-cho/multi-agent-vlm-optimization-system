@@ -72,6 +72,8 @@ datasets/coco_cache/
 datasets/coco_train2017/
 # Phase 2 teacher caption/QA caches (generated, large)
 datasets/caption_cache/
+# Phase 2 ScienceQA pilot images (downloaded, large — see runners/build_scienceqa_cache.py)
+datasets/scienceqa_images/
 
 # Phase 2 student adapters — trained locally, not committed.
 artifacts/students/

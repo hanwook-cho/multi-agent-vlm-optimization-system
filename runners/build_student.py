@@ -59,6 +59,10 @@ DATA_REGISTRY: dict[str, tuple[str, str]] = {
     "qa_balanced_mcq": ("datasets/caption_cache/qwen25_3b_qa_balanced_mcq.jsonl", "datasets/coco_train2017"),
     "qa_balanced_mcq_fallback": ("datasets/caption_cache/qwen25_3b_qa_balanced5k.jsonl", "datasets/coco_train2017"),
     "mcq":             ("datasets/caption_cache/qwen25_3b_mcq.jsonl",   "datasets/coco_train2017"),
+    # P2-B1 distribution fix: MMBench is science/knowledge/reasoning, off-distribution
+    # for COCO (POPE's distribution). ScienceQA is the closest public match AND is
+    # natively MCQ with gold answers — built by runners/build_scienceqa_cache.py.
+    "scienceqa_mcq":   ("datasets/caption_cache/scienceqa_mcq.jsonl", "datasets/scienceqa_images"),
     "canary":          ("datasets/caption_cache/canary.jsonl",          "datasets/coco_train2017"),
 }
 
