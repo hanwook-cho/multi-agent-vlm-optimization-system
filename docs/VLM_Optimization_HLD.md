@@ -101,11 +101,12 @@ This gives the system two distinct operating modes. The architecture must suppor
 
 In Mode A, the system explores a defined search space of well-understood techniques. The toolkit is enumerated and finite (though large):
 
-- **Compression:** FP16, INT8 (per-channel weights, dynamic activations), INT4 (weight-only, group-wise at various group sizes), mixed precision.
+- **Compression** *(quantization/precision only)*: FP16, INT8 (per-channel weights, dynamic activations), INT4 (weight-only, group-wise at various group sizes), mixed precision. NB: "compression" here means precision reduction — it does **not** subsume distillation/pruning/construction below, which are distinct families.
 - **Architecture choices within known families:** vision-token budgets, input resolutions, encoder/decoder swaps within compatible families.
 - **Runtime backends:** MLX, CoreML, ONNX Runtime, llama.cpp / GGUF, per `DeviceDescriptor`.
 - **Decode strategies:** greedy, top-k, speculative decoding (when a draft model is available).
-- **Training-time techniques:** fine-tuning from open weights, caption-only cached distillation from open-license teachers, structured pruning at fixed sparsity levels.
+- **Training-time techniques:** fine-tuning from open weights; **task-aligned knowledge distillation** from open-license teachers (the student is trained on teacher-generated Q&A/MCQ targets — *caption-only* distillation was an early variant that regressed, see ADR-0011), using **LoRA** for the adapt stage and **rehearsal/replay** to fight catastrophic forgetting; structured pruning at fixed sparsity levels.
+- **Student construction** *(Tier-1.5, per §6.5)*: rather than only configuring an existing model, the agent may propose a `StudentSpec` that assembles a right-sized student (LM + vision encoder + MLP projector, LLaVA-style) and trains it two-stage (projector *align* → *distill*). This is still Mode A — every method it uses is well-known (references in [`VLM_Optimization_PriorArt.md`](VLM_Optimization_PriorArt.md) §6.1); only the *machinery* was Tier-2 to build once.
 
 Mode A is essentially a sophisticated *informed sweep* with on-device measurement and Pareto tracking. It does not require literature ingestion or hypothesis generation. It does require:
 
