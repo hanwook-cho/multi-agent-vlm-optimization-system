@@ -71,6 +71,21 @@ QA_GEN_PROMPT = (
     "Q: <question>\nA: <answer>"
 )
 
+# Multiple-choice mode — the student is at the MMBench/RealWorldQA floor because it
+# never trained on the MCQ format (question + options A-D → answer letter). The
+# teacher generates grounded multiple-choice items so the student learns to pick a
+# letter. The training prompt mirrors the eval (build_mcq_question + MCQ suffix) so
+# train/eval format matches.
+MCQ_GEN_PROMPT = (
+    "Create a multiple-choice question that tests understanding of THIS image. "
+    "Give exactly four options labeled A, B, C, D, with exactly one correct answer. "
+    "Make the wrong options plausible. Format strictly:\n"
+    "Question: <question>\nA. <option>\nB. <option>\nC. <option>\nD. <option>\n"
+    "Answer: <letter A-D>"
+)
+# Must match runners.eval_vlmeval.MCQ_PROMPT_SUFFIX so train/eval prompts align.
+MCQ_TRAIN_SUFFIX = " Answer with only the letter A, B, C, or D."
+
 
 def _parse_qa(text: str) -> list[tuple[str, str]]:
     """Parse 'Q: ... / A: ...' pairs from the teacher's output."""
@@ -86,6 +101,32 @@ def _parse_qa(text: str) -> list[tuple[str, str]]:
                 pairs.append((q, a))
             q = None
     return pairs
+
+
+def _parse_mcq(text: str) -> dict | None:
+    """Parse a 'Question/A./B./C./D./Answer:' block → {prompt, target} or None.
+
+    prompt = the question + the four options + the MCQ suffix (matching the eval
+    format); target = the single correct letter. Returns None if malformed.
+    """
+    import re
+    question = None
+    options: dict[str, str] = {}
+    answer = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.lower().startswith("question:"):
+            question = line.split(":", 1)[1].strip()
+        elif re.match(r"^[A-D][.)]\s", line):
+            options[line[0].upper()] = line[2:].strip()
+        elif line.lower().startswith("answer:"):
+            m = re.search(r"[A-D]", line.split(":", 1)[1].upper())
+            if m:
+                answer = m.group(0)
+    if not question or len(options) != 4 or answer not in options:
+        return None
+    opt_block = "\n".join(f"{L}. {options[L]}" for L in ("A", "B", "C", "D"))
+    return {"prompt": f"{question}\n{opt_block}{MCQ_TRAIN_SUFFIX}", "target": answer}
 
 
 # ── B1.1: balanced hard-negative QA (the P2-D2 fix) ──────────────────────────
@@ -382,13 +423,65 @@ def generate_balanced_qa_cache(
     return pairs_total
 
 
+def generate_mcq_cache(
+    image_dir: Path,
+    out_path: Path,
+    limit: int | None = None,
+    teacher_model_id: str = TEACHER_MODEL_ID,
+    device: str | None = None,
+) -> int:
+    """Teacher generates grounded multiple-choice items (question + A-D → letter).
+
+    Writes {image, prompt, target: <letter>, kind: "mcq", ...}. The prompt mirrors
+    the eval format (options + 'Answer with only the letter...'), so the student
+    learns the MCQ format the MMBench/RealWorldQA benchmarks measure. Resumable.
+    """
+    device = device or ("mps" if torch.backends.mps.is_available() else "cpu")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    names = list_images(image_dir, limit)
+    done = _load_done(out_path)
+    todo = [n for n in names if n not in done]
+
+    print(f"  teacher : {teacher_model_id}  (mode=mcq)")
+    print(f"  images  : {len(names)} total, {len(done)} cached, {len(todo)} to do")
+    if not todo:
+        print("  nothing to do — cache already complete for this set.")
+        return 0
+    print(f"  loading teacher on {device} …")
+    model, processor = load_qwen25vl(device)
+
+    written = 0
+    with out_path.open("a") as f:
+        for i, name in enumerate(todo):
+            try:
+                image = Image.open(image_dir / name).convert("RGB")
+                raw = infer_qwen25vl(model, processor, image, MCQ_GEN_PROMPT, device)
+                rec = _parse_mcq(raw)
+            except Exception as exc:
+                print(f"\n  WARN {name}: {exc}")
+                continue
+            if rec is None:
+                continue
+            f.write(json.dumps({"image": name, **rec, "kind": "mcq",
+                                "teacher": teacher_model_id,
+                                "ts": datetime.now(timezone.utc).isoformat()}) + "\n")
+            f.flush()
+            written += 1
+            if i % 10 == 0:
+                print(f"    [{i}/{len(todo)}] {name}: {rec['target']}  {rec['prompt'][:50]!r}")
+
+    print(f"  done — {written} MCQ items from {len(todo)} images → {out_path}")
+    return written
+
+
 def main():
     ap = argparse.ArgumentParser(description="Generate teacher distillation cache (Phase 2 Strategy B)")
     ap.add_argument("--images", required=True, help="Directory of training images")
     ap.add_argument("--out", required=True, help="Output JSONL cache path")
-    ap.add_argument("--mode", choices=["caption", "qa", "qa_balanced"], default="caption",
+    ap.add_argument("--mode", choices=["caption", "qa", "qa_balanced", "mcq"], default="caption",
                     help="caption (P2-D1), qa = task-aligned Q&A (P2-D2), "
-                         "qa_balanced = grounded 50/50 yes/no presence + open (B1.1 fix)")
+                         "qa_balanced = grounded 50/50 yes/no presence + open (B1.1), "
+                         "mcq = multiple-choice items (off the MMBench floor)")
     ap.add_argument("--limit", type=int, default=None, help="Max images (use for the pilot, e.g. 50)")
     ap.add_argument("--pairs-per-image", type=int, default=2,
                     help="qa_balanced: max present/absent presence Qs per class per image")
@@ -397,7 +490,13 @@ def main():
     ap.add_argument("--device", default=None, help="mps/cpu (auto-detected)")
     args = ap.parse_args()
 
-    if args.mode == "qa_balanced":
+    if args.mode == "mcq":
+        n = generate_mcq_cache(
+            image_dir=Path(args.images), out_path=Path(args.out),
+            limit=args.limit, device=args.device,
+        )
+        print(f"\n✅ {n} MCQ items cached (multiple-choice, off the MMBench floor).")
+    elif args.mode == "qa_balanced":
         n = generate_balanced_qa_cache(
             image_dir=Path(args.images), out_path=Path(args.out),
             limit=args.limit, pairs_per_image=args.pairs_per_image,

@@ -36,3 +36,23 @@ def test_parse_presence_labels():
 def test_coco80_is_the_negative_pool():
     assert len(COCO80) == 80
     assert "oven" in COCO80 and "teddy bear" in COCO80
+
+
+def test_parse_mcq_wellformed():
+    from services.distillation_pipeline import _parse_mcq, MCQ_TRAIN_SUFFIX
+    text = ("Question: What animal is shown?\n"
+            "A. Cat\nB. Dog\nC. Horse\nD. Bird\nAnswer: B")
+    rec = _parse_mcq(text)
+    assert rec is not None
+    assert rec["target"] == "B"
+    assert rec["prompt"].startswith("What animal is shown?\nA. Cat\nB. Dog")
+    assert rec["prompt"].endswith(MCQ_TRAIN_SUFFIX)
+
+
+def test_parse_mcq_rejects_malformed():
+    from services.distillation_pipeline import _parse_mcq
+    assert _parse_mcq("no structure here") is None
+    # missing an option
+    assert _parse_mcq("Question: q?\nA. a\nB. b\nC. c\nAnswer: A") is None
+    # answer letter not among options
+    assert _parse_mcq("Question: q?\nA. a\nB. b\nC. c\nD. d\nAnswer: E") is None
