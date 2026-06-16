@@ -42,7 +42,8 @@ class DistillSpec(BaseModel):
     data: Annotated[str, Field(description="Named distillation cache key (e.g. 'qa_balanced_5k' — task-aligned + hard negatives, the P2-D2 fix).")]
     lora_r: Annotated[int, Field(default=16, ge=1, le=256, description="LoRA rank.")]
     epochs: Annotated[int, Field(default=3, ge=1, description="Distillation epochs.")]
-    rehearse_frac: Annotated[float, Field(default=0.2, ge=0.0, le=1.0, description="Fraction of caption/rehearsal data mixed in to fight forgetting (P2-D1/D2 lesson).")]
+    rehearse_data: Annotated[str | None, Field(default=None, description="Named cache key replayed in at rehearse_frac to protect a prior skill from forgetting (continual-learning rehearsal). None = train on 'data' alone, as-is.")]
+    rehearse_frac: Annotated[float, Field(default=0.2, ge=0.0, le=1.0, description="Fraction of 'data' rows' worth of rehearse_data mixed in (e.g. 0.5 adds rows equal to half the primary set). Only applies when rehearse_data is set.")]
 
 
 class EvalSpec(BaseModel):

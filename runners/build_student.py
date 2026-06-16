@@ -224,13 +224,35 @@ def assemble(spec: StudentSpec, device: str) -> tuple[StudentVLM, object, object
 
 # ── Data ──────────────────────────────────────────────────────────────────────
 
-def _load_rows(data_key: str, limit: int | None) -> list[dict]:
-    """Reuse the finetune cache loader → unified {image_path, prompt, target} rows."""
+def _load_rows(data_key: str, limit: int | None,
+               rehearse_key: str | None = None, rehearse_frac: float = 0.0) -> list[dict]:
+    """Reuse the finetune cache loader → unified {image_path, prompt, target} rows.
+
+    If rehearse_key is set, mix in `rehearse_frac × len(primary)` rows from that
+    second cache (continual-learning replay, to protect a prior skill from
+    forgetting — the P2-D1/D2 lesson). Each cache resolves its own image dir, so
+    the two may live in different image roots. Deterministic (seed 0).
+    """
     from runners.finetune_vlm import load_cache
     cache, images = _resolve_data(data_key)
     if not cache.exists():
         raise SystemExit(f"data '{data_key}' cache missing: {cache}")
-    rows = load_cache(cache, images, max_samples=limit, default_prompt=CAPTION_PROMPT)
+    if rehearse_key and rehearse_frac > 0:
+        import random
+        rows = load_cache(cache, images, max_samples=None, default_prompt=CAPTION_PROMPT)
+        r_cache, r_images = _resolve_data(rehearse_key)
+        if r_cache.exists():
+            extra = load_cache(r_cache, r_images, max_samples=None, default_prompt=CAPTION_PROMPT)
+            k = int(len(rows) * rehearse_frac)
+            if extra and k > 0:
+                rows += random.Random(0).sample(extra, min(k, len(extra)))
+        else:
+            print(f"  note: rehearse_data '{rehearse_key}' cache missing → no rehearsal mixed in")
+        random.Random(0).shuffle(rows)
+        if limit:
+            rows = rows[:limit]
+    else:
+        rows = load_cache(cache, images, max_samples=limit, default_prompt=CAPTION_PROMPT)
     if not rows:
         raise SystemExit(f"no usable rows in {cache}")
     return rows
@@ -311,9 +333,12 @@ def distill(model, spec, tokenizer, image_processor, device, steps, lr=2e-4, lim
                       lora_dropout=0.05, bias="none", task_type="CAUSAL_LM")
     model.lm = get_peft_model(model.lm, lora)
     for pm in model.projector.parameters(): pm.requires_grad = True  # projector stays trainable
-    rows = _load_rows(spec.distill.data, limit)
+    rows = _load_rows(spec.distill.data, limit,
+                      spec.distill.rehearse_data, spec.distill.rehearse_frac)
+    reh = (f" + {spec.distill.rehearse_frac:g}×'{spec.distill.rehearse_data}' rehearsal"
+           if spec.distill.rehearse_data else "")
     print(f"  distill   : LoRA r={spec.distill.lora_r} + projector, {steps} steps on "
-          f"'{spec.distill.data}' ({len(rows)} rows)")
+          f"'{spec.distill.data}'{reh} ({len(rows)} rows)")
     return _train_loop(model, rows, tokenizer, image_processor, device, steps, lr, "distill")
 
 
@@ -402,7 +427,8 @@ def build(spec: StudentSpec, out_dir: Path, smoke: bool,
     else:
         align_steps = align_steps or spec.align.steps
         data_limit = max_samples
-        n_distill_rows = len(_load_rows(spec.distill.data, data_limit))
+        n_distill_rows = len(_load_rows(spec.distill.data, data_limit,
+                                        spec.distill.rehearse_data, spec.distill.rehearse_frac))
         distill_steps_eff = distill_steps or (spec.distill.epochs * n_distill_rows)
         eval_n = spec.eval.n
 
