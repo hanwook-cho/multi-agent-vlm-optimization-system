@@ -7,27 +7,27 @@
   "per_image": [
     {
       "image": "img1.jpg",
-      "text": "The image shows two tabby cats resting comfortably on a bright pink blanket or soft surface. Both cats are sleeping or dozing peacefully, with their bodies relaxed and stretched out. The cat on the left is lying on its side, with its limbs extended, and has a green tag visible near its ear. The cat on the right is curled slightly, with its head turned to the side, appearing to be deeply asleep.\n\nBehind the cats, there are two remote controls \u2014 one white and one light blue \u2014 placed on the red or pink couch or seating area. The background suggests a cozy, domestic living space, likely a sofa or couch",
+      "text": "<removed: reference-model output; license-restricted>",
       "clip_score": 32.1425
     },
     {
       "image": "img2.jpg",
-      "text": "The image depicts a rustic, historically styled kitchen. Various cooking pots and pans are hanging from the ceiling and mounted on the walls, many made of copper or metal. A person, dressed in a white apron and black pants with suspenders, stands facing away, seemingly preparing or cooking. On a wooden countertop in the foreground, there are pieces of dough, a rolling pin, bowls, and a jar \u2014 suggesting food preparation is in progress. A lit lantern hangs from the wall, providing warm lighting. The kitchen has old-fashioned stoves and wooden cabinetry, giving it a cozy, vintage feel. Fresh herbs are hanging above,",
+      "text": "<removed: reference-model output; license-restricted>",
       "clip_score": 29.6428
     },
     {
       "image": "img3.jpg",
-      "text": "This image shows a bright, spacious, and well-lit kitchen and adjacent living area. The kitchen features wooden cabinetry with a warm, natural finish, including upper and lower cabinets that surround a white stove and countertop. A range hood is installed above the stove, and a window above the counter lets in natural light. To the right, a white refrigerator stands adjacent to the kitchen area. In the foreground, a round wooden dining table is adorned with a bowl of fresh oranges and bananas, suggesting a cozy, functional, and inviting space. The flooring appears to be a light-colored tile or laminate, and a white door is visible in",
+      "text": "<removed: reference-model output; license-restricted>",
       "clip_score": 23.5945
     },
     {
       "image": "img4.jpg",
-      "text": "Based on the image, here's a description of what is shown:\n\nThis is a street scene in an urban environment, likely a sidewalk or street corner next to a blue construction or business building.\n\nKey elements include:\n\n- **People:**\n  - A woman in a green and black top is walking from left to right, barefoot.\n  - A man in a white t-shirt and dark pants stands near a shopping cart, holding something in his hand, possibly a phone or small object.\n  - Another man, wearing a blue cap, blue shirt, and yellow shoes, is walking past on the right side",
+      "text": "<removed: reference-model output; license-restricted>",
       "clip_score": 25.1559
     },
     {
       "image": "img5.jpg",
-      "text": "This image captures a lively, urban skatepark scene under an overcast sky. The setting is a large, graffiti-covered building with walls adorned in colorful street art, tags, and abstract designs \u2014 suggesting a vibrant, artistic neighborhood.\n\nIn the foreground and midground, several people are actively engaged in skate and bicycle activities:\n\n- A skateboarder is mid-air, performing a trick over a ramp or ledge, with one arm extended for balance. He\u2019s wearing a maroon jacket and dark pants.\n- A cyclist, wearing a pink helmet or jacket and black pants, is riding a bicycle and appears to be navigating or preparing to",
+      "text": "<removed: reference-model output; license-restricted>",
       "clip_score": 31.0028
     }
   ]

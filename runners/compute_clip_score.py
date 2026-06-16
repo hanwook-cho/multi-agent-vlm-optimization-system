@@ -24,9 +24,9 @@ python compute_clip_score.py \
 
 Predictions JSON format:
     {
-      "model_key": "FastVLM-0.5B",
+      "model_key": "some-model",
       "predictions": [
-        {"image": "sample1.jpg", "text": "Two cats sleeping on a red blanket."},
+        {"image": "sample1.jpg", "text": "a generated caption for the image"},
         ...
       ]
     }
