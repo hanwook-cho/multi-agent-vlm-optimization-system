@@ -14,7 +14,7 @@
 1. **AutoML / hardware-aware NAS** — automated architecture and quantization search for edge devices. Mature field, going back to ~2018. Closest to Mode A of this project, but lacks the agent and research-ingestion components.
 2. **LLM-driven AutoML / NAS** — recent (2024–2026) work where LLMs guide the search rather than handcrafted optimizers. Most relevant single line of prior work; directly informs this project's Search Strategist Agent design.
 3. **AI-Scientist-style fully-autonomous research systems** — closest in *agent topology* to what this project proposes, but aimed at producing papers rather than deployable models, and operating without the safety/sandbox/human-gate discipline this project requires.
-4. **Edge inference frameworks with hand-tuned models** — the production systems we're effectively competing against. Liquid AI's LFM2.5-VL, Apple's FastVLM, MLX, llama.cpp. These are the *outputs* of human-driven optimization; this project tries to automate the process that produces them.
+4. **Edge inference frameworks with hand-tuned models** — the production systems we're effectively competing against. Liquid AI's LFM2-VL, Apple's FastVLM, MLX, llama.cpp. These are the *outputs* of human-driven optimization; this project tries to automate the process that produces them.
 
 The novelty of this project is in the **intersection** of these four — specifically, applying LLM-driven AutoML *to VLMs*, *on real edge hardware*, with a *Mode A / Mode B escalation pattern* that includes literature ingestion as a designed-in capability rather than an autonomous-research moonshot. None of the existing systems combine all four.
 
@@ -112,12 +112,12 @@ This is what we're effectively competing *against* in the success criteria. Thes
 
 | Project / model | What it is | Why it's the baseline to beat |
 |---|---|---|
-| **Liquid AI LFM2.5-VL family** | Hand-engineered edge VLMs (450M, 1.6B, 3B). SigLIP2-NaFlex vision encoder + LFM2 backbone. Sub-250ms on Jetson Orin. | The primary bar. If our system can autonomously reach Liquid's quality at comparable size, we've validated the system framing. |
+| **Liquid AI LFM2-VL family** | Hand-engineered edge VLMs (450M, 1.6B, 3B). SigLIP2-NaFlex vision encoder + LFM2 backbone. Sub-250ms on Jetson Orin. | The primary bar. If our system can autonomously reach Liquid's quality at comparable size, we've validated the system framing. |
 | **Apple FastVLM** | Hand-engineered edge VLM (0.5B, 1.5B, 7B). FastViTHD vision encoder, Apple Silicon-tuned via MLX. Sub-120ms TTFT on iPhone 16 Pro. | Reference for what's possible on iPhone with maximum hand-engineering. Their innovation (FastViTHD's high-resolution efficient encoding) is a candidate technique for our Mode B Research Analyst to surface and propose. |
 | **MLX, llama.cpp, ONNX Runtime, CoreML** | Runtime frameworks. Not models but the *deployment substrate* our system uses. | We are not building runtimes; we are choosing between them via DeviceDescriptor. These should be treated as fixed environment, not as targets of optimization. |
 | **Hugging Face Optimum, torch.ao.quantization** | Compression toolkits we depend on. | Tooling, not competition. |
 
-**What these establish:** A skilled human team can produce competitive edge VLMs in the 6–18 month timeframe. Liquid's LFM2.5-VL-450M was released April 2026 after the team had been iterating on the family for over a year. Apple's FastVLM was a CVPR 2025 release after years of FastViT/FastViTHD encoder development.
+**What these establish:** A skilled human team can produce competitive edge VLMs in the 6–18 month timeframe. Liquid's LFM2-VL-450M was released April 2026 after the team had been iterating on the family for over a year. Apple's FastVLM was a CVPR 2025 release after years of FastViT/FastViTHD encoder development.
 
 **Implication for this project:** The "system reaches Liquid's bar autonomously" success criterion is ambitious because Liquid's bar is the result of focused human work. The right framing is: *Liquid is the bar for a system that started with zero knowledge of edge VLMs and reached the bar through automated optimization plus literature ingestion.* That's a strictly stronger claim than "we produced a model as good as Liquid" — and a stronger argument that the system is the real product.
 

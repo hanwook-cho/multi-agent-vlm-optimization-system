@@ -5,7 +5,7 @@
 **Status.** Draft v2 (updated to reflect Goals v3: expanded baseline set including SmolVLM-500M, MiniCPM-V 4.6, Qwen2.5-VL-3B; Phase 4 reusability proof in scope; time-compression framing).
 **Last updated.** May 11, 2026.
 **Companion documents.** Goals v3 (§5 Phase 0 exit criteria, §6 conduct rules), HLD (architecture), Prior Art (related work).
-**Phase 0 goal.** Stand up project infrastructure and lock in measured reference baselines for four small-edge VLMs (LFM2.5-VL-450M, FastVLM-0.5B, SmolVLM-500M, MiniCPM-V 4.6) on iPhone 16 Pro and Raspberry Pi 5 (4 GB), plus measure Qwen2.5-VL-3B as the Phase 2 starting point on Mac mini (M4, 16 GB) initially, with measurements to be repeated on the M5 Pro 32 GB when it becomes available.
+**Phase 0 goal.** Stand up project infrastructure and lock in measured reference baselines for four small-edge VLMs (LFM2-VL-450M, FastVLM-0.5B, SmolVLM-500M, MiniCPM-V 4.6) on iPhone 16 Pro and Raspberry Pi 5 (4 GB), plus measure Qwen2.5-VL-3B as the Phase 2 starting point on Mac mini (M4, 16 GB) initially, with measurements to be repeated on the M5 Pro 32 GB when it becomes available.
 **Duration estimate.** 4-5 weeks solo, full-time-equivalent.
 
 ---
@@ -32,9 +32,9 @@ The plan assumes you work focused hours on the project. If you split attention w
 
 **Week 2: Mac-only baselines + VLMEvalKit integration.** Measure Qwen2.5-VL-3B on Mac mini (the Phase 2 starting point; M5 Pro 32 GB measurements follow when available). Stand up VLMEvalKit and run quality evaluations of all five reference models on benchmark slices. *Why this comes before iPhone/Pi: the Mac mini is already in hand, no provisioning friction, and validating data-plumbing on Mac before pushing to iPhone/Pi means the slower-to-iterate devices have working measurement code by the time you touch them.*
 
-**Week 3: iPhone reference baselines (4 models).** Stand up LFM2.5-VL-450M, FastVLM-0.5B, SmolVLM-500M, and MiniCPM-V 4.6 on iPhone 16 Pro. This is the riskiest week — Apple developer provisioning has bitten more solo projects than anyone wants to admit. The data-plumbing from Week 2 should now be debugged, so iPhone work focuses on iOS-specific issues.
+**Week 3: iPhone reference baselines (4 models).** Stand up LFM2-VL-450M, FastVLM-0.5B, SmolVLM-500M, and MiniCPM-V 4.6 on iPhone 16 Pro. This is the riskiest week — Apple developer provisioning has bitten more solo projects than anyone wants to admit. The data-plumbing from Week 2 should now be debugged, so iPhone work focuses on iOS-specific issues.
 
-**Week 4: Pi 5 reference baselines + eval set assembly.** Pi 5 4 GB with LFM2.5-VL-450M, SmolVLM-500M, MiniCPM-V 4.6 (where they fit) via llama.cpp. Frozen public-photo evaluation set assembled in parallel.
+**Week 4: Pi 5 reference baselines + eval set assembly.** Pi 5 4 GB with LFM2-VL-450M, SmolVLM-500M, MiniCPM-V 4.6 (where they fit) via llama.cpp. Frozen public-photo evaluation set assembled in parallel.
 
 **Week 5: Dashboard, build-vs-adopt spike, license posture, blog draft.** Render the Pareto plot, decide on literature-ingestion tooling, document license posture, draft the reveal blog post.
 
@@ -274,13 +274,13 @@ Document the measurement methodology in `docs/decisions/0001-mac-measurement-met
 
 **Why:** Goals exit criterion 0.6. VLMEvalKit is the harness Liquid uses; running our reference models through it is what makes the Phase 2 success criterion measurable on apples-to-apples benchmarks.
 
-**How:** Clone [`open-compass/VLMEvalKit`](https://github.com/open-compass/VLMEvalKit). It supports LFM2.5-VL, SmolVLM, MiniCPM-V, Qwen2.5-VL, and FastVLM as model adapters (verify each; write a thin adapter if not).
+**How:** Clone [`open-compass/VLMEvalKit`](https://github.com/open-compass/VLMEvalKit). It supports LFM2-VL, SmolVLM, MiniCPM-V, Qwen2.5-VL, and FastVLM as model adapters (verify each; write a thin adapter if not).
 
 Steps:
 
 1. Install VLMEvalKit on the Mac mini.
 2. Configure evaluations on small slices of RealWorldQA (100 examples), MMBench dev-en (100 examples), POPE (100 examples). Use slices rather than full benchmarks to keep runtime reasonable on Mac.
-3. Run sequentially: LFM2.5-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B, Qwen2.5-VL-3B (each adds ~30min–2hr of Mac runtime).
+3. Run sequentially: LFM2-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B, Qwen2.5-VL-3B (each adds ~30min–2hr of Mac runtime).
 4. Parse VLMEvalKit's output into our `MetricsReport` format. Quality metrics (accuracy, F1, etc.) join the same metrics database as latency/memory.
 
 **Risk and time honesty:** 2-3 days. VLMEvalKit is well-maintained but has a steep learning curve — its config system is opinionated. Plan a day of "just figuring out how it wants to be configured" before the actual eval runs. Five models × three benchmark slices = 15 eval runs; some on the Mac mini will take hours each.
@@ -295,7 +295,7 @@ Note: Quality evaluation runs on the Mac, not on the iPhone or Pi. Quality is de
 
 - Qwen2.5-VL-3B baseline on Mac mini (the "unoptimized starting point" reference).
 - VLMEvalKit integrated and running.
-- Quality metrics for all five reference models (LFM2.5-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B, Qwen2.5-VL-3B) on three benchmark slices.
+- Quality metrics for all five reference models (LFM2-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B, Qwen2.5-VL-3B) on three benchmark slices.
 - One ADR written (Mac measurement methodology).
 
 ---
@@ -324,9 +324,9 @@ The honest "stuck" scenario: you spend a week on this and still can't deploy. If
 
 ---
 
-### Task 3.2: LFM2.5-VL-450M on iPhone via LEAP
+### Task 3.2: LFM2-VL-450M on iPhone via LEAP
 
-**What:** Get LFM2.5-VL-450M running on iPhone 16 Pro, producing captions and VQA answers for sample images, with measured TTFT, decode tokens/sec, peak memory, and on-disk size.
+**What:** Get LFM2-VL-450M running on iPhone 16 Pro, producing captions and VQA answers for sample images, with measured TTFT, decode tokens/sec, peak memory, and on-disk size.
 
 **Why:** Goals exit criterion 0.1.
 
@@ -334,8 +334,8 @@ The honest "stuck" scenario: you spend a week on this and still can't deploy. If
 
 Approach:
 
-1. Pull the LFM2.5-VL-450M GGUF weights from Hugging Face (Liquid publishes these under their LFM Open License v1.0).
-2. Use the LEAP SDK example as a starting point. Modify it to load LFM2.5-VL-450M and run inference on a hardcoded test image with a hardcoded prompt.
+1. Pull the LFM2-VL-450M GGUF weights from Hugging Face (Liquid publishes these under their LFM Open License v1.0).
+2. Use the LEAP SDK example as a starting point. Modify it to load LFM2-VL-450M and run inference on a hardcoded test image with a hardcoded prompt.
 3. Instrument the Swift code to measure:
    - TTFT: time from prompt submission to first token emitted.
    - Decode tokens/sec: tokens emitted in the steady state after the first.
@@ -353,7 +353,7 @@ Approach:
 
 Document your methodology in `docs/decisions/0002-ios-measurement-methodology.md`.
 
-**Done when:** LFM2.5-VL-450M runs on the iPhone, produces output for at least 5 sample photos, and a `MetricsReport` JSON exists with stable TTFT, decode speed, peak memory, and on-disk size.
+**Done when:** LFM2-VL-450M runs on the iPhone, produces output for at least 5 sample photos, and a `MetricsReport` JSON exists with stable TTFT, decode speed, peak memory, and on-disk size.
 
 ---
 
@@ -417,7 +417,7 @@ For **MiniCPM-V 4.6**:
 
 | Model | TTFT measured | TTFT published claim | Peak memory measured | On-disk size measured | Notes |
 |---|---|---|---|---|---|
-| LFM2.5-VL-450M | ... | n/a (Jetson published) | ... | ... | |
+| LFM2-VL-450M | ... | n/a (Jetson published) | ... | ... | |
 | FastVLM-0.5B | ... | <120 ms (iPhone 16 Pro) | ... | ~1 GB | |
 | SmolVLM-500M | ... | n/a | ... | ... | |
 | MiniCPM-V 4.6 | ... | n/a (OpenBMB ships demo videos) | ... | ... | |
@@ -433,7 +433,7 @@ If FastVLM-0.5B TTFT is 200ms when Apple claims <120ms, something is off — wro
 **Week 3 exit check.** End of Week 3:
 
 - Provisioning works, you can deploy to iPhone freely.
-- LFM2.5-VL-450M baseline numbers measured and logged.
+- LFM2-VL-450M baseline numbers measured and logged.
 - FastVLM-0.5B baseline numbers measured and logged.
 - SmolVLM-500M baseline numbers measured and logged.
 - MiniCPM-V 4.6 baseline numbers measured and logged (or non-fit documented).
@@ -468,17 +468,17 @@ Install dependencies on the Pi:
 
 ---
 
-### Task 4.2: LFM2.5-VL-450M on Pi 5 via llama.cpp
+### Task 4.2: LFM2-VL-450M on Pi 5 via llama.cpp
 
-**What:** Get LFM2.5-VL-450M running on Pi 5 via llama.cpp, producing captions and VQA answers, with measured TTFT, decode tokens/sec, peak memory, on-disk size.
+**What:** Get LFM2-VL-450M running on Pi 5 via llama.cpp, producing captions and VQA answers, with measured TTFT, decode tokens/sec, peak memory, on-disk size.
 
-**Why:** Goals exit criterion 0.1 (LFM2.5-VL-450M on both devices).
+**Why:** Goals exit criterion 0.1 (LFM2-VL-450M on both devices).
 
-**How:** llama.cpp supports vision-language models via the `mtmd` (multimodal) interface. LFM2.5-VL has community GGUF builds; check Liquid's Hugging Face org and `LiquidAI/lfm2-vl` repos for the latest.
+**How:** llama.cpp supports vision-language models via the `mtmd` (multimodal) interface. LFM2-VL has community GGUF builds; check Liquid's Hugging Face org and `LiquidAI/lfm2-vl` repos for the latest.
 
 Steps:
 
-1. Download the LFM2.5-VL-450M GGUF (Q4_0 quantization to match the Liquid published reference) plus the vision encoder weights (usually a separate `mmproj` file).
+1. Download the LFM2-VL-450M GGUF (Q4_0 quantization to match the Liquid published reference) plus the vision encoder weights (usually a separate `mmproj` file).
 2. Run inference from the Pi shell:
    ```bash
    ./build/bin/llama-mtmd-cli \
@@ -501,7 +501,7 @@ Important: **on 4 GB Pi, you must verify free memory before each run.** If <2 GB
 
 Document methodology in `docs/decisions/0004-pi-measurement-methodology.md`.
 
-**Done when:** LFM2.5-VL-450M runs on the Pi, produces output for 5 sample photos, `MetricsReport` JSON exists, and the measurement was confirmed not to hit swap.
+**Done when:** LFM2-VL-450M runs on the Pi, produces output for 5 sample photos, `MetricsReport` JSON exists, and the measurement was confirmed not to hit swap.
 
 ---
 
@@ -599,7 +599,7 @@ A note on dataset licensing: Flickr30k, COCO, Open Images have research-use lice
 **Week 4 exit check.** End of Week 4:
 
 - Pi 5 4 GB set up, llama.cpp built, SSH-accessible.
-- LFM2.5-VL-450M baseline numbers measured on Pi.
+- LFM2-VL-450M baseline numbers measured on Pi.
 - SmolVLM-500M baseline numbers measured on Pi.
 - MiniCPM-V 4.6 either measured on Pi (if it fits) or non-fit documented.
 - FastVLM-on-Pi unviability documented.
@@ -628,8 +628,8 @@ Database schema (SQLite):
 Use `sqlite3` directly from Python; no ORM needed for this scale.
 
 Dashboard (Streamlit) with four tabs:
-1. **iPhone Pareto:** scatter plot of (TTFT, on-disk size) with LFM2.5-VL-450M, FastVLM-0.5B, SmolVLM-500M, and MiniCPM-V 4.6 as labeled markers.
-2. **Pi 5 Pareto:** scatter plot of (decode tokens/sec, peak memory) with LFM2.5-VL-450M, SmolVLM-500M, and (if it fit) MiniCPM-V 4.6 as labeled markers. Note that FastVLM is documented as non-viable on Pi.
+1. **iPhone Pareto:** scatter plot of (TTFT, on-disk size) with LFM2-VL-450M, FastVLM-0.5B, SmolVLM-500M, and MiniCPM-V 4.6 as labeled markers.
+2. **Pi 5 Pareto:** scatter plot of (decode tokens/sec, peak memory) with LFM2-VL-450M, SmolVLM-500M, and (if it fit) MiniCPM-V 4.6 as labeled markers. Note that FastVLM is documented as non-viable on Pi.
 3. **Mac starting point:** Qwen2.5-VL-3B's measured baseline, clearly labeled "not edge-viable — this is what Phase 2 must optimize *from*."
 4. **Quality summary:** table of RealWorldQA / MMBench / POPE scores per reference model.
 
@@ -675,11 +675,11 @@ For each, write a short evaluation in `docs/decisions/0009-literature-tool-eval.
 
 1. **Hook** (~150 words): the problem. "Edge VLM deployment requires manual orchestration across many decisions. Teams at Apple and Liquid AI take 6-18 months to produce one good edge VLM. What if a system could do the orchestration?"
 
-2. **What I'm building** (~300 words): brief description of the autonomous agent system, the Mode A / Mode B framing, the two target devices, the validation bar (LFM2.5-VL-450M).
+2. **What I'm building** (~300 words): brief description of the autonomous agent system, the Mode A / Mode B framing, the two target devices, the validation bar (LFM2-VL-450M).
 
 3. **Why this is hard** (~400 words): cite Beel et al.'s evaluation of AI-Scientist. Explain why "fully autonomous research" doesn't work yet, and why the design choices in this project (LLM-as-analyst, hypothesis records as implementation kits, Decision-Dossier-gated escalation) specifically address those failures.
 
-4. **Where this fits in the landscape** (~300 words): brief positioning relative to AutoML / NAS, LLM-driven AutoML (MONAQ, Trirat et al.), AI-Scientist, and production edge inference (LFM2.5-VL, FastVLM). Link to the Prior Art document for depth.
+4. **Where this fits in the landscape** (~300 words): brief positioning relative to AutoML / NAS, LLM-driven AutoML (MONAQ, Trirat et al.), AI-Scientist, and production edge inference (LFM2-VL, FastVLM). Link to the Prior Art document for depth.
 
 5. **What I've measured so far** (~200 words): include one screenshot of the Phase 0 Pareto dashboard. State the reference numbers honestly. "Here's where the bar is."
 
@@ -703,7 +703,7 @@ Be honest. Don't oversell. The post is more valuable if it accurately conveys "i
 
 **How:** Create `docs/THIRD_PARTY.md` covering at minimum:
 
-- **LFM2.5-VL-450M, LFM2-VL-3B (Liquid AI):** LFM Open License v1.0. Free for commercial use under $10M annual revenue. Used as benchmark baseline and as fine-tuning starting point / distillation teacher. Derivative models will be released under LFM Open License v1.0.
+- **LFM2-VL-450M, LFM2-VL-3B (Liquid AI):** LFM Open License v1.0. Free for commercial use under $10M annual revenue. Used as benchmark baseline and as fine-tuning starting point / distillation teacher. Derivative models will be released under LFM Open License v1.0.
 - **FastVLM-0.5B, FastVLM-1.5B, FastVLM-7B (Apple):** Apple Sample Code License. Used as benchmark reference only. No derivative work. Not used as distillation teacher. Measurement code on iPhone is written from scratch, not derived from Apple's demo app code.
 - **VLMEvalKit:** Apache 2.0 (verify). Used as evaluation harness.
 - **llama.cpp:** MIT (verify). Used as Pi 5 runtime.
@@ -771,7 +771,7 @@ End of Week 5, before declaring Phase 0 complete, verify all ten Goals §5 exit 
 
 | Criterion | Status | Verification |
 |---|---|---|
-| 0.1 LFM2.5-VL-450M on iPhone + Pi 5 | ☐ | Metrics in DB on both devices, reproducible |
+| 0.1 LFM2-VL-450M on iPhone + Pi 5 | ☐ | Metrics in DB on both devices, reproducible |
 | 0.2 FastVLM-0.5B on iPhone; non-viability on Pi 5 documented | ☐ | iPhone metrics in DB; Pi non-fit ADR-0005 |
 | 0.3 SmolVLM-500M and MiniCPM-V 4.6 on iPhone and Pi 5 (where they fit) | ☐ | Metrics in DB, non-fits documented |
 | 0.4 Qwen2.5-VL-3B on Mac mini; non-fit on Pi 5 documented | ☐ | Mac metrics in DB; Pi non-fit confirmed by math, not attempt |
@@ -812,7 +812,7 @@ If all are met: Phase 0 is complete. Commit a tag (`v0.0-phase-0-complete`) to t
 
 **Risk: iPhone provisioning eats the week.** If Task 2.1 takes more than 3 days, pivot. Options: (a) borrow access to someone else's iOS dev setup, (b) pay for an iOS expert on Upwork/Toptal for a few hours of setup help (~$200-500), (c) defer iPhone measurements to use the iOS Simulator (which gives qualitative-but-not-latency results) and revisit later.
 
-**Risk: Pi 5 4 GB OOMs on LFM2.5-VL-450M.** If Task 3.2 cannot get LFM2.5-VL-450M to run within 4 GB, the project's "Pi 5 is a target" claim becomes "Pi 5 8 GB is a target." Either acquire an 8 GB Pi 5 (~$80) or revise the project scope. Don't fake it.
+**Risk: Pi 5 4 GB OOMs on LFM2-VL-450M.** If Task 3.2 cannot get LFM2-VL-450M to run within 4 GB, the project's "Pi 5 is a target" claim becomes "Pi 5 8 GB is a target." Either acquire an 8 GB Pi 5 (~$80) or revise the project scope. Don't fake it.
 
 **Risk: Stage A eval set takes a week.** 100 VQA pairs is genuinely tedious. If you're slipping, reduce to 50 VQA pairs for Phase 0 with a commitment to expand to 100 before Phase 2. Don't let perfect be the enemy of good.
 
@@ -855,10 +855,10 @@ These should be resolved before you start Week 1, since they affect concrete tas
 
 - License for project code: Apache 2.0 (overridable to MIT if preferred — see Q4).
 - Public repo timing: private through Phase 0-1, public at end of Phase 1. Reason: stronger first impression with a working system; less audience pressure during early development. Documented in ADR-0008.
-- License posture for third-party models: LFM2.5-VL-450M used as Phase 1 baseline; Qwen2.5-VL-3B used as Phase 2 starting point under Qwen license; FastVLM used as benchmark reference only; distillation teacher will be LFM2-VL-3B (not FastVLM-7B). Documented in ADR-0007 and `THIRD_PARTY.md`.
-- Phase 1-2 starting point: Qwen2.5-VL-3B (general, not-edge-optimized). LFM2.5-VL-450M is Phase 1 baseline only; Phase 2 demonstrates the harder general → edge journey from Qwen2.5-VL-3B.
+- License posture for third-party models: LFM2-VL-450M used as Phase 1 baseline; Qwen2.5-VL-3B used as Phase 2 starting point under Qwen license; FastVLM used as benchmark reference only; distillation teacher will be LFM2-VL-3B (not FastVLM-7B). Documented in ADR-0007 and `THIRD_PARTY.md`.
+- Phase 1-2 starting point: Qwen2.5-VL-3B (general, not-edge-optimized). LFM2-VL-450M is Phase 1 baseline only; Phase 2 demonstrates the harder general → edge journey from Qwen2.5-VL-3B.
 - Phase 4 (reusability proof on second task) is now in project scope, not deferred to future work.
-- Reference baseline set: LFM2.5-VL-450M, FastVLM-0.5B, SmolVLM-500M, MiniCPM-V 4.6 (the four small-edge VLMs), plus Qwen2.5-VL-3B (the unoptimized starting point).
+- Reference baseline set: LFM2-VL-450M, FastVLM-0.5B, SmolVLM-500M, MiniCPM-V 4.6 (the four small-edge VLMs), plus Qwen2.5-VL-3B (the unoptimized starting point).
 
 ---
 
@@ -893,19 +893,19 @@ These can't be automated and require human judgment. Record each in `docs/verifi
 - [ ] Qwen2.5-VL-3B loads on Mac mini, produces non-empty output for 5 sample photos
 - [ ] Qwen2.5-VL-3B memory measurement stable across 3 runs (variance < 20%)
 - [ ] VLMEvalKit produces quality scores for all 5 reference models on 3 benchmark slices, scores logged in metrics DB
-- [ ] VLMEvalKit scores for FastVLM-0.5B and LFM2.5-VL-450M within ~20% of published claims on overlapping benchmarks
+- [ ] VLMEvalKit scores for FastVLM-0.5B and LFM2-VL-450M within ~20% of published claims on overlapping benchmarks
 
 **Week 3 (iPhone):**
 - [ ] Apple Developer provisioning works; blank app deploys to iPhone 16 Pro
-- [ ] LFM2.5-VL-450M produces sensible captions for 5 sample photos on iPhone (caption quality is human-judged, not numerically scored)
-- [ ] LFM2.5-VL-450M TTFT within ~20% of published claim on iPhone (or documented explanation if not)
+- [ ] LFM2-VL-450M produces sensible captions for 5 sample photos on iPhone (caption quality is human-judged, not numerically scored)
+- [ ] LFM2-VL-450M TTFT within ~20% of published claim on iPhone (or documented explanation if not)
 - [ ] FastVLM-0.5B TTFT under ~120ms on iPhone (Apple's published claim)
 - [ ] SmolVLM-500M produces sensible captions on iPhone
 - [ ] MiniCPM-V 4.6 produces sensible captions on iPhone, OR non-fit explicitly documented
 - [ ] All iPhone measurements logged in metrics DB with consistent device_id and harness version
 
 **Week 4 (Pi):**
-- [ ] LFM2.5-VL-450M produces sensible captions on Pi 5
+- [ ] LFM2-VL-450M produces sensible captions on Pi 5
 - [ ] Pi 5 measurements confirmed to not hit swap (`free -h` checks pre and post)
 - [ ] SmolVLM-500M produces sensible captions on Pi 5 (or non-fit documented)
 - [ ] FastVLM-on-Pi non-viability empirically confirmed (or surprising-fit documented in ADR)

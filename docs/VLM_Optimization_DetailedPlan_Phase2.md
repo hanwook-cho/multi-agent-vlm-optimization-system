@@ -4,7 +4,7 @@
 **Status:** Draft v1 (written 2026-06-08) — **CORRECTED 2026-06-13, see banner**  
 **Planned duration:** 7–9 weeks  
 **Starting point:** Phase 1 Pareto frontier; Qwen2.5-VL-3B as unoptimized teacher  
-**Exit gate:** A ≤450M-class edge model derived from Qwen2.5-VL-3B running on iPhone 16 Pro (and Pi 5), competitive with at least two Phase 0 reference models, produced without manual configuration tweaks after setup
+**Exit gate:** A ≤450M-class edge model derived from Qwen2.5-VL-3B running on iPhone 16 Pro, competitive with at least two Phase 0 reference models, produced without manual configuration tweaks after setup. *(Raspberry Pi 5 is **deferred** — iPhone/Apple-Silicon is the current scope; exit criterion 2.5 and the Pi 5 sections below are deferred with it. See the "Pi 5 hardware unavailable" risk row and README/HLD §7.2.)*
 
 > **⚠️ CORRECTION (2026-06-13) — read before Strategy B/C below. See [ADR-0011](decisions/0011-phase2-strategy-correction.md).**
 > This draft's **Strategy B distilled *into* LFM2-VL-450M / SmolVLM-500M as students — that is wrong.**
@@ -15,6 +15,8 @@
 > - **P2-B1** (primary) — assemble a right-sized open student (Qwen2.5-0.5B LM + small SigLIP) + distill from the 3B.
 > - **P2-C1** — hard-prune the 3B (collapses toward P2-B1: vision 669M + embed 311M > 450M budget).
 > The "Success targets" and "Strategy" sections below are superseded where they name LFM2/SmolVLM as students.
+>
+> **Follow-on (2026-06-15) — see [ADR-0012](decisions/0012-system-driven-student-construction.md).** P2-B1 became a *system capability*, not a manual build: the agent proposes a content-addressed `StudentSpec`; a deterministic loop assembles (LM + vision + projector), aligns, distills, evaluates same-path, and records to the ledger (`StudentSpec` → `build_student` → `construction_loop`; HLD §6.5). Wherever the plan below implies the human hand-builds the student, that step is now agent-driven Tier-1.5. The distillation methods themselves are standard (references: PriorArt §6.1).
 
 ---
 
@@ -210,7 +212,7 @@ Strategy C requires human-implemented Tier 2 code (new architecture swap, prunin
 
 | Task | Description | Done when |
 |---|---|---|
-| P2-7.1 | Reference model timeline comparison: SmolVLM v1→v2, LFM2→LFM2.5, FastViT→FastVLM | Chart: this project vs. reference teams' calendar time (T2) |
+| P2-7.1 | Reference model timeline comparison: SmolVLM v1→v2, LFM2→LFM2-VL, FastViT→FastVLM | Chart: this project vs. reference teams' calendar time (T2) |
 | P2-7.2 | Time-compression analysis: document hours of calendar time vs. median reference | Criterion 2.7 (T3); headline number for blog post |
 | P2-7.3 | Phase 2 blog post: "The autonomous system produced a competitive edge VLM from a 3B general model" (~3500 words) | `docs/blog/phase2_reveal.md` written |
 | P2-7.4 | arXiv preprint v1: system description + Phase 1+2 results | `.tex` + `.pdf` in `docs/arxiv/` |

@@ -1,6 +1,6 @@
 # Multi-Agent System for VLM Optimization — Goals (v3)
 
-*Goal hierarchy for the project, from the ultimate aim down to per-phase objectives and deliverables. Revision v3 sharpens the central claim from "produce a competitive model" to "compress the time required to produce a competitive edge VLM from team-months to solo-months" — and shifts the Phase 1-2 starting point from already-optimized LFM2.5-VL-450M to a general-purpose Qwen2.5-VL-3B so the optimization journey being demonstrated is meaningful.*
+*Goal hierarchy for the project, from the ultimate aim down to per-phase objectives and deliverables. Revision v3 sharpens the central claim from "produce a competitive model" to "compress the time required to produce a competitive edge VLM from team-months to solo-months" — and shifts the Phase 1-2 starting point from already-optimized LFM2-VL-450M to a general-purpose Qwen2.5-VL-3B so the optimization journey being demonstrated is meaningful.*
 
 **Audience.** Project owner (solo developer), future collaborators, external reviewers.
 **Status.** Draft v3.
@@ -11,22 +11,22 @@
 
 ## 1. The ultimate goal
 
-Build a closed-loop, autonomous agent system that compresses the time required to produce a competitive edge vision-language model — from the team-months of focused expert work that produced models like LFM2.5-VL-450M, SmolVLM-500M, and MiniCPM-V, to solo-developer-months using the system as the optimization tool.
+Build a closed-loop, autonomous agent system that compresses the time required to produce a competitive edge vision-language model — from the team-months of focused expert work that produced models like LFM2-VL-450M, SmolVLM-500M, and MiniCPM-V, to solo-developer-months using the system as the optimization tool.
 
 The system starts from well-known optimization techniques (Mode A) and escalates to research-driven exploration (Mode B) when known techniques are exhausted. It autonomously navigates the full optimization journey from a general-purpose, non-edge-suitable VLM down to a competitive edge model, with human gates only on consequential decisions.
 
 **The system is the deliverable. The compressed time-to-result is the central claim. A competitive model is the proof-of-work.**
 
 The system is judged successful if it independently produces a vision-language model that:
-- Is competitive with the leading published edge VLMs (LFM2.5-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B) on shared benchmarks, at comparable or smaller footprint
-- Runs on both iPhone (16 Pro or later) and Raspberry Pi 5 (4 GB)
+- Is competitive with the leading published edge VLMs (LFM2-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B) on shared benchmarks, at comparable or smaller footprint
+- Runs on iPhone (16 Pro or later). *(Raspberry Pi 5 was originally a co-equal target but is **deferred** — current scope is iPhone/Apple-Silicon; iPhone-only is sufficient for the core time-compression claim, see README and HLD §7.2. Pi 5 becomes Phase-3 debt if hardware is unavailable.)*
 - Was produced in solo-developer-months of calendar time, versus the multi-month expert team efforts that produced the reference models
 
 The autonomous-system claim and the time-compression claim are what make this project a contribution. The model is the evidence both claims hold.
 
 ## 2. Why this matters, and the position relative to prior art
 
-Edge VLM deployment today requires manual orchestration across many decisions: model architecture, quantization scheme, runtime backend, input resolution, vision-token budget, per-device export path. The choices interact non-obviously, and they must be re-made for every new task and every new device. Skilled practitioners take substantial expert team effort to produce one good model in this space: Apple's FastVLM is the result of years of FastViT/FastViTHD encoder research; Liquid AI's LFM2.5-VL family represents over a year of focused iteration; SmolVLM came out of a multi-month systematic research effort published as a paper. The premise of this project is that *most of this orchestration can be automated, compressing the calendar time from team-months to solo-months* without sacrificing the quality of the result.
+Edge VLM deployment today requires manual orchestration across many decisions: model architecture, quantization scheme, runtime backend, input resolution, vision-token budget, per-device export path. The choices interact non-obviously, and they must be re-made for every new task and every new device. Skilled practitioners take substantial expert team effort to produce one good model in this space: Apple's FastVLM is the result of years of FastViT/FastViTHD encoder research; Liquid AI's LFM2-VL family represents over a year of focused iteration; SmolVLM came out of a multi-month systematic research effort published as a paper. The premise of this project is that *most of this orchestration can be automated, compressing the calendar time from team-months to solo-months* without sacrificing the quality of the result.
 
 This is a claim about the *method*, not about any single model. A method that compresses optimization time generalizes; a single model is just a model.
 
@@ -35,7 +35,7 @@ The prior-art survey (companion document) identified four lineages of related wo
 - **Hardware-aware AutoML / NAS** is mature (AMC, EfficientNet-EdgeTPU, BatchQuant, FOX-NAS) but pre-LLM and not VLM-targeted.
 - **LLM-driven AutoML** is recent (MONAQ, Trirat et al., AutoMaAS) and most directly informs this project's Search Strategist Agent, but no existing system targets VLMs, uses real-device measurement consistently, or separates known-techniques exploitation from research-driven exploration.
 - **AI-Scientist (Sakana AI)** is the closest in agent topology — published in *Nature* in March 2026 — but aims at producing research papers rather than deployable models. Its documented failure modes (hallucinated citations, statistical-noise-as-signal, structural errors per Beel, Kan & Baumgart, Feb 2025) are exactly what this project's design choices specifically mitigate.
-- **Production edge inference frameworks** (LFM2.5-VL, FastVLM, SmolVLM, MiniCPM-V, MLX, llama.cpp) are the outputs of human-driven optimization. Matching their performance autonomously, in a fraction of the calendar time, is the success criterion. Beating them outright is a stretch goal.
+- **Production edge inference frameworks** (LFM2-VL, FastVLM, SmolVLM, MiniCPM-V, MLX, llama.cpp) are the outputs of human-driven optimization. Matching their performance autonomously, in a fraction of the calendar time, is the success criterion. Beating them outright is a stretch goal.
 
 This project occupies a specific point in this landscape: **bounded autonomy with verifiable outputs for ML optimization, in compressed time**, distinct from AI-Scientist's "fully autonomous research" (which produces papers with documented quality problems) and from existing AutoML's "search without literature ingestion" (which can't extend its own toolkit). The Mode A / Mode B escalation pattern, the LLM-as-analyst hypothesis-record design, and the *explicit time-compression claim* together distinguish this project from prior art.
 
@@ -53,7 +53,7 @@ Success is judged at the end of Phase 2 (core claim) and Phase 4 (generalization
 
 **Secondary criteria — quality of what the system produces:**
 
-The autonomously-produced model is competitive with at least two of the four published reference models (LFM2.5-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B) on the shared benchmark subset (RealWorldQA, MMBench dev-en, POPE), measured via VLMEvalKit on identical slices. "Competitive" is defined as:
+The autonomously-produced model is competitive with at least two of the four published reference models (LFM2-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B) on the shared benchmark subset (RealWorldQA, MMBench dev-en, POPE), measured via VLMEvalKit on identical slices. "Competitive" is defined as:
 
 | # | Criterion |
 |---|---|
@@ -68,7 +68,7 @@ This is what makes the project meaningful beyond "produced one more model."
 | # | Criterion |
 |---|---|
 | T1 | The calendar time from project start (Phase 0 Week 1) to Phase 2 exit is documented to within ±1 week. |
-| T2 | A best-effort comparison is documented showing the calendar time for the reference models' development cycles (using public release histories: SmolVLM v1→v2, LFM2-VL → LFM2.5-VL, FastViT → FastViTHD → FastVLM). |
+| T2 | A best-effort comparison is documented showing the calendar time for the reference models' development cycles (using public release histories: SmolVLM v1→v2, LFM2-VL → LFM2-VL, FastViT → FastViTHD → FastVLM). |
 | T3 | Project calendar time to Phase 2 exit is meaningfully shorter than the median reference timeline. The honest baseline target: solo developer in 4-6 calendar months versus reference teams' 6-18 calendar months. |
 
 **Generalization criterion — judged at Phase 4:**
@@ -85,7 +85,7 @@ The time-compression claim is meaningfully stronger if it generalizes. Phase 4 (
 | # | Criterion |
 |---|---|
 | X1 | The autonomously-produced model strictly improves over at least one reference on at least one metric (quality, size, latency, memory) on at least one device. |
-| X2 | Raspberry Pi 5 inference at ≥ 2 tokens/sec for the chosen model. (FastVLM does not run usefully on Pi 5 at all; matching or beating LFM2.5-VL-450M's Pi performance is the bar.) |
+| X2 | Raspberry Pi 5 inference at ≥ 2 tokens/sec for the chosen model. (FastVLM does not run usefully on Pi 5 at all; matching or beating LFM2-VL-450M's Pi performance is the bar.) |
 
 **Ordering and what "success" means:**
 
@@ -104,7 +104,7 @@ The project's problem boundary is intentionally narrow so that success is measur
 
 **Devices addressed:** iPhone 16 Pro (or later) and Raspberry Pi 5 (4 GB). Other devices (Android, Jetson, Pi 4, Mac as a deployment target) are not in scope; the DeviceDescriptor design (per HLD §2.4) preserves the option to add them later, but adding them is not a project goal.
 
-**Mode of optimization addressed:** Mode A (known-techniques optimization loop) in Phase 1-2. Mode B (research-driven exploration) is brought online in Phase 3 — both to demonstrate Mode B's value and to apply it to LFM2.5-VL-450M (the "squeeze more from an already-optimized model" complementary claim, see §5).
+**Mode of optimization addressed:** Mode A (known-techniques optimization loop) in Phase 1-2. Mode B (research-driven exploration) is brought online in Phase 3 — both to demonstrate Mode B's value and to apply it to LFM2-VL-450M (the "squeeze more from an already-optimized model" complementary claim, see §5).
 
 **Style of success:** Reproducible, measurable, on real hardware. No synthetic benchmarks, no LLM-predicted-as-stand-in-for-measurement, no "trust me it would work."
 
@@ -123,7 +123,7 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 
 ### Phase 0 — Foundations & reference baselines
 
-**Goal:** Stand up the project infrastructure and lock in measured reference baselines for the four small-edge VLMs (LFM2.5-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B) on the target devices, plus measure the Phase 1-2 starting point (Qwen2.5-VL-3B) on Mac as the unoptimized "before" picture.
+**Goal:** Stand up the project infrastructure and lock in measured reference baselines for the four small-edge VLMs (LFM2-VL-450M, SmolVLM-500M, MiniCPM-V 4.6, FastVLM-0.5B) on the target devices, plus measure the Phase 1-2 starting point (Qwen2.5-VL-3B) on Mac as the unoptimized "before" picture.
 
 **Why this phase exists:** Before any optimization claim can be made, we need rigorously measured reference numbers on the actual hardware. Vendor benchmarks use different harnesses, different precision, sometimes different prompts. Phase 0 is the anchor. Adding Qwen2.5-VL-3B as a baseline (Mac-only — it won't run on Pi 5 4 GB, confirming the need for size reduction) makes the Phase 2 "from 3B general to 450M-class edge" claim concretely measurable.
 
@@ -131,7 +131,7 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 
 | # | Criterion |
 |---|---|
-| 0.1 | LFM2.5-VL-450M runs on iPhone 16 Pro (via Liquid's LEAP SDK / Apollo app) and Pi 5 4 GB (via GGUF + llama.cpp). Metrics logged. |
+| 0.1 | LFM2-VL-450M runs on iPhone 16 Pro (via Liquid's LEAP SDK / Apollo app) and Pi 5 4 GB (via GGUF + llama.cpp). Metrics logged. |
 | 0.2 | FastVLM-0.5B runs on iPhone 16 Pro via apple/ml-fastvlm demo. Metrics logged. Pi 5 non-viability documented. |
 | 0.3 | SmolVLM-500M and MiniCPM-V 4.6 run on iPhone 16 Pro and Pi 5 4 GB. Metrics logged. (Where one doesn't fit on Pi, that's documented.) |
 | 0.4 | Qwen2.5-VL-3B runs on the Mac mini (M4, 16 GB). Metrics logged. Non-fit on Pi 5 4 GB documented as "expected and confirmed." M5 Pro 32 GB measurement logged when that machine becomes available (does not block Phase 0 completion). |
@@ -159,15 +159,15 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 
 **Goal:** Implement the Search Strategist Agent plus core services (Experiment Runner, Pareto Tracker, Evaluation Harness, Deployment Dispatcher) to drive an autonomous Mode A optimization loop on a small-model starting point. This phase validates the loop works before Phase 2 attempts the harder 3B → 450M optimization.
 
-**Why this phase exists:** Phase 2 is ambitious (general 3B → competitive edge model). Before tackling it, prove the closed-loop optimizer works end-to-end on a tractable starting point. Phase 1 uses LFM2.5-VL-450M as starting point and runs compression/runtime sweeps — same shape as Phase 2 but with much smaller compute requirements. If Phase 1 cannot produce a Pareto improvement here, attempting Phase 2 is wasteful.
+**Why this phase exists:** Phase 2 is ambitious (general 3B → competitive edge model). Before tackling it, prove the closed-loop optimizer works end-to-end on a tractable starting point. Phase 1 uses LFM2-VL-450M as starting point and runs compression/runtime sweeps — same shape as Phase 2 but with much smaller compute requirements. If Phase 1 cannot produce a Pareto improvement here, attempting Phase 2 is wasteful.
 
 **Exit criteria:**
 
 | # | Criterion |
 |---|---|
 | 1.1 | The Search Strategist Agent (one process, conforming to HLD schemas) reads experiment configs, dispatches them to the runner, collects metrics, and updates the Pareto frontier autonomously. |
-| 1.2 | Autonomous sweep over (quantization × vision-token budget × resolution × runtime backend) executed on iPhone 16 Pro and Pi 5 4 GB, starting from LFM2.5-VL-450M. |
-| 1.3 | At least one configuration on the Pareto frontier improves on baseline LFM2.5-VL-450M Q4_0 in size, memory, or latency on at least one device, with quality regression ≤ 5% on the eval set. |
+| 1.2 | Autonomous sweep over (quantization × vision-token budget × resolution × runtime backend) executed on iPhone 16 Pro and Pi 5 4 GB, starting from LFM2-VL-450M. |
+| 1.3 | At least one configuration on the Pareto frontier improves on baseline LFM2-VL-450M Q4_0 in size, memory, or latency on at least one device, with quality regression ≤ 5% on the eval set. |
 | 1.4 | The improvement was achieved without manual configuration edits after initial setup. Human approval was required only for the final deploy candidate. |
 | 1.5 | The Decision Dossier scaffold is in place (Threshold Monitor exists, signals defined, dossier format implemented) even though Phase 1 doesn't need it to fire. |
 | 1.6 | Repository goes public at Phase 1 exit, with the Phase 0+1 blog post as the reveal artifact. |
@@ -188,14 +188,14 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 
 **Goal:** With the full system online (all services, training pipeline, distillation, approval queue, dashboard), autonomously produce a competitive 450M-class edge model **starting from Qwen2.5-VL-3B** — a general-purpose, not-edge-optimized VLM. Document the calendar time taken.
 
-**Why this phase exists:** This is the phase that validates the project's central claim. *The system autonomously navigates the full optimization journey from a general-purpose 3B VLM down to a competitive edge model on both target devices, in solo-developer calendar time, without manual config tweaking.* The starting point matters: Phase 1's "compress LFM2.5-VL-450M further" doesn't prove the system does the hard optimization work, only that it polishes. Phase 2's "Qwen2.5-VL-3B → competitive 450M" is the hard optimization work itself.
+**Why this phase exists:** This is the phase that validates the project's central claim. *The system autonomously navigates the full optimization journey from a general-purpose 3B VLM down to a competitive edge model on both target devices, in solo-developer calendar time, without manual config tweaking.* The starting point matters: Phase 1's "compress LFM2-VL-450M further" doesn't prove the system does the hard optimization work, only that it polishes. Phase 2's "Qwen2.5-VL-3B → competitive 450M" is the hard optimization work itself.
 
 **Exit criteria:**
 
 | # | Criterion |
 |---|---|
 | 2.1 | All Phase 1 components plus: training/fine-tuning/distillation pipeline, Deployment Dispatcher with full DeviceDescriptor support, human Approval Queue, dashboard with all five reference markers (including Qwen2.5-VL-3B as the starting point) and all candidate models. |
-| 2.2 | Cached-caption distillation pipeline operational: LFM2-VL-3B (or chosen open-license teacher) generates captions for the training corpus once; student training reuses the cache. Justifies time/compute. |
+| 2.2 | Distillation pipeline operational: the teacher (**Qwen2.5-VL-3B** — the Phase-2 pivot, ADR-0011; *caption-only* distillation was an early variant that regressed) generates a **task-aligned** target cache (grounded Q&A / MCQ) once; student training reuses the cache. Justifies time/compute. |
 | 2.3 | Starting from Qwen2.5-VL-3B, the system produced a 450M-class deployable model without manual configuration tweaks after setup. (P1.) |
 | 2.4 | The system's output includes a per-device Pareto frontier with ≥ 3 candidates per device and a written rationale. (P2.) |
 | 2.5 | The chosen model runs on iPhone 16 Pro and Pi 5 4 GB with reproducible metrics. (P3.) |
@@ -209,16 +209,16 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 | D2.1 | A working end-to-end system, documented well enough for reproduction. | Public artifact |
 | D2.2 | The Phase 2 model: weights, configs, build artifacts for iPhone and Pi 5, derived from Qwen2.5-VL-3B, released under inherited license (Qwen license). | Public artifact |
 | D2.3 | A blog post (~3500 words): "Phase 2: the autonomous system produced a competitive edge VLM from a 3B general model. Here's the model, the numbers, the calendar time, the cost — and what's left to do." | Public artifact |
-| D2.4 | A timeline-comparison chart: this project vs. SmolVLM, LFM2.5-VL, MiniCPM-V, FastVLM development histories. | Public artifact |
+| D2.4 | A timeline-comparison chart: this project vs. SmolVLM, LFM2-VL, MiniCPM-V, FastVLM development histories. | Public artifact |
 | D2.5 | An arXiv preprint covering the system, results, and time-compression analysis. **Now recommended, not optional** — the time-compression claim is much stronger with a citable preprint. | Public artifact |
 | D2.6 | A short demo video. | Public artifact |
 | D2.7 | The full experiment log published. | Technical artifact |
 
 **Duration estimate:** 7-9 weeks solo. This is the largest phase. Includes the cached teacher distillation pass (1-3 days of overnight Mac compute, longer if Qwen2.5-VL-3B is heavier than expected; consider $300-600 cloud GPU rental for this step).
 
-### Phase 3 — Mode B research-driven exploration + LFM2.5-VL-450M squeezing
+### Phase 3 — Mode B research-driven exploration + LFM2-VL-450M squeezing
 
-**Goal:** Bring the Research Analyst Agent fully online. Demonstrate two complementary claims: (a) the system can ingest recent literature and apply research-derived techniques to improve a Pareto frontier, and (b) even an already-expertly-optimized model (LFM2.5-VL-450M) still has squeezable value when run through the system with literature-driven techniques.
+**Goal:** Bring the Research Analyst Agent fully online. Demonstrate two complementary claims: (a) the system can ingest recent literature and apply research-derived techniques to improve a Pareto frontier, and (b) even an already-expertly-optimized model (LFM2-VL-450M) still has squeezable value when run through the system with literature-driven techniques.
 
 **Why this phase exists:** Phase 2 demonstrates the system optimizes effectively starting from an unoptimized model. Phase 3 demonstrates two further things: that the system can extend its own toolkit through research ingestion (the Mode B capability that distinguishes the project from a sophisticated AutoML sweep), and that the system adds value even on top of expert manual optimization (the "useful as a tool for working teams" complementary claim).
 
@@ -232,7 +232,7 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 | 3.4 | At least one Tier 2 hypothesis (code-requiring) is human-implemented from the hypothesis record, run by the system, and measured. |
 | 3.5 | At least one literature-derived technique improves the Phase 2 model's Pareto frontier by a statistically meaningful margin (multiple seeds, effect size > defined threshold). |
 | 3.6 | The Decision Dossier fires at least once in realistic conditions, presents the human with the signals from HLD §4.2, and the human's decision is logged. |
-| 3.7 | Starting from LFM2.5-VL-450M as a separate experiment track, the system with Mode B enabled identifies and applies at least one literature-derived technique that improves the LFM2.5-VL-450M Pareto frontier on at least one metric. **This is the "squeeze" demonstration.** |
+| 3.7 | Starting from LFM2-VL-450M as a separate experiment track, the system with Mode B enabled identifies and applies at least one literature-derived technique that improves the LFM2-VL-450M Pareto frontier on at least one metric. **This is the "squeeze" demonstration.** |
 
 **Phase 3 deliverables:**
 
@@ -241,10 +241,10 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 | D3.1 | Working Research Analyst Agent code. | Public artifact |
 | D3.2 | A library of hypothesis records produced during Phase 3, demonstrating the format. | Public artifact |
 | D3.3 | A blog post (~3000 words): "Phase 3: can an LLM agent read the literature and improve a model? Including one that experts already optimized?" Honest accounting of hits and misses. | Public artifact |
-| D3.4 | An updated arXiv preprint (v2) incorporating Mode B results and the LFM2.5-VL-450M squeezing result. | Public artifact |
+| D3.4 | An updated arXiv preprint (v2) incorporating Mode B results and the LFM2-VL-450M squeezing result. | Public artifact |
 | D3.5 | A short documented Mode B technique catalog: which papers were ingested, which techniques surfaced, which made it through validation, which improved the Pareto frontier. | Public artifact |
 
-**Duration estimate:** 5-6 weeks solo. The LFM2.5-VL-450M squeezing experiment adds ~1 week to the original Phase 3 estimate.
+**Duration estimate:** 5-6 weeks solo. The LFM2-VL-450M squeezing experiment adds ~1 week to the original Phase 3 estimate.
 
 ### Phase 4 — Reusability proof on a second task *(now in project scope)*
 
@@ -285,9 +285,9 @@ Public release of the repository is at end of Phase 1, not Day 1 — see §6.
 | Phase | Duration | Cumulative | Notes |
 |---|---|---|---|
 | Phase 0 | 4-5 weeks | 5 weeks | Foundations + 5 reference baselines |
-| Phase 1 | 4-5 weeks | 10 weeks | Mode A loop on LFM2.5-VL-450M; repo goes public at end |
+| Phase 1 | 4-5 weeks | 10 weeks | Mode A loop on LFM2-VL-450M; repo goes public at end |
 | Phase 2 | 7-9 weeks | 19 weeks | Full system + Qwen2.5-VL-3B → edge model (the core claim) |
-| Phase 3 | 5-6 weeks | 25 weeks | Mode B + LFM2.5-VL-450M squeeze |
+| Phase 3 | 5-6 weeks | 25 weeks | Mode B + LFM2-VL-450M squeeze |
 | Phase 4 | 4-5 weeks | 30 weeks | Reusability proof on second task |
 
 **Total: ~6-7 months solo full-time-equivalent for the full project (Phases 0-4).**
@@ -358,7 +358,7 @@ Decisions now locked (previously open, now resolved):
 | Pi 5 RAM tier | 4 GB. Tighter than 8 GB; constrains Mode B candidates. |
 | Public repo timing | Private through Phase 0-1; public at end of Phase 1. ADR-0007. |
 | Phase 4 inclusion | In project scope (was future work). Required to validate time-compression generalization. |
-| Phase 1-2 starting point | Qwen2.5-VL-3B (general, not edge-optimized). LFM2.5-VL-450M used as Phase 1 sanity baseline and as Phase 3 squeeze target. |
+| Phase 1-2 starting point | Qwen2.5-VL-3B (general, not edge-optimized). LFM2-VL-450M used as Phase 1 sanity baseline and as Phase 3 squeeze target. |
 | License posture | Apache 2.0 for code; LFM Open License inheritance for LFM-derived models; Qwen license inheritance for Qwen2.5-VL-3B-derived models; FastVLM is benchmark-only, no derivative work. ADR-0006. |
 | arXiv preprint | Recommended at end of Phase 2; updated versions at end of Phase 3 and Phase 4. The time-compression claim needs a citable artifact. |
 
