@@ -264,7 +264,19 @@ HYPOTHESIS_TABLE = [
             "forgetting family as P2-D1/D2. Don't repeat as-is. Next: rehearsal weighting / more distill "
             "steps to retain POPE while adding MCQ; far more MCQ data (491 too few); distribution-matched "
             "MCQ (COCO-object MCQs may not transfer to MMBench's reasoning/knowledge questions). Best "
-            "student remains the no-MCQ scale-up d3423bc0 (POPE bal-acc 68.3 real, MMBench at floor)."
+            "student remains the no-MCQ scale-up d3423bc0 (POPE bal-acc 68.3 real, MMBench at floor). "
+            "UPDATE 2 (rehearsal + full-epoch, spec 55dcb001): grounding kept PRIMARY (qa_balanced_5k) "
+            "with MCQ replayed in (rehearse_data='mcq', frac 0.5) and trained 3 FULL epochs (~5631 steps, "
+            "vs the prior under-trained 0.8 epoch). ALSO NEGATIVE — and it FALSIFIES the under-training "
+            "hypothesis: POPE bal-acc 47.5 (below floor), MMBench still AT floor (0.47). Both MCQ-containing "
+            "runs land ~48 POPE regardless of budget (0.8 ep→48.3, 3 ep→47.5) while the no-MCQ run holds "
+            "68.3 → MCQ-mixing itself collapses grounding; it is NOT a budget/rehearsal problem. More steps "
+            "did not rescue POPE nor lift MMBench. CONCLUSION: at this capacity/data scale the student "
+            "cannot hold grounding AND learn MCQ from COCO-object MCQs. Remaining levers are narrowing: "
+            "(a) distribution-matched MCQ (generate MMBench-like reasoning/knowledge MCQs, not COCO-object); "
+            "(b) accept single-skill — ship the grounding student (d3423bc0) and pick a POPE-supported goal, "
+            "treating MMBench as out of reach for this training distribution. Best student STILL d3423bc0. "
+            "Rehearsal is now correctly wired (was inert before); the mechanism works, the data doesn't."
         ),
     },
 ]

@@ -1,0 +1,69 @@
+{
+  "experiment_id": "55dcb001a24d9828b2c01f5f477f1403b68dcd38ff08c6ca3b691fe9c0ff3e2a",
+  "kind": "student_construction",
+  "hypothesis_id": "P2-B1",
+  "rationale": "Rehearsal-protected retry of the P2-B1 MCQ attempt. KEY: the prior negative (spec 1507d317) set rehearse_frac=0.2 but the construction path never read it \u2014 rehearsal was inert, and it trained only ~0.8 epoch (1500 steps / 1877 rows). Now rehearsal is wired: primary=qa_balanced_5k (1386 grounding rows, the skill that gives POPE bal-acc 68.3) with mcq (491) replayed in at frac 0.5 \u2014 which reproduces the SAME validated 1386:491 composition, isolating the lever to TRAINING BUDGET: 3 full epochs (~5631 steps) vs the prior under-trained 0.8 epoch. Tests whether the MCQ negative was under-training, not fundamental interference \u2014 does grounding-dominant replay over full epochs retain POPE while giving MCQ enough exposure to clear the MMBench floor?",
+  "spec": {
+    "lm": "Qwen/Qwen2.5-0.5B-Instruct",
+    "vision": "google/siglip-base-patch16-224",
+    "projector": {
+      "type": "mlp",
+      "depth": 2,
+      "hidden": 2048
+    },
+    "init": "scratch",
+    "align": {
+      "data": "coco_caption_5k",
+      "steps": 3000
+    },
+    "distill": {
+      "teacher": "Qwen2.5-VL-3B",
+      "data": "qa_balanced_5k",
+      "lora_r": 16,
+      "epochs": 3,
+      "rehearse_data": "mcq",
+      "rehearse_frac": 0.5
+    },
+    "eval": {
+      "benchmarks": [
+        "POPE",
+        "RealWorldQA",
+        "MMBench_DEV_EN"
+      ],
+      "n": 100
+    },
+    "target_device_id": "mac_mini_m4_16gb",
+    "notes": "P2-B1: Rehearsal-protected retry of the P2-B1 MCQ attempt. KEY: the prior negative (spe"
+  },
+  "report": {
+    "experiment_id": "55dcb001a24d9828b2c01f5f477f1403b68dcd38ff08c6ca3b691fe9c0ff3e2a",
+    "status": "built",
+    "device_id": "mac_mini_m4_16gb",
+    "started_at": "2026-06-16T18:49:31.754109+00:00",
+    "completed_at": "2026-06-16T19:48:55.506021+00:00",
+    "align_final_loss": 1.9444736242294312,
+    "distill_final_loss": 0.10151088982820511,
+    "quality_scores": [
+      {
+        "benchmark": "POPE",
+        "metric": "Overall",
+        "value": 63.63636363636363,
+        "delta_vs_benchmark": -24.06363636363637
+      },
+      {
+        "benchmark": "RealWorldQA",
+        "metric": "Overall",
+        "value": 0.44,
+        "delta_vs_benchmark": 0.020000000000000018
+      },
+      {
+        "benchmark": "MMBench_DEV_EN",
+        "metric": "Overall",
+        "value": 0.47,
+        "delta_vs_benchmark": -0.27
+      }
+    ],
+    "note": "built; run runners/eval_student.py for same-path scores."
+  },
+  "recorded_at": "2026-06-16T19:50:26.187811+00:00"
+}
