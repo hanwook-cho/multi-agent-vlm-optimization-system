@@ -117,6 +117,7 @@ Runs tee their output to `artifacts/logs/`, and the operator console auto-points
 - Not a generic AutoML tool — VLM-specific, edge-specific.
 - Not "fully autonomous research" — humans gate consequential decisions (see HLD §5).
 - Not a competitor to Liquid AI or Apple on individual model quality — the contribution is the *method* that compresses optimization time, demonstrated by producing one competitive model in solo-months rather than team-months. See `docs/VLM_Optimization_PriorArt.md`.
+- **Not externally-validated benchmarking.** Every score reported here and in `STATUS.md` / `docs/observations/` is **internal-only**: 100-sample slices on a non-official protocol, floor-adjusted, with no published number reproduced yet. They are trusted for *steering experiments on a held-constant path* — **not for external citation or model-to-model leaderboard claims**. A full-set, official-protocol validation run is deferred (decision 2026-06-16).
 
 ## License
 
