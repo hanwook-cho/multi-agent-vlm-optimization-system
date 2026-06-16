@@ -722,6 +722,8 @@ In the repo, also keep a `licenses/` subdirectory containing the exact LICENSE f
 
 ### Task 5.5: ADR-0007 (license posture) and ADR-0008 (public-repo timing)
 
+> **Reconciliation (2026-06-16):** neither ADR was ultimately written (ADRs are authored as decisions are made, not retroactively — see [`decisions/README.md`](decisions/README.md)). The **license posture** is recorded authoritatively in [`THIRD_PARTY.md`](THIRD_PARTY.md); the **public-repo-timing** decision was simply executed (the repo went public at the end of Phase 1). Note also that the teacher choice in (a) below is now stale — Phase 2 distills from **Qwen2.5-VL-3B**, not an LFM2 model (ADR-0011).
+
 **What:** Two short Architecture Decision Records.
 
 **ADR-0007 — License posture decision.** Documents *why* the project takes the license posture it does: (a) use LFM2-VL-3B as the distillation teacher rather than FastVLM-7B, (b) treat FastVLM as benchmark-only, (c) release derivative models under inherited upstream licenses (LFM Open License for LFM-derived, Qwen license for Qwen-derived), (d) write iPhone measurement code from scratch rather than fork Apple's demo.

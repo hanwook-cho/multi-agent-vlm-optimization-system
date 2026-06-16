@@ -356,10 +356,10 @@ Decisions now locked (previously open, now resolved):
 |---|---|
 | iPhone target | iPhone 16 Pro or later. Documented in DeviceDescriptor. |
 | Pi 5 RAM tier | 4 GB. Tighter than 8 GB; constrains Mode B candidates. |
-| Public repo timing | Private through Phase 0-1; public at end of Phase 1. ADR-0007. |
+| Public repo timing | Private through Phase 0-1; public at end of Phase 1 — **executed** (repo is now public). *(Planned ADR-0008 was never written; decision is recorded here and in the Phase-0 plan §5.5.)* |
 | Phase 4 inclusion | In project scope (was future work). Required to validate time-compression generalization. |
 | Phase 1-2 starting point | Qwen2.5-VL-3B (general, not edge-optimized). LFM2-VL-450M used as Phase 1 sanity baseline and as Phase 3 squeeze target. |
-| License posture | Apache 2.0 for code; LFM Open License inheritance for LFM-derived models; Qwen license inheritance for Qwen2.5-VL-3B-derived models; FastVLM is benchmark-only, no derivative work. ADR-0006. |
+| License posture | Apache 2.0 for code; LFM Open License inheritance for LFM-derived models; Qwen license inheritance for Qwen2.5-VL-3B-derived models; FastVLM is benchmark-only, no derivative work. *(Planned ADR-0007 was never written; the authoritative record is [`THIRD_PARTY.md`](THIRD_PARTY.md).)* |
 | arXiv preprint | Recommended at end of Phase 2; updated versions at end of Phase 3 and Phase 4. The time-compression claim needs a citable artifact. |
 
 Still genuinely open:
