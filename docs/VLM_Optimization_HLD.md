@@ -297,6 +297,8 @@ The takeaway: **the LLM is not trusted; it is verified.** Every output of the Re
 
 The original HLD drew the autonomy line at "Tier-2 = code-requiring → the human implements it." Phase-2 experience overruled that boundary as written. After two distillation pilots regressed (P2-D1 caption-only, P2-D2 task-aligned — both distilling *into* the LFM2 benchmark, see ADR-0011), the corrected approach was to **construct** a right-sized student from the Qwen2.5-VL-3B lineage. The decision (ADR-0012, your directive: *"system should do, not human implement"*) was to make model construction a **system capability**, not a human one-off. This section revises the tier model accordingly.
 
+> **On the methods themselves.** The construction loop's training-time techniques — knowledge distillation, sequence-level (teacher-generated-target) distillation, LoRA, LLaVA-style projector-align-then-distill assembly, and rehearsal/replay against catastrophic forgetting — are all **standard, published methods used in their conventional form**; none are a contribution of this project. This section describes only the *mechanism* by which the system applies them; their provenance and references are catalogued in [`VLM_Optimization_PriorArt.md`](VLM_Optimization_PriorArt.md) §6.1.
+
 #### 6.5.1 Revised principle
 
 > **Tier-2 human work produces a *parameterized capability*, not a one-off.** A human writes a generic builder **once** (the irreducible machinery — e.g. assembling a multimodal forward pass *is* code). Thereafter the agent constructs every *instance* by proposing a declarative, content-addressed spec, and a deterministic loop builds → trains → evaluates → records it. Construction becomes a search dimension, not a manual task.

@@ -145,6 +145,22 @@ After surveying the four lineages, here is an honest accounting of what this pro
 - VLMEvalKit-based evaluation — using existing tooling.
 - Pareto frontier maintenance — textbook multi-objective optimization.
 
+### 6.1 Phase-2 construction & distillation — the methods are well-known and general *(added 2026-06-16)*
+
+This document was first written for the Phase-1 *search/NAS* framing. The Phase-2 pivot (ADR-0011/0012) moved the work to **constructing and distilling a right-sized student** (HLD §6.5). For the avoidance of doubt: **every training-time method the construction loop uses is a standard, published technique applied in its conventional form.** None are a contribution of this project — the contribution is the *system that proposes, builds, evaluates, and re-routes over them autonomously*. The methods, with references:
+
+| Method (as used here) | What it is | Reference |
+|---|---|---|
+| **Knowledge distillation** | Train a small *student* to reproduce a larger *teacher*'s behavior. | Hinton, Vinyals & Dean (2015), *Distilling the Knowledge in a Neural Network*, arXiv:1503.02531 |
+| **Sequence-level KD** (teacher generates answer targets; student imitates — exactly our cached `{image, prompt, target}` recipe) | Distill on the teacher's *generated sequences* rather than its soft logits. | Kim & Rush (2016), *Sequence-Level Knowledge Distillation*, EMNLP; arXiv:1606.07947 |
+| **LoRA** (the distill-stage adapter) | Parameter-efficient fine-tuning via low-rank weight updates; we use the stock `peft` implementation. | Hu et al. (2021), *LoRA: Low-Rank Adaptation of Large Language Models*, arXiv:2106.09685 (ICLR 2022) |
+| **LLaVA-style assembly + two-stage training** (vision encoder + MLP projector + LM; *align projector* then *distill*) | The standard open-VLM architecture and its projector-align-then-instruction-tune recipe. | Liu et al. (2023), *Visual Instruction Tuning*, arXiv:2304.08485 (NeurIPS 2023) |
+| **SigLIP vision encoder** | The pretrained image encoder the student is built on. | Zhai et al. (2023), *Sigmoid Loss for Language Image Pre-Training*, arXiv:2303.15343 (ICCV 2023) |
+| **Catastrophic forgetting** (the failure mode that broke P2-D1/D2 and the MCQ pilot) | A network loses a prior skill when trained on a new one. | McCloskey & Cohen (1989), *Catastrophic Interference in Connectionist Networks* |
+| **Rehearsal / experience replay** (our fix: replay prior-skill data while learning a new one) | Mix old-task examples into new-task training to mitigate forgetting. | Robins (1995), *Catastrophic Forgetting, Rehearsal and Pseudorehearsal*, Connection Science 7(2):123–146 |
+
+The *teacher* (Qwen2.5-VL-3B), the *student* backbones (Qwen2.5-0.5B, SigLIP), the reference/yardstick models (LFM2-VL, SmolVLM, MiniCPM-V, FastVLM), and the benchmarks (POPE, MMBench, RealWorldQA) are all third-party and used, not redistributed — their sources and licenses are in [`THIRD_PARTY.md`](THIRD_PARTY.md). Method provenance for the construction loop is summarized here; the HLD (§6.5) describes only the *mechanism*, not the method lineage.
+
 ---
 
 ## 7. What this project should learn from prior art
