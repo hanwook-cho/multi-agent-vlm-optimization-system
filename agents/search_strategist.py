@@ -257,7 +257,14 @@ HYPOTHESIS_TABLE = [
             "consistent with the training data (yes/no + open Q&A, no multiple-choice). Next levers: "
             "(1) add MCQ-format distill data so the student can do multiple-choice; (2) lift POPE recall "
             "(40 — under-detects); (3) larger balanced cache. The construction loop produces real (if "
-            "narrow) capability — keep refining. See observation 2026-06-16."
+            "narrow) capability — keep refining. See observation 2026-06-16. "
+            "UPDATE (MCQ attempt, spec 1507d317): mixing 491 teacher MCQ items into the distill set at "
+            "the same 1500-step budget was NEGATIVE — task interference. MMBench stayed AT the 0.50 floor "
+            "(no MCQ gained) and POPE REGRESSED from balanced-acc 68.3 to 48.3 (below floor). Same "
+            "forgetting family as P2-D1/D2. Don't repeat as-is. Next: rehearsal weighting / more distill "
+            "steps to retain POPE while adding MCQ; far more MCQ data (491 too few); distribution-matched "
+            "MCQ (COCO-object MCQs may not transfer to MMBench's reasoning/knowledge questions). Best "
+            "student remains the no-MCQ scale-up d3423bc0 (POPE bal-acc 68.3 real, MMBench at floor)."
         ),
     },
 ]
