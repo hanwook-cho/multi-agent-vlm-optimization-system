@@ -19,6 +19,8 @@ dependencies = [
 train = [
     "torch>=2.1",
     "transformers>=4.40",
+    "peft>=0.11",            # LoRA adapters (runners/finetune_vlm.py, distillation)
+    "Pillow>=10.0",          # image loading (runners + distillation pipeline)
 ]
 # Evaluation harness — also requires train extras.
 eval = [
@@ -26,9 +28,20 @@ eval = [
     "transformers>=4.40",
     "vlmeval>=0.1",          # VLMEvalKit: pip install vlmeval
 ]
-# Everything including train and eval.
+# Operator console + read-only dashboard (Streamlit UI).
+console = [
+    "streamlit>=1.30",
+]
+# Agent/chat backend clients. local = OpenAI-compatible (llama.cpp server, Ollama);
+# api = Anthropic (opt-in). The default LOCAL backend also needs an external
+# llama.cpp `llama-server` running separately — see README "Development environment".
+agent = [
+    "openai>=1.0",           # OpenAI-compatible client for the local backend
+    "anthropic>=0.30",       # Anthropic client for the opt-in API backend
+]
+# Everything including train, eval, console, and agent backends.
 all = [
-    "vlm-opt[train,eval]",
+    "vlm-opt[train,eval,console,agent]",
 ]
 # Development and test tools.
 dev = [

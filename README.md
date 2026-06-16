@@ -30,14 +30,39 @@ A live browser UI (ADR-0013) to run, watch, steer, and gate the system: pause/st
 streamlit run operator_console.py     # → http://localhost:8501
 ```
 
-## How to
+## Development environment
 
-Requires Python 3.11+ (CI runs 3.11; an Apple-Silicon Mac is needed for the MPS training/eval paths). Heavy ML deps (torch, transformers, peft) and `streamlit` are used by the runners and the console.
+The system is developed and the reported results are produced on a single, fixed
+reference setup. The on-device numbers (latency/memory) are only meaningful
+against this hardware — see `docs/observations/` for the per-run context.
+
+| | Reference setup (where results were produced) | Minimum |
+|---|---|---|
+| Machine | Apple **M4, 16 GB**, macOS 26 | Apple Silicon (for the MPS train/eval paths) |
+| Python | **3.14** (daily driver) | **3.11+** — CI gates on 3.11 |
+| Compute path | PyTorch **MPS** (`torch` 2.12, `transformers` 5.9, `peft` 0.19) | `torch>=2.1`, `transformers>=4.40` |
+| Local agent backend (default) | external **llama.cpp `llama-server`** + Qwen2.5-7B-Instruct (Q4_K_M) on `:8080`, via the `openai` client | any OpenAI-compatible endpoint (llama.cpp, Ollama) |
+| API agent backend (opt-in) | `anthropic` client, `ANTHROPIC_API_KEY` env, `STRATEGIST_BACKEND=api` | — |
+
+> **16 GB constraint:** fp32 VLM fine-tuning must run at **batch-size 1** on this
+> machine or it swap-thrashes. The dependency lower bounds are *floors*, not the
+> validated versions; the table's left column is what the results were run on.
+
+**Default local backend needs an external server.** Install llama.cpp separately
+and launch it before using the agent/console chat:
 
 ```bash
-# 1. install
-python -m pip install -r requirements-dev.txt          # test + dev deps
-#    (torch / transformers / peft / streamlit as needed for runners + console)
+llama-server -m qwen2.5-7b-instruct-q4_k_m.gguf --jinja --port 8080 -c 8192
+```
+
+## How to
+
+```bash
+# 1. install — pick the extras you need (see pyproject.toml)
+python -m pip install -e ".[dev]"                       # tests / schemas only (no heavy deps)
+python -m pip install -e ".[all]"                       # train + eval + console + agent backends
+#    or, for the test/dev pin set used by CI:
+python -m pip install -r requirements-dev.txt
 
 # 2. run the test suite (deterministic logic; no model downloads)
 python -m pytest -q
