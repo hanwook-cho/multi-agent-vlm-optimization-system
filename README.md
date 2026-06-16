@@ -1,5 +1,9 @@
 # Multi-Agent System for VLM Optimization
 
+[![CI](https://github.com/hanwook-cho/multi-agent-vlm-optimization-system/actions/workflows/verify-schemas.yml/badge.svg)](https://github.com/hanwook-cho/multi-agent-vlm-optimization-system/actions/workflows/verify-schemas.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](pyproject.toml)
+
 An autonomous multi-agent system whose **goal** is to compress the time required to produce a competitive edge vision-language model — from the team-months of focused expert work behind models like LFM2-VL-450M, SmolVLM-500M, and MiniCPM-V toward solo-developer-months, using the system itself as the optimization tool.
 
 **The system is the deliverable; the compressed time-to-result is the central claim; a competitive model is the proof-of-work.**

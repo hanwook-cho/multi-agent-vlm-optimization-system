@@ -8,3 +8,4 @@ pyyaml>=6.0
 
 # Phase 2 Strategy B (distillation) — student LoRA fine-tuning
 peft>=0.11           # LoRA adapters for runners/finetune_vlm.py
+Pillow>=10.0         # PIL.Image — module-level import in services/distillation_pipeline.py (test collection)
