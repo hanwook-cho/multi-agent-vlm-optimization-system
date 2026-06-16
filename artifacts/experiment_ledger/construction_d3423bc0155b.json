@@ -1,0 +1,72 @@
+{
+  "experiment_id": "d3423bc0155b33b2b648a88bb1cd33a0547cbc0c5457f9a2f8052db38a341dd9",
+  "kind": "student_construction",
+  "hypothesis_id": "P2-B1",
+  "rationale": "B1.3 first run was degenerate because stage-1 alignment never converged (align loss held ~2.38 over only 200 steps) \u2014 projected vision tokens were noise. Scale alignment to 3000 steps on the full coco_caption_5k cache (5000 captions) so the projector actually learns the SigLIP\u2192Qwen mapping before distillation; keep distill modest (qa_balanced) to isolate the alignment fix.",
+  "spec": {
+    "lm": "Qwen/Qwen2.5-0.5B-Instruct",
+    "vision": "google/siglip-base-patch16-224",
+    "projector": {
+      "type": "mlp",
+      "depth": 2,
+      "hidden": 2048
+    },
+    "init": "scratch",
+    "align": {
+      "data": "coco_caption_5k",
+      "steps": 3000
+    },
+    "distill": {
+      "teacher": "Qwen2.5-VL-3B",
+      "data": "qa_balanced_5k",
+      "lora_r": 16,
+      "epochs": 3,
+      "rehearse_frac": 0.2
+    },
+    "eval": {
+      "benchmarks": [
+        "POPE",
+        "RealWorldQA",
+        "MMBench_DEV_EN"
+      ],
+      "n": 100
+    },
+    "target_device_id": "mac_mini_m4_16gb",
+    "notes": "P2-B1: B1.3 first run was degenerate because stage-1 alignment never converged (align l"
+  },
+  "report": {
+    "experiment_id": "d3423bc0155b33b2b648a88bb1cd33a0547cbc0c5457f9a2f8052db38a341dd9",
+    "status": "built",
+    "device_id": "mac_mini_m4_16gb",
+    "started_at": "2026-06-15T23:12:17.754364+00:00",
+    "completed_at": "2026-06-15T23:42:15.563596+00:00",
+    "align_final_loss": 1.8480772972106934,
+    "distill_final_loss": 0.09210501611232758,
+    "quality_scores": [
+      {
+        "benchmark": "MMBench_DEV_EN",
+        "metric": "accuracy",
+        "value": 0.44,
+        "chance_floor": 0.5,
+        "above_floor": false
+      },
+      {
+        "benchmark": "POPE",
+        "metric": "balanced-accuracy",
+        "value": 68.333,
+        "chance_floor": 50.0,
+        "above_floor": true
+      },
+      {
+        "benchmark": "RealWorldQA",
+        "metric": "accuracy",
+        "value": 0.41,
+        "chance_floor": 0.47,
+        "above_floor": false
+      }
+    ],
+    "note": "built; run runners/eval_student.py for same-path scores.",
+    "correction_note": "Re-scored 2026-06-16 after fixing the decode bug (lm.generate(inputs_embeds=...) ignored image embeds). Floor-adjusted, trustworthy metrics: POPE balanced-acc 68.3 (>50 floor, real); MMBench 0.44 (at 0.50 floor); RealWorldQA uninformative at n=100. Earlier all-zero scores were a measurement bug."
+  },
+  "recorded_at": "2026-06-15T23:43:15.217749+00:00"
+}

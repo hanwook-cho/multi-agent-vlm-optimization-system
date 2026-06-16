@@ -29,8 +29,33 @@ if str(PROJECT_ROOT) not in sys.path:
 BENCHMARK_BAR = {"POPE": 87.7, "RealWorldQA": 0.42, "MMBench_DEV_EN": 0.74}
 
 
+def _chance_floor(ds, df, bench: str, scratch: Path, is_mcq: bool) -> dict:
+    """Strongest trivial constant-prediction baseline, via the SAME scorer.
+
+    A model at or below this floor has demonstrated no real ability — a raw score
+    must be read against it (always-'A' on a 41%-A slice already scores 0.41).
+    """
+    from runners.eval_vlmeval import score_benchmark
+    best = {"label": None, "Overall": None}
+    for c in (["A", "B", "C", "D"] if is_mcq else ["Yes", "No"]):
+        rdf = df.copy()
+        rdf["prediction"] = c
+        rdf = rdf.drop(columns=["image"], errors="ignore")
+        try:
+            sc = score_benchmark(ds, rdf, scratch, f"floor_{bench}_{c}")
+        except Exception:
+            continue
+        ov = sc.get("Overall", sc.get("acc"))
+        if ov is not None and (best["Overall"] is None or ov > best["Overall"]):
+            best = {"label": f"always-{c}", "Overall": ov}
+    return best
+
+
 def evaluate(build_dir: Path, benchmarks: list[str], n: int, out_dir: Path) -> dict:
-    """Score the constructed student; write MetricsReport JSONs; return {bench: scores}."""
+    """Score the constructed student; write MetricsReport JSONs; return {bench: scores}.
+
+    Each score is reported AGAINST its chance floor (and, for POPE, as balanced
+    accuracy — the trustworthy metric on imbalanced slices, vs the F1 'Overall')."""
     import json
     from runners.build_student import load_student
     from runners.eval_vlmeval import (
@@ -70,12 +95,33 @@ def evaluate(build_dir: Path, benchmarks: list[str], n: int, out_dir: Path) -> d
         bar = BENCHMARK_BAR.get(bench)
         overall = scores.get("Overall")
         delta = (overall - bar) if (bar is not None and overall is not None) else None
-        print(f"    Scores: {scores}   (Δ vs benchmark: {delta})")
-        (out_dir / f"student_{bench}.json").write_text(json.dumps(
-            {"benchmark": bench, "scores": scores, "benchmark_bar": bar,
-             "delta_vs_benchmark": delta, "failed": failed,
-             "evaluated_at": datetime.now(timezone.utc).isoformat()}, indent=2))
-        results[bench] = {"scores": scores, "delta_vs_benchmark": delta}
+
+        is_mcq = build_mcq_question(df.iloc[0])[1]
+        floor = _chance_floor(ds, df, bench, scratch, is_mcq)
+        bal_acc = None if is_mcq else scores.get("acc")  # POPE: balanced acc
+
+        # Judge on the TRUSTWORTHY metric per benchmark: balanced accuracy (floor 50)
+        # for POPE — its F1 "Overall" is misleading on imbalanced slices; accuracy vs
+        # the majority floor for MCQ.
+        if is_mcq:
+            metric, mval, mfloor = "accuracy", overall, floor["Overall"]
+        else:
+            metric, mval, mfloor = "balanced-accuracy", bal_acc, 50.0
+        above_floor = (mval is not None and mfloor is not None and mval > mfloor + 1e-9)
+
+        print(f"    Overall(raw)={overall}  | trustworthy {metric}={mval}  "
+              f"vs floor {mfloor}  → above_floor={above_floor}")
+        if not above_floor:
+            print(f"    ⚠️ AT/BELOW the chance floor — no demonstrated ability on {bench}.")
+
+        rec = {"benchmark": bench, "scores": scores, "benchmark_bar": bar,
+               "delta_vs_benchmark": delta, "chance_floor": floor,
+               "trustworthy_metric": metric, "trustworthy_value": mval,
+               "trustworthy_floor": mfloor, "above_floor": above_floor,
+               "balanced_accuracy": bal_acc, "failed": failed,
+               "evaluated_at": datetime.now(timezone.utc).isoformat()}
+        (out_dir / f"student_{bench}.json").write_text(json.dumps(rec, indent=2))
+        results[bench] = rec
 
     print(f"\n  ✅ student eval done → {out_dir}")
     return results

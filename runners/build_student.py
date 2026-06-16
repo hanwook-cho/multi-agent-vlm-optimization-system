@@ -124,29 +124,56 @@ class StudentVLM(nn.Module):
         return self.lm(inputs_embeds=inputs_embeds, attention_mask=attn, labels=full_labels)
 
     @torch.no_grad()
-    def generate(self, input_ids, attention_mask, pixel_values, **kw):
+    def generate(self, input_ids, attention_mask, pixel_values, max_new_tokens: int = 32, **_kw):
+        """Greedy decode via the (working) forward pass with a KV cache.
+
+        NOTE: we do NOT use `self.lm.generate(inputs_embeds=...)` — for this
+        prepend-an-image-embed setup it fails to condition on the image embeds and
+        emits constant garbage. The forward pass conditions correctly, so we decode
+        from it directly. Returns ONLY the new token ids ([b, n_new]).
+        """
         text_embeds = self.lm.get_input_embeddings()(input_ids)
         img_embeds = self._image_embeds(pixel_values).to(text_embeds.dtype)
-        inputs_embeds = torch.cat([img_embeds, text_embeds], dim=1)
         b, p, _ = img_embeds.shape
-        img_mask = torch.ones(b, p, dtype=attention_mask.dtype, device=attention_mask.device)
-        attn = torch.cat([img_mask, attention_mask], dim=1)
-        return self.lm.generate(inputs_embeds=inputs_embeds, attention_mask=attn, **kw)
+        step_in = torch.cat([img_embeds, text_embeds], dim=1)
+        attn = torch.cat([torch.ones(b, p, dtype=attention_mask.dtype, device=attention_mask.device),
+                          attention_mask], dim=1)
+        eos = (self._proc.tok.eos_token_id if getattr(self, "_proc", None) is not None
+               else getattr(self.lm.config, "eos_token_id", None))
+        past, out = None, []
+        for _ in range(max_new_tokens):
+            o = self.lm(inputs_embeds=step_in, attention_mask=attn,
+                        past_key_values=past, use_cache=True)
+            past = o.past_key_values
+            nxt = o.logits[:, -1, :].argmax(-1)                 # [b]
+            out.append(nxt)
+            step_in = self.lm.get_input_embeddings()(nxt.unsqueeze(1))
+            attn = torch.cat([attn, torch.ones(b, 1, dtype=attn.dtype, device=attn.device)], dim=1)
+            if eos is not None and bool((nxt == eos).all()):
+                break
+        return torch.stack(out, dim=1)
 
     @torch.no_grad()
     def infer(self, image_path: str, question: str, is_mcq: bool) -> str:
-        """Eval interface matching eval_vlmeval's model protocol (same-path scoring)."""
-        from runners.eval_vlmeval import MCQ_PROMPT_SUFFIX, POPE_PROMPT_SUFFIX
+        """Eval interface (eval_vlmeval model protocol).
+
+        Raw question (no chat template — the student trained on raw prompts). The
+        MCQ answer-format suffix is ADDED (the multiple-choice questions carry no
+        "answer with a letter" instruction, and without it the student emits an empty
+        string on long MCQ prompts). The POPE suffix is NOT added: POPE questions
+        already end with "Please answer yes or no.", so the harness suffix would
+        double-instruct — which pushes this raw-trained student toward "No" and
+        collapses recall. A full chat-template eval is the matched-format comparison
+        and needs a retrain.
+        """
+        from runners.eval_vlmeval import MCQ_PROMPT_SUFFIX
         device = next(self.lm.parameters()).device
         image = Image.open(image_path).convert("RGB")
         pixel_values = self._proc.image(images=image, return_tensors="pt").pixel_values.to(device)
-        text = question + (MCQ_PROMPT_SUFFIX if is_mcq else POPE_PROMPT_SUFFIX)
-        msg = [{"role": "user", "content": text}]
-        prompt = self._proc.tok.apply_chat_template(msg, tokenize=False, add_generation_prompt=True)
-        enc = self._proc.tok(prompt, return_tensors="pt").to(device)
+        text = question + (MCQ_PROMPT_SUFFIX if is_mcq else "")
+        enc = self._proc.tok(text, return_tensors="pt").to(device)
         out = self.generate(input_ids=enc.input_ids, attention_mask=enc.attention_mask,
-                            pixel_values=pixel_values, max_new_tokens=32, do_sample=False)
-        # generate(inputs_embeds=...) returns ONLY new tokens (no prompt prefix).
+                            pixel_values=pixel_values, max_new_tokens=32)
         return self._proc.tok.decode(out[0], skip_special_tokens=True).strip()
 
     # set by assemble()/load_student so infer() can reach the processors

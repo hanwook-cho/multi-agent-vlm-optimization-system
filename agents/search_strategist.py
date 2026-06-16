@@ -245,15 +245,19 @@ HYPOTHESIS_TABLE = [
         "phase": 2,
         "tier": "code",
         "result_summary": (
-            "FIRST constructed student built end-to-end by the system (ADR-0012 B1.3, spec df64c49b): "
-            "Qwen2.5-0.5B + SigLIP-base, fresh MLP projector, align 200 + distill 1000 steps on the "
-            "481-img balanced cache. Result: DEGENERATE — POPE Overall null, RWQA 0.0, MMBench 0.0; "
-            "greedy output gibberish. Root cause: alignment never converged (align loss stayed ~2.38) "
-            "— 200 steps on a fresh projector is far too few, so projected vision tokens are noise and "
-            "the LM garbles. The loop works; the recipe needs SCALE-UP. Next spec: (1) many more align "
-            "steps until align loss actually drops (use the full coco_caption_5k, not the capped 481), "
-            "(2) larger balanced cache, (3) consider init=adapt:<small VLM> to skip projector cold-start. "
-            "Keep refining this hypothesis — do NOT abandon it."
+            "Scale-up run (spec d3423bc0: align 3000 on coco_caption_5k + distill 1500 on the balanced "
+            "cache) + a decode-bug investigation. The earlier 'degenerate' results (B1.3 + scale-up) were "
+            "a MEASUREMENT BUG, not bad models: StudentVLM.generate used lm.generate(inputs_embeds=...), "
+            "which ignored the image embeds and emitted constant garbage. FIXED (forward-based greedy). "
+            "Floor-adjusted, validated eval (a known-good LFM2 scores 86.2 POPE / 0.74 MMBench, far above "
+            "the chance floor, so the test machinery is sound): the scale-up student has REAL grounding on "
+            "POPE — balanced-accuracy 68.3 vs 50 chance (precision 92), well below LFM2's 86 but genuine — "
+            "and NO multiple-choice ability (MMBench 0.44 is AT the 0.50 majority floor; RealWorldQA at "
+            "n=100 is uninformative — even LFM2 is at the floor). So: real on ONE axis (POPE), none on MCQ, "
+            "consistent with the training data (yes/no + open Q&A, no multiple-choice). Next levers: "
+            "(1) add MCQ-format distill data so the student can do multiple-choice; (2) lift POPE recall "
+            "(40 — under-detects); (3) larger balanced cache. The construction loop produces real (if "
+            "narrow) capability — keep refining. See observation 2026-06-16."
         ),
     },
 ]
