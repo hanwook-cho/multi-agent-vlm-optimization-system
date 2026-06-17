@@ -86,7 +86,7 @@ def run_once(spec: StudentSpec, smoke: bool, queue_entry: dict | None = None,
              out_dir: Path | None = None, eval_after: bool = False,
              eval_n: int | None = None, align_steps: int | None = None,
              distill_steps: int | None = None, max_samples: int | None = None,
-             require_approval: bool = False) -> dict:
+             require_approval: bool = False, seed: int = 0) -> dict:
     """Build the spec, optionally run the same-path eval, write a ledger entry.
 
     require_approval gates a REAL (non-smoke) run behind the operator approval queue
@@ -111,13 +111,16 @@ def run_once(spec: StudentSpec, smoke: bool, queue_entry: dict | None = None,
 
     from runners.build_student import build  # lazy: pulls torch/transformers
 
-    out_dir = out_dir or (PROJECT_ROOT / "artifacts" / "students" /
-                          f"build_{spec.content_hash()[:12]}")
+    # seed is a run parameter, not part of the spec hash — suffix paths so repeated
+    # seeds of the same spec (variance measurement) don't overwrite each other.
+    sfx = f"_s{seed}" if seed else ""
+    tag = f"{spec.content_hash()[:12]}{sfx}"
+    out_dir = out_dir or (PROJECT_ROOT / "artifacts" / "students" / f"build_{tag}")
 
     from services.runlog import tee_stdout
-    with tee_stdout(f"construction_{spec.content_hash()[:12]}"):  # standard run log
+    with tee_stdout(f"construction_{tag}"):  # standard run log
         record = build(spec, out_dir, smoke=smoke, align_steps=align_steps,
-                       distill_steps=distill_steps, max_samples=max_samples)
+                       distill_steps=distill_steps, max_samples=max_samples, seed=seed)
 
         # B1.3: score the constructed student on the same path as the LFM2 benchmark.
         if eval_after and not smoke and record.get("student_dir"):
@@ -131,8 +134,9 @@ def run_once(spec: StudentSpec, smoke: bool, queue_entry: dict | None = None,
             ]
 
     entry = _ledger_entry(spec, record, queue_entry)
+    entry["seed"] = seed
     LEDGER_DIR.mkdir(parents=True, exist_ok=True)
-    ledger_path = LEDGER_DIR / f"construction_{spec.content_hash()[:12]}.json"
+    ledger_path = LEDGER_DIR / f"construction_{tag}.json"
     ledger_path.write_text(json.dumps(entry, indent=2))
     try:
         shown = ledger_path.relative_to(PROJECT_ROOT)
@@ -157,6 +161,8 @@ def main():
     ap.add_argument("--max-samples", type=int, default=None, help="Cap train rows")
     ap.add_argument("--require-approval", action="store_true",
                     help="Gate a real run behind the operator approval queue (blocks until approved)")
+    ap.add_argument("--seed", type=int, default=0,
+                    help="RNG seed (projector init + training). Fix to compare specs; vary to measure variance.")
     args = ap.parse_args()
 
     if args.spec:
@@ -170,7 +176,8 @@ def main():
     run_once(spec, smoke=args.smoke, queue_entry=entry,
              eval_after=args.eval, eval_n=args.eval_n,
              align_steps=args.align_steps, distill_steps=args.distill_steps,
-             max_samples=args.max_samples, require_approval=args.require_approval)
+             max_samples=args.max_samples, require_approval=args.require_approval,
+             seed=args.seed)
 
 
 if __name__ == "__main__":

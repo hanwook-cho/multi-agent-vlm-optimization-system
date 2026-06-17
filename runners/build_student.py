@@ -69,6 +69,26 @@ DATA_REGISTRY: dict[str, tuple[str, str]] = {
 CAPTION_PROMPT = "Describe this image in detail."
 
 
+def seed_everything(seed: int) -> None:
+    """Seed python/numpy/torch RNGs so a build is reproducible.
+
+    Without this the fresh MLP projector is randomly initialised differently every
+    run, making cross-spec comparisons (data ratio, LoRA rank) confounded by init
+    variance rather than the lever under test. Call before assemble() so projector
+    init — and thus the whole run — is deterministic for a given seed.
+    """
+    import random as _random
+    _random.seed(seed)
+    try:
+        import numpy as _np
+        _np.random.seed(seed)
+    except Exception:
+        pass
+    torch.manual_seed(seed)
+    if torch.backends.mps.is_available():
+        torch.mps.manual_seed(seed)
+
+
 def _device() -> str:
     return "mps" if torch.backends.mps.is_available() else "cpu"
 
@@ -403,17 +423,22 @@ def load_student(build_dir: Path, device: str | None = None) -> StudentVLM:
 
 def build(spec: StudentSpec, out_dir: Path, smoke: bool,
           align_steps: int | None = None, distill_steps: int | None = None,
-          max_samples: int | None = None, save: bool | None = None) -> dict:
+          max_samples: int | None = None, save: bool | None = None,
+          seed: int = 0) -> dict:
     """Run the full pipeline for a spec. Returns a run record (also written to disk).
 
     Budgets: smoke uses tiny fixed budgets; a real run uses the spec's align.steps and
     a distill-step count derived from epochs × dataset size (overridable via args).
+
+    seed makes the run reproducible (projector init + training): hold it fixed to
+    compare specs (a lever's effect), vary it to measure run-to-run variance.
     """
     device = _device()
+    seed_everything(seed)
     out_dir.mkdir(parents=True, exist_ok=True)
     exp_id = spec.content_hash()
     started = datetime.now(timezone.utc)
-    print(f"▶ build_student  spec={exp_id[:12]}  device={device}  smoke={smoke}")
+    print(f"▶ build_student  spec={exp_id[:12]}  device={device}  smoke={smoke}  seed={seed}")
 
     # Operator intake (ADR-0013 H1): stamp the authorized goal/scope if a run.yaml exists.
     run_meta = None
