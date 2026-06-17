@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Model Optimization — A Study Guide</title>
+<style>
+  :root {
+    --blue:    #2E5496;
+    --navy:    #1F3864;
+    --purple:  #534AB7;
+    --teal:    #0F6E56;
+    --amber:   #BA7517;
+    --coral:   #A32D2D;
+    --green:   #1a6e2e;
+    --gray:    #555;
+    --bg:      #f9f9f9;
+    --white:   #ffffff;
+    --border:  #dde3ed;
+    --code-bg: #f3f4f8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 15px; color: #222; background: var(--bg); line-height: 1.7; }
+  .page { max-width: 900px; margin: 0 auto; padding: 40px 32px 80px; background: var(--white); }
+
+  /* ── Title ── */
+  .title-block { text-align: center; padding: 48px 0 32px; border-bottom: 4px solid var(--navy); margin-bottom: 40px; }
+  .title-block h1 { font-size: 2.6rem; color: var(--navy); margin-bottom: 8px; }
+  .title-block .subtitle { font-size: 1.2rem; color: var(--blue); margin-bottom: 10px; }
+  .title-block .topics { font-size: 0.9rem; color: #888; font-style: italic; }
+
+  /* ── TOC ── */
+  .toc { background: #f0f4fa; border-left: 4px solid var(--blue); padding: 20px 28px; border-radius: 6px; margin-bottom: 48px; }
+  .toc h2 { color: var(--navy); font-size: 1rem; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 5px 0; }
+  .toc a { color: var(--blue); text-decoration: none; font-size: 0.95rem; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* ── Part headers ── */
+  .part { margin-top: 60px; }
+  .part-header { background: var(--navy); color: white; padding: 16px 24px; border-radius: 8px 8px 0 0; }
+  .part-header .part-num { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+  .part-header h2 { font-size: 1.5rem; margin-top: 4px; }
+  .part-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; padding: 28px 28px 32px; }
+
+  h3 { font-size: 1.1rem; color: var(--blue); margin: 28px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+  h4 { font-size: 1rem; color: var(--gray); margin: 20px 0 6px; }
+  p  { margin: 10px 0; }
+  ul, ol { padding-left: 22px; margin: 10px 0; }
+  li { margin: 6px 0; }
+  strong { color: #111; }
+
+  /* ── Key boxes ── */
+  .keybox { display: flex; margin: 14px 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; font-size: 0.9rem; }
+  .keybox .kb-label { background: #e8eef7; color: var(--blue); font-weight: bold; padding: 10px 14px; min-width: 160px; display: flex; align-items: center; }
+  .keybox .kb-value { padding: 10px 14px; }
+
+  /* ── Formula box ── */
+  .formula { background: #f3f4f8; border-left: 4px solid var(--purple); padding: 14px 18px; border-radius: 0 6px 6px 0; font-family: 'Courier New', monospace; font-size: 0.95rem; margin: 14px 0; color: #333; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.88rem; }
+  thead tr { background: var(--navy); color: white; }
+  thead th { padding: 10px 14px; text-align: left; }
+  tbody tr:nth-child(even) { background: #f0f4fa; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+
+  /* ── Diagrams ── */
+  .diagram-wrap { margin: 28px 0; }
+  .diagram-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 8px; }
+  .diagram-wrap svg { width: 100%; height: auto; display: block; border: 1px solid var(--border); border-radius: 8px; background: white; padding: 12px; }
+
+  /* SVG text styles used in diagrams */
+  .th { font: bold 13px Arial; fill: #222; }
+  .ts { font: 11px Arial; fill: #555; }
+  .arr { stroke: #444; }
+  .c-purple rect { fill: #EEEDFE; stroke: #534AB7; }
+  .c-blue   rect { fill: #E6F1FB; stroke: #185FA5; }
+  .c-teal   rect { fill: #D4F0EA; stroke: #0F6E56; }
+  .c-amber  rect { fill: #FEF3D8; stroke: #BA7517; }
+  .c-coral  rect { fill: #FDECEA; stroke: #A32D2D; }
+  .c-gray   rect { fill: #F3F3F0; stroke: #888; }
+  .c-green  rect { fill: #D4EDDA; stroke: #1a6e2e; }
+  .c-red    rect { fill: #FDECEA; stroke: #A32D2D; }
+
+  /* ── Upcoming table ── */
+  .upcoming thead tr { background: var(--navy); }
+  .upcoming .tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+  .tag-yellow { background: #FFF3CD; color: #856404; }
+  .tag-green  { background: #D4EDDA; color: #155724; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.85rem; color: #aaa; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══════════════════════════════════════════════════════════════ TITLE -->
+<div class="title-block">
+  <h1>AI Model Optimization</h1>
+  <div class="subtitle">A Study Guide</div>
+  <div class="topics">Knowledge Distillation &nbsp;•&nbsp; NAS &nbsp;•&nbsp; Pruning &nbsp;•&nbsp; Quantization &nbsp;•&nbsp; Low-Rank Factorization &nbsp;•&nbsp; Weight Sharing &nbsp;•&nbsp; Production Pipelines</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ TOC -->
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#part1">Knowledge Distillation</a></li>
+    <li><a href="#part2">Neural Architecture Search (NAS)</a></li>
+    <li><a href="#part3">Pruning</a></li>
+    <li><a href="#part4">Quantization</a></li>
+    <li><a href="#part5">Low-Rank Factorization &amp; LoRA</a></li>
+    <li><a href="#part6">Weight Sharing</a></li>
+    <li><a href="#part7">Real Production Pipelines</a></li>
+    <li><a href="#part8">Early Exit</a></li>
+    <li><a href="#part9">Combining Methods</a></li>
+    <li><a href="#references">References</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 1 -->
+<div class="part" id="part1">
+  <div class="part-header">
+    <div class="part-num">Part 1</div>
+    <h2>Knowledge Distillation</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>What is it?</h3>
+    <p>Knowledge distillation is a technique where a small model (the <strong>student</strong>) learns by imitating a large, accurate model (the <strong>teacher</strong>), rather than learning directly from raw labeled data alone. The goal is to transfer the teacher's "knowledge" into a compact model that is cheaper to run.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 1.1 — Distillation overview: teacher guides student via soft labels</div>
+      <svg viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <g class="c-gray"><rect x="270" y="20" width="140" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="42" text-anchor="middle" dominant-baseline="central">Input image</text><text class="ts" x="340" y="60" text-anchor="middle" dominant-baseline="central">e.g. a photo of a cat</text></g>
+        <line x1="260" y1="46" x2="186" y2="100" stroke="#444" stroke-width="1" marker-end="url(#a1)"/>
+        <line x1="420" y1="46" x2="494" y2="100" stroke="#444" stroke-width="1" marker-end="url(#a1)"/>
+        <g class="c-purple"><rect x="60" y="100" width="220" height="90" rx="12" stroke-width="0.5"/><text class="th" x="170" y="128" text-anchor="middle" dominant-baseline="central">Teacher model</text><text class="ts" x="170" y="150" text-anchor="middle" dominant-baseline="central">Large, slow, accurate</text><text class="ts" x="170" y="168" text-anchor="middle" dominant-baseline="central">e.g. 100 billion params</text></g>
+        <g class="c-teal"><rect x="400" y="100" width="220" height="90" rx="12" stroke-width="0.5"/><text class="th" x="510" y="128" text-anchor="middle" dominant-baseline="central">Student model</text><text class="ts" x="510" y="150" text-anchor="middle" dominant-baseline="central">Small, fast, lightweight</text><text class="ts" x="510" y="168" text-anchor="middle" dominant-baseline="central">e.g. 1 billion params</text></g>
+        <line x1="170" y1="190" x2="170" y2="240" stroke="#444" stroke-width="1" marker-end="url(#a1)"/>
+        <g class="c-amber"><rect x="50" y="242" width="240" height="72" rx="8" stroke-width="0.5"/><text class="th" x="170" y="268" text-anchor="middle" dominant-baseline="central">Soft labels (from teacher)</text><text class="ts" x="170" y="288" text-anchor="middle" dominant-baseline="central">cat: 85%  dog: 12%  fox: 3%</text><text class="ts" x="170" y="306" text-anchor="middle" dominant-baseline="central">Rich probability distribution</text></g>
+        <g class="c-gray"><rect x="390" y="242" width="240" height="72" rx="8" stroke-width="0.5"/><text class="th" x="510" y="268" text-anchor="middle" dominant-baseline="central">Hard labels (ground truth)</text><text class="ts" x="510" y="288" text-anchor="middle" dominant-baseline="central">cat: 100%  dog: 0%  fox: 0%</text><text class="ts" x="510" y="306" text-anchor="middle" dominant-baseline="central">One correct answer only</text></g>
+        <line x1="200" y1="316" x2="280" y2="366" stroke="#444" stroke-width="1" marker-end="url(#a1)"/>
+        <line x1="460" y1="316" x2="400" y2="366" stroke="#444" stroke-width="1" marker-end="url(#a1)"/>
+        <line x1="510" y1="190" x2="510" y2="240" stroke="#444" stroke-width="1" marker-end="url(#a1)"/>
+        <g class="c-coral"><rect x="220" y="368" width="240" height="60" rx="10" stroke-width="0.5"/><text class="th" x="340" y="390" text-anchor="middle" dominant-baseline="central">Distillation loss</text><text class="ts" x="340" y="410" text-anchor="middle" dominant-baseline="central">Mix of soft + hard → trains student</text></g>
+      </svg>
+    </div>
+
+    <h3>Hard labels vs Soft labels</h3>
+    <p><strong>Hard labels</strong> are human-annotated ground truth: one class is 100%, all others are 0%. They carry no information about similarity between classes.</p>
+    <p><strong>Soft labels</strong> are the probability distributions output by the teacher model (e.g. cat 85%, fox 12%, dog 3%). They capture which classes resemble each other — information invisible in hard labels. Hinton called this <strong>dark knowledge</strong>.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 1.2 — Hard vs soft labels side by side</div>
+      <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg">
+        <text class="th" x="175" y="28" text-anchor="middle">Hard labels</text>
+        <text class="ts" x="175" y="48" text-anchor="middle">"One winner, everything else is zero"</text>
+        <text class="ts" x="50" y="80" dominant-baseline="central">Golden retriever</text><rect x="180" y="68" width="110" height="20" rx="4" fill="#534AB7" opacity="0.85"/><text class="ts" x="298" y="80" dominant-baseline="central">100%</text>
+        <text class="ts" x="50" y="112" dominant-baseline="central">Labrador</text><rect x="180" y="100" width="1" height="20" rx="2" fill="#aaa"/><text class="ts" x="298" y="112" dominant-baseline="central">0%</text>
+        <text class="ts" x="50" y="144" dominant-baseline="central">Wolf</text><rect x="180" y="132" width="1" height="20" rx="2" fill="#aaa"/><text class="ts" x="298" y="144" dominant-baseline="central">0%</text>
+        <text class="ts" x="50" y="176" dominant-baseline="central">Fox</text><rect x="180" y="164" width="1" height="20" rx="2" fill="#aaa"/><text class="ts" x="298" y="176" dominant-baseline="central">0%</text>
+        <rect x="40" y="210" width="270" height="52" rx="8" fill="none" stroke="#ccc" stroke-width="0.5"/>
+        <text class="ts" x="175" y="230" text-anchor="middle">Comes from a human annotator.</text>
+        <text class="ts" x="175" y="250" text-anchor="middle">Binary. No similarity information.</text>
+        <line x1="340" y1="20" x2="340" y2="290" stroke="#ddd" stroke-width="0.5" stroke-dasharray="4 4"/>
+        <text class="th" x="505" y="28" text-anchor="middle">Soft labels</text>
+        <text class="ts" x="505" y="48" text-anchor="middle">"Confident, but aware of similarity"</text>
+        <text class="ts" x="380" y="80" dominant-baseline="central">Golden retriever</text><rect x="510" y="68" width="86" height="20" rx="4" fill="#BA7517" opacity="0.9"/><text class="ts" x="602" y="80" dominant-baseline="central">78%</text>
+        <text class="ts" x="380" y="112" dominant-baseline="central">Labrador</text><rect x="510" y="100" width="17" height="20" rx="4" fill="#EF9F27" opacity="0.7"/><text class="ts" x="602" y="112" dominant-baseline="central">15%</text>
+        <text class="ts" x="380" y="144" dominant-baseline="central">Wolf</text><rect x="510" y="132" width="4" height="20" rx="4" fill="#EF9F27" opacity="0.5"/><text class="ts" x="602" y="144" dominant-baseline="central">4%</text>
+        <text class="ts" x="380" y="176" dominant-baseline="central">Fox</text><rect x="510" y="164" width="2" height="20" rx="4" fill="#EF9F27" opacity="0.4"/><text class="ts" x="602" y="176" dominant-baseline="central">2%</text>
+        <rect x="370" y="210" width="270" height="52" rx="8" fill="none" stroke="#ccc" stroke-width="0.5"/>
+        <text class="ts" x="505" y="230" text-anchor="middle">Comes from the teacher model.</text>
+        <text class="ts" x="505" y="250" text-anchor="middle">Encodes similarity between classes.</text>
+        <rect x="40" y="284" width="600" height="42" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="th" x="340" y="308" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Key insight: soft labels reveal which classes are similar to each other — hard labels hide this.</text>
+      </svg>
+    </div>
+
+    <h3>The distillation loss formula</h3>
+    <div class="formula">Total loss = α × T² × KL(teacher ∥ student)  +  (1 − α) × CrossEntropy(student, true label)</div>
+    <ul>
+      <li><strong>Soft loss (KL divergence):</strong> measures how different the student's distribution is from the teacher's. Both outputs are passed through temperature T.</li>
+      <li><strong>Hard loss (cross-entropy):</strong> standard training loss vs ground-truth label. Keeps the student grounded.</li>
+      <li><strong>Alpha (α):</strong> mixing weight, typically 0.7–0.9. Higher = trust the teacher more.</li>
+      <li><strong>T² scaling:</strong> compensates for gradient shrinkage caused by raising temperature.</li>
+    </ul>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 1.3 — Distillation loss breakdown</div>
+      <svg viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <g class="c-gray"><rect x="40" y="20" width="600" height="36" rx="8" stroke-width="0.5"/><text class="th" x="340" y="38" text-anchor="middle" dominant-baseline="central">Total loss = α × (soft loss) + (1 − α) × (hard loss)</text></g>
+        <text class="ts" x="340" y="74" text-anchor="middle" fill="#888">α is a mixing weight you choose, typically 0.7–0.9</text>
+        <g class="c-amber"><rect x="40" y="90" width="280" height="110" rx="10" stroke-width="0.5"/><text class="th" x="180" y="114" text-anchor="middle" dominant-baseline="central">Soft loss (KL divergence)</text><text class="ts" x="180" y="136" text-anchor="middle" dominant-baseline="central">Compare student vs teacher distributions</text><text class="ts" x="180" y="156" text-anchor="middle" dominant-baseline="central">Both softened by temperature T</text><text class="ts" x="180" y="176" text-anchor="middle" dominant-baseline="central">"How different are their beliefs?"</text></g>
+        <g class="c-purple"><rect x="360" y="90" width="280" height="110" rx="10" stroke-width="0.5"/><text class="th" x="500" y="114" text-anchor="middle" dominant-baseline="central">Hard loss (cross-entropy)</text><text class="ts" x="500" y="136" text-anchor="middle" dominant-baseline="central">Compare student vs ground truth</text><text class="ts" x="500" y="156" text-anchor="middle" dominant-baseline="central">No temperature used here</text><text class="ts" x="500" y="176" text-anchor="middle" dominant-baseline="central">"Did the student get it right?"</text></g>
+        <line x1="180" y1="200" x2="270" y2="286" stroke="#444" stroke-width="1" marker-end="url(#a2)"/>
+        <line x1="500" y1="200" x2="410" y2="286" stroke="#444" stroke-width="1" marker-end="url(#a2)"/>
+        <text class="ts" x="100" y="282" text-anchor="middle" fill="#888">× α</text>
+        <text class="ts" x="580" y="282" text-anchor="middle" fill="#888">× (1−α)</text>
+        <g class="c-teal"><rect x="160" y="288" width="360" height="68" rx="12" stroke-width="0.5"/><text class="th" x="340" y="314" text-anchor="middle" dominant-baseline="central">Total distillation loss</text><text class="ts" x="340" y="334" text-anchor="middle" dominant-baseline="central">Updates student weights via backpropagation</text></g>
+        <text class="ts" x="340" y="376" text-anchor="middle" fill="#888">Note: soft loss is also scaled by T² to compensate for gradient shrinkage</text>
+      </svg>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 2 -->
+<div class="part" id="part2">
+  <div class="part-header">
+    <div class="part-num">Part 2</div>
+    <h2>Neural Architecture Search (NAS)</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>What is it?</h3>
+    <p>NAS automates the design of neural network architectures. Instead of a human expert manually choosing layers, layer types, and connections, an algorithm searches for the best combination automatically.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 2.1 — NAS three core components</div>
+      <svg viewBox="0 0 680 400" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <g class="c-blue"><rect x="40" y="20" width="180" height="120" rx="10" stroke-width="0.5"/><text class="th" x="130" y="48" text-anchor="middle" dominant-baseline="central">① Search space</text><text class="ts" x="130" y="72" text-anchor="middle" dominant-baseline="central">All possible network</text><text class="ts" x="130" y="90" text-anchor="middle" dominant-baseline="central">designs to consider</text><text class="ts" x="130" y="110" text-anchor="middle" dominant-baseline="central">How many layers? Which ops?</text></g>
+        <g class="c-amber"><rect x="250" y="20" width="180" height="120" rx="10" stroke-width="0.5"/><text class="th" x="340" y="48" text-anchor="middle" dominant-baseline="central">② Search strategy</text><text class="ts" x="340" y="72" text-anchor="middle" dominant-baseline="central">How to explore the</text><text class="ts" x="340" y="90" text-anchor="middle" dominant-baseline="central">search space smartly</text><text class="ts" x="340" y="110" text-anchor="middle" dominant-baseline="central">RL / Evolutionary / DARTS</text></g>
+        <g class="c-teal"><rect x="460" y="20" width="180" height="120" rx="10" stroke-width="0.5"/><text class="th" x="550" y="48" text-anchor="middle" dominant-baseline="central">③ Estimator</text><text class="ts" x="550" y="72" text-anchor="middle" dominant-baseline="central">Quickly evaluate how</text><text class="ts" x="550" y="90" text-anchor="middle" dominant-baseline="central">good each candidate is</text><text class="ts" x="550" y="110" text-anchor="middle" dominant-baseline="central">Without full training</text></g>
+        <path d="M340 140 L340 168 L130 168 L130 142" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a3)"/>
+        <text class="ts" x="230" y="162" text-anchor="middle" fill="#888">explores</text>
+        <path d="M550 140 L550 188 L340 188 L340 142" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a3)"/>
+        <text class="ts" x="460" y="202" text-anchor="middle" fill="#888">score fed back</text>
+        <g class="c-coral"><rect x="160" y="220" width="360" height="56" rx="10" stroke-width="0.5"/><text class="th" x="340" y="244" text-anchor="middle" dominant-baseline="central">Best architecture found</text><text class="ts" x="340" y="262" text-anchor="middle" dominant-baseline="central">Trained fully and deployed</text></g>
+        <line x1="340" y1="210" x2="340" y2="220" stroke="#444" stroke-width="1" marker-end="url(#a3)"/>
+        <rect x="40" y="298" width="600" height="78" rx="10" fill="none" stroke="#dde" stroke-width="0.5"/>
+        <text class="th" x="340" y="320" text-anchor="middle" dominant-baseline="central">How NAS relates to distillation</text>
+        <text class="ts" x="340" y="342" text-anchor="middle" dominant-baseline="central">NAS finds a good small architecture. Distillation then trains it efficiently.</text>
+        <text class="ts" x="340" y="362" text-anchor="middle" dominant-baseline="central">They are often used together: NAS designs the student, distillation teaches it.</text>
+      </svg>
+    </div>
+
+    <h3>Performance estimator tricks</h3>
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 2.2 — Three estimation tricks and their relative speed</div>
+      <svg viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg">
+        <g class="c-coral"><rect x="40" y="20" width="600" height="44" rx="10" stroke-width="0.5"/><text class="th" x="340" y="38" text-anchor="middle" dominant-baseline="central">The problem: fully training each candidate takes days</text><text class="ts" x="340" y="54" text-anchor="middle" dominant-baseline="central">NAS must evaluate thousands of architectures → need fast approximations</text></g>
+        <g class="c-blue"><rect x="40" y="86" width="180" height="130" rx="10" stroke-width="0.5"/><text class="th" x="130" y="110" text-anchor="middle" dominant-baseline="central">Early stopping</text><text class="ts" x="130" y="132" text-anchor="middle" dominant-baseline="central">Train for just 5 epochs</text><text class="ts" x="130" y="150" text-anchor="middle" dominant-baseline="central">instead of 100. See</text><text class="ts" x="130" y="168" text-anchor="middle" dominant-baseline="central">which looks most</text><text class="ts" x="130" y="186" text-anchor="middle" dominant-baseline="central">promising early on.</text></g>
+        <g class="c-amber"><rect x="250" y="86" width="180" height="130" rx="10" stroke-width="0.5"/><text class="th" x="340" y="110" text-anchor="middle" dominant-baseline="central">Weight sharing</text><text class="ts" x="340" y="132" text-anchor="middle" dominant-baseline="central">Train one giant</text><text class="ts" x="340" y="150" text-anchor="middle" dominant-baseline="central">"supernet" containing</text><text class="ts" x="340" y="168" text-anchor="middle" dominant-baseline="central">all candidates inside.</text><text class="ts" x="340" y="186" text-anchor="middle" dominant-baseline="central">Borrow weights.</text></g>
+        <g class="c-teal"><rect x="460" y="86" width="180" height="130" rx="10" stroke-width="0.5"/><text class="th" x="550" y="110" text-anchor="middle" dominant-baseline="central">Predictor model</text><text class="ts" x="550" y="132" text-anchor="middle" dominant-baseline="central">Train a small ML model</text><text class="ts" x="550" y="150" text-anchor="middle" dominant-baseline="central">to predict scores</text><text class="ts" x="550" y="168" text-anchor="middle" dominant-baseline="central">without running</text><text class="ts" x="550" y="186" text-anchor="middle" dominant-baseline="central">the network at all.</text></g>
+        <text class="th" x="340" y="248" text-anchor="middle" fill="#888">Relative speed vs full training</text>
+        <text class="ts" x="148" y="280" text-anchor="end">Full training</text><rect x="152" y="268" width="200" height="18" rx="3" fill="#A32D2D" opacity="0.7"/><text class="ts" x="358" y="280">100× (baseline)</text>
+        <text class="ts" x="148" y="312" text-anchor="end">Early stopping</text><rect x="152" y="300" width="60" height="18" rx="3" fill="#185FA5" opacity="0.8"/><text class="ts" x="218" y="312">~10–20× faster</text>
+        <text class="ts" x="148" y="344" text-anchor="end">Weight sharing</text><rect x="152" y="332" width="10" height="18" rx="3" fill="#BA7517" opacity="0.8"/><text class="ts" x="168" y="344">~100–1000× faster</text>
+        <text class="ts" x="148" y="376" text-anchor="end">Predictor model</text><rect x="152" y="364" width="3" height="18" rx="3" fill="#0F6E56" opacity="0.9"/><text class="ts" x="161" y="376">~10,000× faster</text>
+        <rect x="40" y="400" width="600" height="32" rx="8" fill="none" stroke="#dde" stroke-width="0.5"/>
+        <text class="ts" x="340" y="418" text-anchor="middle" dominant-baseline="central">Trade-off: speed vs accuracy of the estimate. NAS picks the right balance for the task.</text>
+      </svg>
+    </div>
+
+    <h3>Hardware-aware NAS: dominant schemes</h3>
+    <table>
+      <thead><tr><th>Method</th><th>Search cost</th><th>Hardware-aware?</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>DARTS</strong></td><td>Low (GPU-hours)</td><td>Indirect (FLOPs)</td><td>Fast prototyping</td></tr>
+        <tr><td><strong>Once-for-All</strong></td><td>High once, free after</td><td>Yes — many devices</td><td>Multi-device deployment</td></tr>
+        <tr><td><strong>ProxylessNAS</strong></td><td>Medium</td><td>Yes — real latency</td><td>Single target chip</td></tr>
+        <tr><td><strong>Evolutionary</strong></td><td>Very high (GPU-days)</td><td>Yes — real latency</td><td>Production models</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 3 -->
+<div class="part" id="part3">
+  <div class="part-header">
+    <div class="part-num">Part 3</div>
+    <h2>Pruning</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>What is it?</h3>
+    <p>Pruning removes parts of a trained neural network that contribute little to its output. 50–90% of weights in a typical trained network can be set to zero with negligible accuracy loss. The <strong>Lottery Ticket Hypothesis</strong> (2019) showed that inside every large network there is a small "winning sub-network" that does most of the real work.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 3.1 — Before and after pruning: dense vs sparse network</div>
+      <svg viewBox="0 0 680 340" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <text class="th" x="175" y="20" text-anchor="middle" fill="#888">Before pruning</text>
+        <text class="th" x="505" y="20" text-anchor="middle" fill="#888">After pruning</text>
+        <circle cx="80" cy="80" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><circle cx="80" cy="130" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><circle cx="80" cy="180" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><circle cx="80" cy="230" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+        <circle cx="200" cy="60" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><circle cx="200" cy="110" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><circle cx="200" cy="160" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><circle cx="200" cy="210" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><circle cx="200" cy="260" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+        <circle cx="320" cy="100" r="14" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1"/><circle cx="320" cy="170" r="14" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1"/><circle cx="320" cy="240" r="14" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1"/>
+        <line x1="94" y1="80" x2="186" y2="110" stroke="#534AB7" stroke-width="2" opacity="0.8"/><line x1="94" y1="130" x2="186" y2="160" stroke="#534AB7" stroke-width="2" opacity="0.8"/><line x1="94" y1="180" x2="186" y2="210" stroke="#534AB7" stroke-width="1.5" opacity="0.7"/><line x1="94" y1="230" x2="186" y2="260" stroke="#534AB7" stroke-width="2" opacity="0.8"/>
+        <line x1="94" y1="80" x2="186" y2="60" stroke="#ccc" stroke-width="0.5"/><line x1="94" y1="130" x2="186" y2="60" stroke="#ccc" stroke-width="0.5"/><line x1="94" y1="80" x2="186" y2="210" stroke="#ccc" stroke-width="0.5"/><line x1="94" y1="230" x2="186" y2="110" stroke="#ccc" stroke-width="0.5"/>
+        <line x1="214" y1="110" x2="306" y2="100" stroke="#0F6E56" stroke-width="2" opacity="0.9"/><line x1="214" y1="160" x2="306" y2="170" stroke="#0F6E56" stroke-width="2" opacity="0.9"/><line x1="214" y1="210" x2="306" y2="240" stroke="#0F6E56" stroke-width="1.5" opacity="0.8"/>
+        <line x1="214" y1="60" x2="306" y2="170" stroke="#ccc" stroke-width="0.5"/><line x1="214" y1="210" x2="306" y2="100" stroke="#ccc" stroke-width="0.5"/>
+        <line x1="358" y1="200" x2="395" y2="200" stroke="#444" stroke-width="2" marker-end="url(#a4)"/><text class="ts" x="376" y="188" text-anchor="middle">prune</text>
+        <circle cx="430" cy="80" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><circle cx="430" cy="130" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><circle cx="430" cy="180" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/><circle cx="430" cy="230" r="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+        <circle cx="550" cy="60" r="14" fill="#f5f5f5" stroke="#ccc" stroke-width="1" stroke-dasharray="3 2"/><text class="ts" x="550" y="64" text-anchor="middle" dominant-baseline="central" fill="#aaa">✕</text>
+        <circle cx="550" cy="110" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><circle cx="550" cy="160" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><circle cx="550" cy="210" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/><circle cx="550" cy="260" r="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+        <circle cx="640" cy="100" r="14" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1"/><circle cx="640" cy="170" r="14" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1"/><circle cx="640" cy="240" r="14" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1"/>
+        <line x1="444" y1="80" x2="536" y2="110" stroke="#534AB7" stroke-width="2" opacity="0.8"/><line x1="444" y1="130" x2="536" y2="160" stroke="#534AB7" stroke-width="2" opacity="0.8"/><line x1="444" y1="180" x2="536" y2="210" stroke="#534AB7" stroke-width="1.5" opacity="0.7"/><line x1="444" y1="230" x2="536" y2="260" stroke="#534AB7" stroke-width="2" opacity="0.8"/>
+        <line x1="564" y1="110" x2="626" y2="100" stroke="#0F6E56" stroke-width="2" opacity="0.9"/><line x1="564" y1="160" x2="626" y2="170" stroke="#0F6E56" stroke-width="2" opacity="0.9"/><line x1="564" y1="210" x2="626" y2="240" stroke="#0F6E56" stroke-width="1.5" opacity="0.8"/>
+        <text class="ts" x="175" y="300" text-anchor="middle" fill="#888">Dense: many weak connections (gray)</text>
+        <text class="ts" x="505" y="300" text-anchor="middle" fill="#888">Sparse: only strong connections remain</text>
+      </svg>
+    </div>
+
+    <h3>Three criteria for deciding what to prune</h3>
+    <ul>
+      <li><strong>Magnitude-based:</strong> remove weights closest to zero. Cheapest, no data required. Assumes small weight = small contribution.</li>
+      <li><strong>Gradient-based:</strong> remove weights whose removal changes the loss the least (estimated via gradient × weight). More principled, used in Taylor expansion pruning.</li>
+      <li><strong>Activation-based:</strong> run real data through; remove neurons that are rarely activated. Natural fit for structured pruning.</li>
+    </ul>
+
+    <h3>The standard workflow</h3>
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 3.2 — Pruning workflow with iterative loop</div>
+      <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <g class="c-purple"><rect x="40" y="60" width="120" height="64" rx="8" stroke-width="0.5"/><text class="th" x="100" y="84" text-anchor="middle" dominant-baseline="central">① Train</text><text class="ts" x="100" y="104" text-anchor="middle" dominant-baseline="central">full network</text></g>
+        <line x1="160" y1="92" x2="184" y2="92" stroke="#444" stroke-width="1.5" marker-end="url(#a5)"/>
+        <g class="c-coral"><rect x="186" y="60" width="120" height="64" rx="8" stroke-width="0.5"/><text class="th" x="246" y="84" text-anchor="middle" dominant-baseline="central">② Prune</text><text class="ts" x="246" y="104" text-anchor="middle" dominant-baseline="central">zero out weights</text></g>
+        <line x1="306" y1="92" x2="330" y2="92" stroke="#444" stroke-width="1.5" marker-end="url(#a5)"/>
+        <g class="c-amber"><rect x="332" y="60" width="120" height="64" rx="8" stroke-width="0.5"/><text class="th" x="392" y="84" text-anchor="middle" dominant-baseline="central">③ Fine-tune</text><text class="ts" x="392" y="104" text-anchor="middle" dominant-baseline="central">recover accuracy</text></g>
+        <line x1="452" y1="92" x2="476" y2="92" stroke="#444" stroke-width="1.5" marker-end="url(#a5)"/>
+        <g class="c-teal"><rect x="478" y="60" width="162" height="64" rx="8" stroke-width="0.5"/><text class="th" x="559" y="84" text-anchor="middle" dominant-baseline="central">④ Deploy</text><text class="ts" x="559" y="104" text-anchor="middle" dominant-baseline="central">smaller, faster model</text></g>
+        <path d="M246 126 L246 164 L392 164 L392 126" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#a5)"/>
+        <text class="ts" x="319" y="182" text-anchor="middle" fill="#888">repeat: iterative pruning (prune a little, fine-tune, repeat)</text>
+        <rect x="40" y="200" width="600" height="40" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="ts" x="340" y="222" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Sweet spot: 50–70% pruned with &lt;1–2% accuracy drop using iterative approach</text>
+      </svg>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 4 -->
+<div class="part" id="part4">
+  <div class="part-header">
+    <div class="part-num">Part 4</div>
+    <h2>Quantization</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>What is it?</h3>
+    <p>Quantization reduces numerical precision of weights from 32-bit floats to 8-bit or 4-bit integers. Neural networks are surprisingly tolerant of imprecision — rounding 0.37219184 to an integer like 47 produces nearly identical outputs.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 4.1 — Bit widths compared</div>
+      <svg viewBox="0 0 680 290" xmlns="http://www.w3.org/2000/svg">
+        <g class="c-purple"><rect x="40" y="20" width="600" height="46" rx="8" stroke-width="0.5"/><text class="th" x="130" y="40" text-anchor="middle" dominant-baseline="central">FP32</text><text class="ts" x="130" y="56" text-anchor="middle" dominant-baseline="central">32 bits</text><rect x="200" y="28" width="14" height="22" rx="2" fill="#534AB7" opacity="0.9"/><rect x="216" y="28" width="56" height="22" rx="2" fill="#AFA9EC" opacity="0.8"/><rect x="274" y="28" width="140" height="22" rx="2" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/><text class="ts" x="456" y="44" text-anchor="middle" dominant-baseline="central">e.g. 0.37219184   — 1× (baseline)</text></g>
+        <g class="c-blue"><rect x="40" y="76" width="600" height="46" rx="8" stroke-width="0.5"/><text class="th" x="130" y="96" text-anchor="middle" dominant-baseline="central">FP16</text><text class="ts" x="130" y="112" text-anchor="middle" dominant-baseline="central">16 bits</text><rect x="200" y="84" width="8" height="22" rx="2" fill="#185FA5" opacity="0.9"/><rect x="210" y="84" width="32" height="22" rx="2" fill="#85B7EB" opacity="0.8"/><rect x="244" y="84" width="78" height="22" rx="2" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text class="ts" x="456" y="100" text-anchor="middle" dominant-baseline="central">e.g. 0.3721   — 2× smaller</text></g>
+        <g class="c-amber"><rect x="40" y="132" width="600" height="46" rx="8" stroke-width="0.5"/><text class="th" x="130" y="152" text-anchor="middle" dominant-baseline="central">INT8</text><text class="ts" x="130" y="168" text-anchor="middle" dominant-baseline="central">8 bits</text><rect x="200" y="140" width="38" height="22" rx="2" fill="#BA7517" opacity="0.85"/><text class="ts" x="219" y="153" text-anchor="middle" dominant-baseline="central">47</text><text class="ts" x="456" y="152" text-anchor="middle" dominant-baseline="central">e.g. 47 (out of −128…127)   — 4× smaller</text></g>
+        <g class="c-coral"><rect x="40" y="188" width="600" height="46" rx="8" stroke-width="0.5"/><text class="th" x="130" y="208" text-anchor="middle" dominant-baseline="central">INT4</text><text class="ts" x="130" y="224" text-anchor="middle" dominant-baseline="central">4 bits</text><rect x="200" y="196" width="18" height="22" rx="2" fill="#993C1D" opacity="0.85"/><text class="ts" x="209" y="209" text-anchor="middle" dominant-baseline="central">3</text><text class="ts" x="456" y="208" text-anchor="middle" dominant-baseline="central">e.g. 3 (out of 0…15)   — 8× smaller</text></g>
+        <rect x="40" y="250" width="600" height="32" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="ts" x="340" y="268" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">float = scale × (integer − zero_point)   |   store scale + zero_point alongside each layer</text>
+      </svg>
+    </div>
+
+    <h3>LLM quantization formats</h3>
+    <table>
+      <thead><tr><th>Format</th><th>Full name</th><th>Key insight</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>GPTQ</strong></td><td>Generalized Post-Training Quantization</td><td>Compensate rounding error in remaining weights layer by layer</td><td>NVIDIA GPU deployment</td></tr>
+        <tr><td><strong>AWQ</strong></td><td>Activation-aware Weight Quantization</td><td>Protect the 1% of salient weights; aggressively compress the rest</td><td>NVIDIA GPU, highest accuracy</td></tr>
+        <tr><td><strong>GGUF</strong></td><td>Universal model file for llama.cpp (successor to GGML)</td><td>Self-contained file for any hardware — CPU, GPU, Apple Silicon</td><td>Laptops, Ollama, llama.cpp</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 5 -->
+<div class="part" id="part5">
+  <div class="part-header">
+    <div class="part-num">Part 5</div>
+    <h2>Low-Rank Factorization &amp; LoRA</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>What is low-rank factorization?</h3>
+    <p>A weight matrix W (e.g. 1000×1000 = 1,000,000 parameters) can be approximated by two thin matrices A (1000×r) and B (r×1000). At rank 4, A+B store only 8,000 parameters — 125× fewer.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 5.1 — Matrix decomposition and LoRA adapter</div>
+      <svg viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <rect x="60" y="30" width="80" height="100" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+        <text class="th" x="100" y="78" text-anchor="middle" dominant-baseline="central" fill="#534AB7">W</text>
+        <text class="ts" x="100" y="96" text-anchor="middle" dominant-baseline="central">1000×1000</text>
+        <text class="ts" x="100" y="148" text-anchor="middle">1,000,000 params</text>
+        <text class="th" x="183" y="80" text-anchor="middle" dominant-baseline="central" fill="#888">≈</text>
+        <rect x="210" y="30" width="26" height="100" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="1.5"/>
+        <text class="th" x="223" y="78" text-anchor="middle" dominant-baseline="central" fill="#BA7517">A</text>
+        <text class="ts" x="223" y="148" text-anchor="middle">1000×4</text>
+        <text class="th" x="256" y="80" text-anchor="middle" dominant-baseline="central" fill="#888">×</text>
+        <rect x="272" y="66" width="100" height="26" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1.5"/>
+        <text class="th" x="322" y="79" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">B</text>
+        <text class="ts" x="322" y="148" text-anchor="middle">4×1000</text>
+        <rect x="400" y="30" width="240" height="100" rx="8" fill="none" stroke="#dde" stroke-width="0.5"/>
+        <text class="th" x="520" y="58" text-anchor="middle" dominant-baseline="central">Parameter savings</text>
+        <text class="ts" x="520" y="80" text-anchor="middle" dominant-baseline="central">W alone:  1,000,000 params</text>
+        <text class="ts" x="520" y="100" text-anchor="middle" dominant-baseline="central">A+B (rank 4):  8,000 params</text>
+        <text class="th" x="520" y="120" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">125× fewer parameters</text>
+        <text class="th" x="340" y="188" text-anchor="middle" fill="#888">LoRA: freeze W, train only A and B</text>
+        <rect x="60" y="204" width="120" height="72" rx="8" fill="#f5f5f5" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text class="th" x="120" y="232" text-anchor="middle" dominant-baseline="central" fill="#aaa">W (frozen)</text>
+        <text class="ts" x="120" y="252" text-anchor="middle" dominant-baseline="central" fill="#aaa">never updated</text>
+        <text class="th" x="210" y="240" text-anchor="middle" dominant-baseline="central" fill="#888">+</text>
+        <rect x="226" y="204" width="160" height="72" rx="8" fill="#FFF3CD" stroke="#BA7517" stroke-width="1.5"/>
+        <text class="th" x="306" y="228" text-anchor="middle" dominant-baseline="central" fill="#BA7517">ΔW = A × B</text>
+        <text class="ts" x="306" y="250" text-anchor="middle" dominant-baseline="central">tiny trainable adapter</text>
+        <line x1="386" y1="240" x2="420" y2="240" stroke="#444" stroke-width="1.5" marker-end="url(#a6)"/>
+        <rect x="422" y="204" width="218" height="72" rx="8" fill="#f5f5f5" stroke="#dde" stroke-width="0.5"/>
+        <text class="th" x="531" y="228" text-anchor="middle" dominant-baseline="central">Output = (W + ΔW) × x</text>
+        <text class="ts" x="531" y="250" text-anchor="middle" dominant-baseline="central">merged at deploy time</text>
+        <rect x="40" y="302" width="186" height="60" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+        <text class="th" x="133" y="324" text-anchor="middle" dominant-baseline="central">Memory</text>
+        <text class="ts" x="133" y="344" text-anchor="middle" dominant-baseline="central">Fine-tune 70B on 1 GPU</text>
+        <rect x="247" y="302" width="186" height="60" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="th" x="340" y="324" text-anchor="middle" dominant-baseline="central">Swappable adapters</text>
+        <text class="ts" x="340" y="344" text-anchor="middle" dominant-baseline="central">1 base, many task LoRAs</text>
+        <rect x="454" y="302" width="186" height="60" rx="8" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.5"/>
+        <text class="th" x="547" y="324" text-anchor="middle" dominant-baseline="central">Tiny file size</text>
+        <text class="ts" x="547" y="344" text-anchor="middle" dominant-baseline="central">Full: 140 GB → LoRA: 50 MB</text>
+      </svg>
+    </div>
+
+    <h3>How the loss is calculated with frozen W</h3>
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 5.2 — Gradient flow: forward pass uses W, backward pass skips it</div>
+      <svg viewBox="0 0 680 440" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="a7g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round"/></marker>
+          <marker id="a7r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#A32D2D" stroke-width="1.5" stroke-linecap="round"/></marker>
+        </defs>
+        <text class="th" x="110" y="18" text-anchor="middle" fill="#0F6E56">→ Forward pass</text>
+        <text class="th" x="500" y="18" text-anchor="middle" fill="#A32D2D">← Backward pass (gradients)</text>
+        <g class="c-blue"><rect x="40" y="34" width="80" height="40" rx="8" stroke-width="0.5"/><text class="th" x="80" y="54" text-anchor="middle" dominant-baseline="central">input x</text></g>
+        <line x1="120" y1="54" x2="155" y2="54" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <line x1="158" y1="54" x2="158" y2="94" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <rect x="108" y="96" width="100" height="54" rx="8" fill="#f5f5f5" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text class="th" x="158" y="118" text-anchor="middle" dominant-baseline="central" fill="#aaa">W (frozen)</text>
+        <text class="ts" x="158" y="136" text-anchor="middle" dominant-baseline="central" fill="#aaa">requires_grad=False</text>
+        <line x1="158" y1="150" x2="158" y2="188" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <text class="ts" x="186" y="174" fill="#0F6E56">W·x</text>
+        <line x1="120" y1="54" x2="340" y2="54" stroke="#0F6E56" stroke-width="1.5"/>
+        <line x1="340" y1="54" x2="340" y2="94" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <rect x="288" y="96" width="104" height="54" rx="8" fill="#FEF3D8" stroke="#BA7517" stroke-width="1.5"/>
+        <text class="th" x="340" y="118" text-anchor="middle" dominant-baseline="central" fill="#BA7517">A (trainable)</text>
+        <text class="ts" x="340" y="136" text-anchor="middle" dominant-baseline="central">rank bottleneck</text>
+        <line x1="340" y1="150" x2="340" y2="188" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <rect x="288" y="190" width="104" height="54" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1.5"/>
+        <text class="th" x="340" y="212" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">B (trainable)</text>
+        <text class="ts" x="340" y="230" text-anchor="middle" dominant-baseline="central">projects back up</text>
+        <line x1="340" y1="244" x2="340" y2="278" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <text class="ts" x="368" y="264" fill="#0F6E56">B·A·x</text>
+        <circle cx="158" cy="302" r="20" fill="#f9f9f9" stroke="#534AB7" stroke-width="1.5"/>
+        <text class="th" x="158" y="302" text-anchor="middle" dominant-baseline="central" fill="#534AB7">+</text>
+        <line x1="158" y1="192" x2="158" y2="280" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <line x1="340" y1="280" x2="180" y2="302" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <line x1="178" y1="302" x2="390" y2="302" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <g class="c-teal"><rect x="392" y="282" width="120" height="40" rx="8" stroke-width="0.5"/><text class="th" x="452" y="298" text-anchor="middle" dominant-baseline="central">output y</text><text class="ts" x="452" y="314" text-anchor="middle" dominant-baseline="central">W·x + B·A·x</text></g>
+        <line x1="512" y1="302" x2="556" y2="302" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#a7g)"/>
+        <g class="c-coral"><rect x="558" y="282" width="80" height="40" rx="8" stroke-width="0.5"/><text class="th" x="598" y="302" text-anchor="middle" dominant-baseline="central">Loss</text></g>
+        <line x1="558" y1="316" x2="514" y2="316" stroke="#A32D2D" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a7r)"/>
+        <line x1="452" y1="326" x2="392" y2="326" stroke="#A32D2D" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="392" y1="326" x2="392" y2="248" stroke="#A32D2D" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a7r)"/>
+        <text class="ts" x="620" y="352" text-anchor="middle" fill="#A32D2D">updates B ✓</text>
+        <line x1="352" y1="190" x2="352" y2="152" stroke="#A32D2D" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a7r)"/>
+        <text class="ts" x="620" y="372" text-anchor="middle" fill="#A32D2D">updates A ✓</text>
+        <line x1="140" y1="316" x2="115" y2="316" stroke="#A32D2D" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="115" y1="316" x2="115" y2="152" stroke="#A32D2D" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="115" y1="152" x2="136" y2="152" stroke="#A32D2D" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <rect x="100" y="156" width="58" height="22" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/>
+        <text class="ts" x="129" y="168" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">blocked ✗</text>
+        <text class="ts" x="620" y="392" text-anchor="middle" fill="#888">W never updated ✗</text>
+        <rect x="40" y="414" width="600" height="22" rx="6" fill="#f0f4fa" stroke="#dde" stroke-width="0.5"/>
+        <text class="ts" x="340" y="425" text-anchor="middle" dominant-baseline="central">"Blocked" = requires_grad=False on W. PyTorch computes gradients up to W then stops. W is never changed.</text>
+      </svg>
+    </div>
+
+    <div class="keybox"><div class="kb-label">QLoRA</div><div class="kb-value">Base model stored in INT4 + LoRA adapters trained in full precision. Fine-tune a 70B model on a single consumer GPU.</div></div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 6 -->
+<div class="part" id="part6">
+  <div class="part-header">
+    <div class="part-num">Part 6</div>
+    <h2>Weight Sharing</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>What is it?</h3>
+    <p>Weight sharing makes multiple weights share the same stored value. Instead of storing each weight as its own 32-bit number, you assign every weight to a cluster and store one representative value per cluster in a <strong>codebook</strong>. Each weight is replaced by a small index pointing to its cluster.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 6.1 — Weight sharing via k-means codebook</div>
+      <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <text class="th" x="175" y="20" text-anchor="middle" fill="#888">Before: 16 unique weights</text>
+        <text class="th" x="510" y="20" text-anchor="middle" fill="#888">After: 4 shared values + index grid</text>
+        <!-- before grid -->
+        <rect x="50" y="34" width="46" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="73" y="52" text-anchor="middle" dominant-baseline="central" fill="#534AB7">0.91</text>
+        <rect x="100" y="34" width="46" height="34" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="123" y="52" text-anchor="middle" dominant-baseline="central" fill="#BA7517">-0.52</text>
+        <rect x="150" y="34" width="46" height="34" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="173" y="52" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">0.12</text>
+        <rect x="200" y="34" width="46" height="34" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="223" y="52" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">-0.89</text>
+        <rect x="50" y="72" width="46" height="34" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="73" y="90" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">0.08</text>
+        <rect x="100" y="72" width="46" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="123" y="90" text-anchor="middle" dominant-baseline="central" fill="#534AB7">0.88</text>
+        <rect x="150" y="72" width="46" height="34" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="173" y="90" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">-0.93</text>
+        <rect x="200" y="72" width="46" height="34" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="223" y="90" text-anchor="middle" dominant-baseline="central" fill="#BA7517">-0.48</text>
+        <rect x="50" y="110" width="46" height="34" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="73" y="128" text-anchor="middle" dominant-baseline="central" fill="#BA7517">-0.55</text>
+        <rect x="100" y="110" width="46" height="34" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="123" y="128" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">0.15</text>
+        <rect x="150" y="110" width="46" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="173" y="128" text-anchor="middle" dominant-baseline="central" fill="#534AB7">0.94</text>
+        <rect x="200" y="110" width="46" height="34" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="223" y="128" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">-0.91</text>
+        <rect x="50" y="148" width="46" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="73" y="166" text-anchor="middle" dominant-baseline="central" fill="#534AB7">0.89</text>
+        <rect x="100" y="148" width="46" height="34" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="123" y="166" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">-0.87</text>
+        <rect x="150" y="148" width="46" height="34" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="173" y="166" text-anchor="middle" dominant-baseline="central" fill="#BA7517">-0.50</text>
+        <rect x="200" y="148" width="46" height="34" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="223" y="166" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">0.11</text>
+        <!-- arrow -->
+        <line x1="308" y1="110" x2="348" y2="110" stroke="#444" stroke-width="2" marker-end="url(#a8)"/>
+        <text class="ts" x="328" y="98" text-anchor="middle">k-means</text>
+        <!-- after: index grid -->
+        <rect x="368" y="34" width="34" height="28" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="385" y="49" text-anchor="middle" dominant-baseline="central">0</text>
+        <rect x="406" y="34" width="34" height="28" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="423" y="49" text-anchor="middle" dominant-baseline="central">1</text>
+        <rect x="444" y="34" width="34" height="28" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="461" y="49" text-anchor="middle" dominant-baseline="central">2</text>
+        <rect x="482" y="34" width="34" height="28" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="499" y="49" text-anchor="middle" dominant-baseline="central">3</text>
+        <rect x="368" y="66" width="34" height="28" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="385" y="81" text-anchor="middle" dominant-baseline="central">2</text>
+        <rect x="406" y="66" width="34" height="28" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="423" y="81" text-anchor="middle" dominant-baseline="central">0</text>
+        <rect x="444" y="66" width="34" height="28" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="461" y="81" text-anchor="middle" dominant-baseline="central">3</text>
+        <rect x="482" y="66" width="34" height="28" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="499" y="81" text-anchor="middle" dominant-baseline="central">1</text>
+        <rect x="368" y="98" width="34" height="28" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="385" y="113" text-anchor="middle" dominant-baseline="central">1</text>
+        <rect x="406" y="98" width="34" height="28" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="423" y="113" text-anchor="middle" dominant-baseline="central">2</text>
+        <rect x="444" y="98" width="34" height="28" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="461" y="113" text-anchor="middle" dominant-baseline="central">0</text>
+        <rect x="482" y="98" width="34" height="28" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="499" y="113" text-anchor="middle" dominant-baseline="central">3</text>
+        <rect x="368" y="130" width="34" height="28" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="385" y="145" text-anchor="middle" dominant-baseline="central">0</text>
+        <rect x="406" y="130" width="34" height="28" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="423" y="145" text-anchor="middle" dominant-baseline="central">3</text>
+        <rect x="444" y="130" width="34" height="28" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="461" y="145" text-anchor="middle" dominant-baseline="central">1</text>
+        <rect x="482" y="130" width="34" height="28" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="499" y="145" text-anchor="middle" dominant-baseline="central">2</text>
+        <!-- codebook -->
+        <text class="th" x="490" y="182" text-anchor="middle" fill="#888">Codebook (4 entries)</text>
+        <rect x="366" y="192" width="54" height="28" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="393" y="207" text-anchor="middle" dominant-baseline="central" fill="#534AB7">0: +0.91</text>
+        <rect x="426" y="192" width="54" height="28" rx="4" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/><text class="ts" x="453" y="207" text-anchor="middle" dominant-baseline="central" fill="#BA7517">1: -0.51</text>
+        <rect x="486" y="192" width="54" height="28" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/><text class="ts" x="513" y="207" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">2: +0.12</text>
+        <rect x="546" y="192" width="56" height="28" rx="4" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/><text class="ts" x="574" y="207" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">3: -0.90</text>
+        <!-- savings -->
+        <rect x="40" y="242" width="600" height="48" rx="8" fill="#f0f4fa" stroke="#dde" stroke-width="0.5"/>
+        <text class="ts" x="340" y="260" text-anchor="middle" dominant-baseline="central">Before: 16 × 32 bits = 512 bits stored</text>
+        <text class="ts" x="340" y="280" text-anchor="middle" dominant-baseline="central">After: 16 × 2-bit index + 4 × 32-bit codebook = 160 bits  →  3× smaller</text>
+        <rect x="40" y="306" width="600" height="40" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="ts" x="340" y="328" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Key difference from quantization: codebook values are learned (non-uniform), not a fixed grid</text>
+      </svg>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 7 -->
+<div class="part" id="part7">
+  <div class="part-header">
+    <div class="part-num">Part 7</div>
+    <h2>Real Production Pipelines</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>No technique is used alone — they stack</h3>
+    <p>In production, compression techniques are always combined. Each addresses a different dimension: distillation shrinks architecture, pruning removes redundancy, quantization reduces precision, LoRA enables efficient customization.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 7.1 — Three real production pipelines</div>
+      <svg viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a9" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <!-- Pipeline A -->
+        <text class="th" x="340" y="22" text-anchor="middle" fill="#888">Pipeline A — On-device mobile  (Apple Neural Engine, Pixel)</text>
+        <g class="c-purple"><rect x="40" y="32" width="86" height="52" rx="8" stroke-width="0.5"/><text class="th" x="83" y="52" text-anchor="middle" dominant-baseline="central">NAS</text><text class="ts" x="83" y="68" text-anchor="middle" dominant-baseline="central">find arch</text></g>
+        <line x1="126" y1="58" x2="142" y2="58" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-amber"><rect x="144" y="32" width="86" height="52" rx="8" stroke-width="0.5"/><text class="th" x="187" y="52" text-anchor="middle" dominant-baseline="central">Distillation</text><text class="ts" x="187" y="68" text-anchor="middle" dominant-baseline="central">train student</text></g>
+        <line x1="230" y1="58" x2="246" y2="58" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-blue"><rect x="248" y="32" width="86" height="52" rx="8" stroke-width="0.5"/><text class="th" x="291" y="52" text-anchor="middle" dominant-baseline="central">Pruning</text><text class="ts" x="291" y="68" text-anchor="middle" dominant-baseline="central">structured</text></g>
+        <line x1="334" y1="58" x2="350" y2="58" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-coral"><rect x="352" y="32" width="86" height="52" rx="8" stroke-width="0.5"/><text class="th" x="395" y="52" text-anchor="middle" dominant-baseline="central">Quantize</text><text class="ts" x="395" y="68" text-anchor="middle" dominant-baseline="central">INT8/INT4</text></g>
+        <line x1="438" y1="58" x2="454" y2="58" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-teal"><rect x="456" y="32" width="184" height="52" rx="8" stroke-width="0.5"/><text class="th" x="548" y="52" text-anchor="middle" dominant-baseline="central">Deploy on-chip</text><text class="ts" x="548" y="68" text-anchor="middle" dominant-baseline="central">runs in &lt;10ms on device</text></g>
+
+        <!-- Pipeline B -->
+        <text class="th" x="340" y="118" text-anchor="middle" fill="#888">Pipeline B — Custom LLM fine-tuning  (Llama / Mistral on your task)</text>
+        <g class="c-gray"><rect x="40" y="128" width="100" height="52" rx="8" stroke-width="0.5"/><text class="th" x="90" y="148" text-anchor="middle" dominant-baseline="central">Pretrained</text><text class="ts" x="90" y="164" text-anchor="middle" dominant-baseline="central">base LLM FP16</text></g>
+        <line x1="140" y1="154" x2="156" y2="154" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-coral"><rect x="158" y="128" width="100" height="52" rx="8" stroke-width="0.5"/><text class="th" x="208" y="148" text-anchor="middle" dominant-baseline="central">Quantize</text><text class="ts" x="208" y="164" text-anchor="middle" dominant-baseline="central">base to INT4</text></g>
+        <line x1="258" y1="154" x2="274" y2="154" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-amber"><rect x="276" y="128" width="100" height="52" rx="8" stroke-width="0.5"/><text class="th" x="326" y="148" text-anchor="middle" dominant-baseline="central">QLoRA</text><text class="ts" x="326" y="164" text-anchor="middle" dominant-baseline="central">add adapters</text></g>
+        <line x1="376" y1="154" x2="392" y2="154" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-teal"><rect x="394" y="128" width="100" height="52" rx="8" stroke-width="0.5"/><text class="th" x="444" y="148" text-anchor="middle" dominant-baseline="central">Merge+GGUF</text><text class="ts" x="444" y="164" text-anchor="middle" dominant-baseline="central">export Ollama</text></g>
+        <line x1="494" y1="154" x2="510" y2="154" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-purple"><rect x="512" y="128" width="128" height="52" rx="8" stroke-width="0.5"/><text class="th" x="576" y="148" text-anchor="middle" dominant-baseline="central">Deploy</text><text class="ts" x="576" y="164" text-anchor="middle" dominant-baseline="central">runs on laptop</text></g>
+
+        <!-- Pipeline C -->
+        <text class="th" x="340" y="214" text-anchor="middle" fill="#888">Pipeline C — Cloud LLM inference at scale  (serving GPT-class models)</text>
+        <g class="c-purple"><rect x="40" y="224" width="96" height="52" rx="8" stroke-width="0.5"/><text class="th" x="88" y="244" text-anchor="middle" dominant-baseline="central">Large model</text><text class="ts" x="88" y="260" text-anchor="middle" dominant-baseline="central">FP32 trained</text></g>
+        <line x1="136" y1="250" x2="152" y2="250" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-amber"><rect x="154" y="224" width="96" height="52" rx="8" stroke-width="0.5"/><text class="th" x="202" y="244" text-anchor="middle" dominant-baseline="central">Distillation</text><text class="ts" x="202" y="260" text-anchor="middle" dominant-baseline="central">smaller model</text></g>
+        <line x1="250" y1="250" x2="266" y2="250" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-blue"><rect x="268" y="224" width="96" height="52" rx="8" stroke-width="0.5"/><text class="th" x="316" y="244" text-anchor="middle" dominant-baseline="central">Pruning</text><text class="ts" x="316" y="260" text-anchor="middle" dominant-baseline="central">structured</text></g>
+        <line x1="364" y1="250" x2="380" y2="250" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-coral"><rect x="382" y="224" width="96" height="52" rx="8" stroke-width="0.5"/><text class="th" x="430" y="244" text-anchor="middle" dominant-baseline="central">INT8 quant</text><text class="ts" x="430" y="260" text-anchor="middle" dominant-baseline="central">+calibration</text></g>
+        <line x1="478" y1="250" x2="494" y2="250" stroke="#444" stroke-width="1.5" marker-end="url(#a9)"/>
+        <g class="c-teal"><rect x="496" y="224" width="144" height="52" rx="8" stroke-width="0.5"/><text class="th" x="568" y="244" text-anchor="middle" dominant-baseline="central">TensorRT/vLLM</text><text class="ts" x="568" y="260" text-anchor="middle" dominant-baseline="central">optimized serving</text></g>
+
+        <!-- Three rules -->
+        <text class="th" x="340" y="310" text-anchor="middle" fill="#888">Three universal rules</text>
+        <g class="c-blue"><rect x="40" y="320" width="185" height="72" rx="8" stroke-width="0.5"/><text class="th" x="132" y="344" text-anchor="middle" dominant-baseline="central">Order matters</text><text class="ts" x="132" y="364" text-anchor="middle" dominant-baseline="central">NAS/distillation first.</text><text class="ts" x="132" y="380" text-anchor="middle" dominant-baseline="central">Quantization always last.</text></g>
+        <g class="c-amber"><rect x="247" y="320" width="186" height="72" rx="8" stroke-width="0.5"/><text class="th" x="340" y="344" text-anchor="middle" dominant-baseline="central">Recover between steps</text><text class="ts" x="340" y="364" text-anchor="middle" dominant-baseline="central">Fine-tune after pruning</text><text class="ts" x="340" y="380" text-anchor="middle" dominant-baseline="central">before quantizing.</text></g>
+        <g class="c-coral"><rect x="455" y="320" width="185" height="72" rx="8" stroke-width="0.5"/><text class="th" x="547" y="344" text-anchor="middle" dominant-baseline="central">Measure at each step</text><text class="ts" x="547" y="364" text-anchor="middle" dominant-baseline="central">Track accuracy drop.</text><text class="ts" x="547" y="380" text-anchor="middle" dominant-baseline="central">Don't let it compound.</text></g>
+
+        <!-- cumulative -->
+        <rect x="40" y="414" width="600" height="54" rx="10" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/>
+        <text class="ts" x="340" y="432" text-anchor="middle" dominant-baseline="central">Distillation: 10× smaller  +  Pruning: 2× smaller  +  Quantization: 4× smaller</text>
+        <text class="th" x="340" y="454" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Combined: ~80× smaller than original, with only ~2–5% total accuracy loss</text>
+      </svg>
+    </div>
+
+    <h3>Why order matters</h3>
+    <p><strong>Architecture-level decisions first.</strong> NAS and distillation define the shape and size of the model. You want to establish this foundation before applying lossy operations like pruning or quantization.</p>
+    <p><strong>Quantization last.</strong> It is the most aggressive single-step transformation. Applying it to a model that has already been well-optimized by pruning and fine-tuning minimizes the total accuracy loss.</p>
+    <p><strong>Recover between steps.</strong> After pruning and before quantizing, always fine-tune to recover lost accuracy. Stacking two lossy steps without recovery compounds the damage significantly.</p>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ UPCOMING -->
+<!-- ═══════════════════════════════════════════════════════════════ PART 8 -->
+<div class="part" id="part8">
+  <div class="part-header">
+    <div class="part-num">Part 8</div>
+    <h2>Early Exit</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>What is it?</h3>
+    <p>Early exit adds <strong>off-ramps</strong> at intermediate layers of a neural network. Instead of every input running through all layers, easy inputs exit after fewer layers while hard inputs continue to the end. The key insight: not all inputs are equally difficult, so why spend the same compute on all of them?</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 8.1 — Early exit network: easy inputs leave early, hard inputs go deep</div>
+      <svg viewBox="0 0 680 520" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="ae1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker>
+        <marker id="ae2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#0F6E56" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <!-- input -->
+        <rect x="40" y="20" width="600" height="40" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="340" y="36" text-anchor="middle" dominant-baseline="central" fill="#185FA5">Input batch</text>
+        <text font-family="Arial" font-size="11" x="340" y="52" text-anchor="middle" dominant-baseline="central" fill="#555">some inputs are easy  •  some are hard  •  we don't know which yet</text>
+        <line x1="340" y1="60" x2="340" y2="80" stroke="#444" stroke-width="1" marker-end="url(#ae1)"/>
+        <!-- block 1 -->
+        <rect x="100" y="82" width="480" height="32" rx="6" fill="#f3f4f8" stroke="#ccc" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="11" x="340" y="98" text-anchor="middle" dominant-baseline="central" fill="#555">Layer block 1  (first few layers)</text>
+        <line x1="340" y1="114" x2="340" y2="132" stroke="#444" stroke-width="1" marker-end="url(#ae1)"/>
+        <!-- exit 1 -->
+        <rect x="210" y="134" width="260" height="40" rx="8" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="340" y="150" text-anchor="middle" dominant-baseline="central" fill="#BA7517">Exit 1: confidence ≥ threshold?</text>
+        <text font-family="Arial" font-size="11" x="340" y="166" text-anchor="middle" dominant-baseline="central" fill="#555">e.g. top class probability ≥ 0.90</text>
+        <!-- exit right -->
+        <line x1="470" y1="154" x2="554" y2="154" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#ae2)"/>
+        <rect x="556" y="134" width="84" height="40" rx="6" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="598" y="150" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">EXIT ✓</text>
+        <text font-family="Arial" font-size="10" x="598" y="166" text-anchor="middle" dominant-baseline="central" fill="#555">easy input</text>
+        <!-- not confident -->
+        <line x1="340" y1="174" x2="340" y2="196" stroke="#888" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#ae1)"/>
+        <text font-family="Arial" font-size="10" x="230" y="188" fill="#888">not confident enough →</text>
+        <!-- block 2 -->
+        <rect x="100" y="198" width="480" height="32" rx="6" fill="#f3f4f8" stroke="#ccc" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="11" x="340" y="214" text-anchor="middle" dominant-baseline="central" fill="#555">Layer block 2  (middle layers)</text>
+        <line x1="340" y1="230" x2="340" y2="248" stroke="#444" stroke-width="1" marker-end="url(#ae1)"/>
+        <!-- exit 2 -->
+        <rect x="210" y="250" width="260" height="40" rx="8" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="340" y="266" text-anchor="middle" dominant-baseline="central" fill="#BA7517">Exit 2: confidence ≥ threshold?</text>
+        <text font-family="Arial" font-size="11" x="340" y="282" text-anchor="middle" dominant-baseline="central" fill="#555">e.g. top class probability ≥ 0.90</text>
+        <line x1="470" y1="270" x2="554" y2="270" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#ae2)"/>
+        <rect x="556" y="250" width="84" height="40" rx="6" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="598" y="266" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">EXIT ✓</text>
+        <text font-family="Arial" font-size="10" x="598" y="282" text-anchor="middle" dominant-baseline="central" fill="#555">medium input</text>
+        <line x1="340" y1="290" x2="340" y2="312" stroke="#888" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#ae1)"/>
+        <!-- block 3 -->
+        <rect x="100" y="314" width="480" height="32" rx="6" fill="#f3f4f8" stroke="#ccc" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="11" x="340" y="330" text-anchor="middle" dominant-baseline="central" fill="#555">Layer block 3  (full network — all remaining layers)</text>
+        <line x1="340" y1="346" x2="340" y2="366" stroke="#444" stroke-width="1" marker-end="url(#ae1)"/>
+        <!-- final -->
+        <rect x="210" y="368" width="260" height="40" rx="8" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="340" y="384" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">Final output (always exits here)</text>
+        <text font-family="Arial" font-size="11" x="340" y="400" text-anchor="middle" dominant-baseline="central" fill="#555">hardest inputs — full compute used</text>
+        <!-- savings note -->
+        <rect x="40" y="430" width="600" height="40" rx="8" fill="none" stroke="#dde" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="340" y="446" text-anchor="middle" dominant-baseline="central">Key benefit: average compute per input drops dramatically</text>
+        <text font-family="Arial" font-size="11" x="340" y="462" text-anchor="middle" dominant-baseline="central" fill="#555">If 60% of inputs exit at layer 6 of 48, average depth ≈ 25 layers instead of 48</text>
+        <!-- training note -->
+        <rect x="40" y="480" width="600" height="32" rx="8" fill="#f0f4fa" stroke="#dde" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="11" x="340" y="498" text-anchor="middle" dominant-baseline="central" fill="#444">Training: loss computed at every exit simultaneously, summed together. All exit heads train jointly with the main network.</text>
+      </svg>
+    </div>
+
+    <h3>How the confidence check works</h3>
+    <p>Each exit point has a small classifier head — usually just one or two layers — attached to the main network. After processing through a block of layers, this head outputs a probability distribution. If the top predicted class has probability above a threshold (e.g. 0.90), the network is confident enough to exit now. If the distribution is flat ("20% cat, 18% dog, 15% fox..."), confidence is low and the input continues deeper.</p>
+    <p>The <strong>threshold</strong> is a tunable dial: higher = fewer exits (more accurate), lower = more exits (faster). You choose it based on how much accuracy you're willing to trade for speed.</p>
+
+    <h3>Where early exit shines</h3>
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 8.2 — Average compute used relative to full network, by workload difficulty</div>
+      <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+        <text font-family="Arial" font-size="12" font-weight="bold" x="340" y="20" text-anchor="middle" fill="#888">Average compute used relative to full network</text>
+        <text font-family="Arial" font-size="11" x="148" y="52" text-anchor="end" fill="#555">No early exit</text>
+        <rect x="152" y="40" width="300" height="18" rx="3" fill="#A32D2D" opacity="0.75"/>
+        <text font-family="Arial" font-size="11" x="458" y="52" fill="#555">100% compute (baseline)</text>
+        <text font-family="Arial" font-size="11" x="148" y="86" text-anchor="end" fill="#555">Easy workload</text>
+        <rect x="152" y="74" width="90" height="18" rx="3" fill="#0F6E56" opacity="0.85"/>
+        <text font-family="Arial" font-size="11" x="248" y="86" fill="#555">~30% compute  (70% saved)</text>
+        <text font-family="Arial" font-size="11" x="148" y="120" text-anchor="end" fill="#555">Mixed workload</text>
+        <rect x="152" y="108" width="165" height="18" rx="3" fill="#BA7517" opacity="0.8"/>
+        <text font-family="Arial" font-size="11" x="323" y="120" fill="#555">~55% compute  (45% saved)</text>
+        <text font-family="Arial" font-size="11" x="148" y="154" text-anchor="end" fill="#555">Hard workload</text>
+        <rect x="152" y="142" width="255" height="18" rx="3" fill="#534AB7" opacity="0.7"/>
+        <text font-family="Arial" font-size="11" x="413" y="154" fill="#555">~85% compute  (15% saved)</text>
+        <rect x="40" y="184" width="600" height="34" rx="8" fill="#FFF3CD" stroke="#BA7517" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="340" y="198" text-anchor="middle" dominant-baseline="central" fill="#856404">Unlike pruning/quantization — savings are dynamic and input-dependent</text>
+        <text font-family="Arial" font-size="11" x="340" y="213" text-anchor="middle" dominant-baseline="central" fill="#555">Works best when workloads are naturally skewed toward easy inputs</text>
+        <rect x="40" y="226" width="600" height="28" rx="8" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="11" x="340" y="242" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">Main limitation: doesn't play well with batched GPU inference — different inputs exit at different layers</text>
+      </svg>
+    </div>
+
+    <h3>Ideal use cases</h3>
+    <ul>
+      <li><strong>NLP classification:</strong> "This email is spam" is obvious after 3 layers. No need for 12 layers.</li>
+      <li><strong>Real-time video:</strong> Most frames show a routine scene. Run the full model only when something changes.</li>
+      <li><strong>LLM token generation:</strong> Common words ("the", "and") are predictable early. Exit sooner for those tokens.</li>
+      <li><strong>Edge / CPU inference:</strong> Where inputs arrive one at a time and batch parallelism isn't the bottleneck.</li>
+    </ul>
+
+    <h3>The key distinction from all other techniques</h3>
+    <p>Every other method — pruning, quantization, distillation — produces a <strong>fixed speedup</strong> regardless of input. Early exit is fundamentally different: its savings are <strong>dynamic</strong>. The harder the batch, the less you save. This makes it complementary to the other techniques rather than a replacement — you apply pruning and quantization first for a baseline speedup, then layer early exit on top for additional input-adaptive savings.</p>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PART 9 -->
+<div class="part" id="part9">
+  <div class="part-header" style="background: var(--teal);">
+    <div class="part-num">Part 9 — Capstone</div>
+    <h2>Combining Methods in Production</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>Start from your constraint, not the technique</h3>
+    <p>The biggest mistake practitioners make is picking a technique because it sounds interesting rather than because it matches their actual problem. The table below maps your situation to the right starting point.</p>
+
+    <table>
+      <thead><tr><th>Your situation</th><th>Primary technique</th><th>Stack with</th></tr></thead>
+      <tbody>
+        <tr><td>Need to run a large model on a laptop / phone</td><td><strong>Quantization (INT4)</strong> — GGUF / AWQ</td><td>Pruning for further size</td></tr>
+        <tr><td>Want to fine-tune a large LLM on your own data</td><td><strong>LoRA / QLoRA</strong> — adapter-based fine-tuning</td><td>INT4 base + distillation</td></tr>
+        <tr><td>Building a model for a specific chip / device</td><td><strong>NAS (hardware-aware)</strong> — ProxylessNAS / OFA</td><td>Distillation + INT8</td></tr>
+        <tr><td>Large model works well, want a smaller one</td><td><strong>Knowledge distillation</strong> — teacher → student</td><td>Pruning + quantization</td></tr>
+        <tr><td>Model is too slow, accuracy is fine</td><td><strong>Structured pruning</strong> — remove whole neurons</td><td>Quantization after</td></tr>
+        <tr><td>Workload has many "easy" inputs</td><td><strong>Early exit</strong> — dynamic compute saving</td><td>Any other technique first</td></tr>
+        <tr><td>Memory is the bottleneck, not speed</td><td><strong>Weight sharing</strong> — codebook compression</td><td>Low-rank factorization</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Case Study A — Custom LLM running on a laptop</h3>
+    <p>This is the most common real-world scenario for practitioners today. You don't train from scratch — that costs millions. Instead:</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 9.1 — Open-source LLM fine-tuning pipeline (QLoRA + GGUF)</div>
+      <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="p9a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <rect x="40" y="60" width="110" height="72" rx="8" fill="#F3F3F0" stroke="#888" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="95" y="88" text-anchor="middle" dominant-baseline="central">Start</text>
+        <text font-family="Arial" font-size="11" x="95" y="108" text-anchor="middle" dominant-baseline="central" fill="#555">Llama 70B</text>
+        <text font-family="Arial" font-size="11" x="95" y="124" text-anchor="middle" dominant-baseline="central" fill="#555">FP16 · 140 GB</text>
+        <line x1="150" y1="96" x2="166" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9a)"/>
+        <rect x="168" y="60" width="110" height="72" rx="8" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="223" y="84" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">① Quantize</text>
+        <text font-family="Arial" font-size="11" x="223" y="104" text-anchor="middle" dominant-baseline="central" fill="#555">AWQ INT4</text>
+        <text font-family="Arial" font-size="11" x="223" y="120" text-anchor="middle" dominant-baseline="central" fill="#555">140 GB → 35 GB</text>
+        <line x1="278" y1="96" x2="294" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9a)"/>
+        <rect x="296" y="60" width="110" height="72" rx="8" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="351" y="84" text-anchor="middle" dominant-baseline="central" fill="#BA7517">② QLoRA</text>
+        <text font-family="Arial" font-size="11" x="351" y="104" text-anchor="middle" dominant-baseline="central" fill="#555">Train adapters</text>
+        <text font-family="Arial" font-size="11" x="351" y="120" text-anchor="middle" dominant-baseline="central" fill="#555">~50 MB added</text>
+        <line x1="406" y1="96" x2="422" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9a)"/>
+        <rect x="424" y="60" width="110" height="72" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="479" y="84" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">③ Merge+GGUF</text>
+        <text font-family="Arial" font-size="11" x="479" y="104" text-anchor="middle" dominant-baseline="central" fill="#555">Export for Ollama</text>
+        <text font-family="Arial" font-size="11" x="479" y="120" text-anchor="middle" dominant-baseline="central" fill="#555">llama.cpp ready</text>
+        <line x1="534" y1="96" x2="550" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9a)"/>
+        <rect x="552" y="60" width="88" height="72" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="13" font-weight="bold" x="596" y="88" text-anchor="middle" dominant-baseline="central" fill="#534AB7">Deploy</text>
+        <text font-family="Arial" font-size="11" x="596" y="108" text-anchor="middle" dominant-baseline="central" fill="#555">runs on</text>
+        <text font-family="Arial" font-size="11" x="596" y="124" text-anchor="middle" dominant-baseline="central" fill="#555">laptop GPU</text>
+        <rect x="40" y="152" width="600" height="36" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="340" y="166" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Result: custom 70B LLM on a 48 GB GPU workstation. Fine-tuning cost: 1 GPU × 1–2 days vs 100s of GPUs for full fine-tune.</text>
+      </svg>
+    </div>
+
+    <h3>Case Study B — On-device vision model (Apple Neural Engine)</h3>
+    <p>This is the most aggressive pipeline, used when you need a model to run on a battery-powered chip in under 5 milliseconds with no server connection.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 9.2 — On-device mobile pipeline (NAS + distillation + pruning + quantization)</div>
+      <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="p9b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <rect x="40" y="60" width="90" height="72" rx="8" fill="#F3F3F0" stroke="#888" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="85" y="88" text-anchor="middle" dominant-baseline="central">Start</text>
+        <text font-family="Arial" font-size="10" x="85" y="108" text-anchor="middle" dominant-baseline="central" fill="#555">Large cloud</text>
+        <text font-family="Arial" font-size="10" x="85" y="122" text-anchor="middle" dominant-baseline="central" fill="#555">vision model</text>
+        <line x1="130" y1="96" x2="146" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9b)"/>
+        <rect x="148" y="60" width="100" height="72" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="198" y="84" text-anchor="middle" dominant-baseline="central" fill="#534AB7">① NAS</text>
+        <text font-family="Arial" font-size="10" x="198" y="104" text-anchor="middle" dominant-baseline="central" fill="#555">Find arch for</text>
+        <text font-family="Arial" font-size="10" x="198" y="120" text-anchor="middle" dominant-baseline="central" fill="#555">Neural Engine</text>
+        <line x1="248" y1="96" x2="264" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9b)"/>
+        <rect x="266" y="60" width="100" height="72" rx="8" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="316" y="84" text-anchor="middle" dominant-baseline="central" fill="#BA7517">② Distillation</text>
+        <text font-family="Arial" font-size="10" x="316" y="104" text-anchor="middle" dominant-baseline="central" fill="#555">Cloud model</text>
+        <text font-family="Arial" font-size="10" x="316" y="120" text-anchor="middle" dominant-baseline="central" fill="#555">teaches student</text>
+        <line x1="366" y1="96" x2="382" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9b)"/>
+        <rect x="384" y="60" width="100" height="72" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="434" y="84" text-anchor="middle" dominant-baseline="central" fill="#185FA5">③ Pruning</text>
+        <text font-family="Arial" font-size="10" x="434" y="104" text-anchor="middle" dominant-baseline="central" fill="#555">Structured,</text>
+        <text font-family="Arial" font-size="10" x="434" y="120" text-anchor="middle" dominant-baseline="central" fill="#555">iterative</text>
+        <line x1="484" y1="96" x2="500" y2="96" stroke="#444" stroke-width="1.5" marker-end="url(#p9b)"/>
+        <rect x="502" y="60" width="138" height="72" rx="8" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="571" y="80" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">④ INT8 + weight</text>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="571" y="96" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">sharing</text>
+        <text font-family="Arial" font-size="10" x="571" y="116" text-anchor="middle" dominant-baseline="central" fill="#555">Core ML export</text>
+        <rect x="40" y="152" width="600" height="36" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="340" y="166" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Result: runs in &lt;5ms on Neural Engine, on battery, no server. ~80× smaller, ~2–3% accuracy loss.</text>
+      </svg>
+    </div>
+
+    <h3>What each technique targets — the master picture</h3>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 9.3 — Each technique attacks a different dimension</div>
+      <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="40" y="20" width="108" height="120" rx="8" fill="#FEF3D8" stroke="#BA7517" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="94" y="48" text-anchor="middle" dominant-baseline="central" fill="#BA7517">Distillation</text>
+        <text font-family="Arial" font-size="10" x="94" y="72" text-anchor="middle" dominant-baseline="central" fill="#555">Shrinks the</text>
+        <text font-family="Arial" font-size="10" x="94" y="88" text-anchor="middle" dominant-baseline="central" fill="#555">model class</text>
+        <text font-family="Arial" font-size="10" x="94" y="112" text-anchor="middle" dominant-baseline="central" fill="#BA7517">~10× smaller</text>
+
+        <rect x="156" y="20" width="108" height="120" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="210" y="48" text-anchor="middle" dominant-baseline="central" fill="#534AB7">NAS</text>
+        <text font-family="Arial" font-size="10" x="210" y="72" text-anchor="middle" dominant-baseline="central" fill="#555">Shapes the</text>
+        <text font-family="Arial" font-size="10" x="210" y="88" text-anchor="middle" dominant-baseline="central" fill="#555">architecture</text>
+        <text font-family="Arial" font-size="10" x="210" y="112" text-anchor="middle" dominant-baseline="central" fill="#534AB7">chip-optimal</text>
+
+        <rect x="272" y="20" width="108" height="120" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="326" y="48" text-anchor="middle" dominant-baseline="central" fill="#185FA5">Pruning</text>
+        <text font-family="Arial" font-size="10" x="326" y="72" text-anchor="middle" dominant-baseline="central" fill="#555">Removes</text>
+        <text font-family="Arial" font-size="10" x="326" y="88" text-anchor="middle" dominant-baseline="central" fill="#555">redundancy</text>
+        <text font-family="Arial" font-size="10" x="326" y="112" text-anchor="middle" dominant-baseline="central" fill="#185FA5">~2× smaller</text>
+
+        <rect x="388" y="20" width="108" height="120" rx="8" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="442" y="48" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">Quantization</text>
+        <text font-family="Arial" font-size="10" x="442" y="72" text-anchor="middle" dominant-baseline="central" fill="#555">Reduces</text>
+        <text font-family="Arial" font-size="10" x="442" y="88" text-anchor="middle" dominant-baseline="central" fill="#555">precision</text>
+        <text font-family="Arial" font-size="10" x="442" y="112" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">4–8× smaller</text>
+
+        <rect x="504" y="20" width="136" height="120" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.8"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="572" y="48" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Early exit</text>
+        <text font-family="Arial" font-size="10" x="572" y="72" text-anchor="middle" dominant-baseline="central" fill="#555">Adapts to</text>
+        <text font-family="Arial" font-size="10" x="572" y="88" text-anchor="middle" dominant-baseline="central" fill="#555">input difficulty</text>
+        <text font-family="Arial" font-size="10" x="572" y="112" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">dynamic saving</text>
+
+        <rect x="40" y="158" width="600" height="32" rx="8" fill="#1F3864"/>
+        <text font-family="Arial" font-size="12" font-weight="bold" x="340" y="176" text-anchor="middle" dominant-baseline="central" fill="white">Combined: 10× × 2× × 4–8× = 80–160× smaller · ~2–5% accuracy loss</text>
+      </svg>
+    </div>
+
+    <h3>The three universal rules</h3>
+    <ul>
+      <li><strong>Order is not arbitrary.</strong> Architecture decisions (NAS, distillation) must come first because they define what you're compressing. Quantization must come last — it is the most destructive step and should be applied to a network already well-optimized by earlier stages.</li>
+      <li><strong>Recover between lossy steps.</strong> After any pruning step, fine-tune before the next step. Errors from two lossy operations compound silently if you don't recover in between.</li>
+      <li><strong>Each technique attacks a different dimension.</strong> Distillation, NAS, pruning, quantization, early exit, and LoRA address orthogonal problems. None is a substitute for the others — they multiply when stacked correctly.</li>
+    </ul>
+
+    <div class="keybox">
+      <div class="kb-label">The gap explained</div>
+      <div class="kb-value">In 2017, large neural networks ran only on expensive servers. Today they run on your laptop. That entire gap — roughly 100× in efficiency — is almost entirely explained by these techniques stacked together.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ REFERENCES -->
+<div class="part" id="references">
+  <div class="part-header" style="background: #2c2c2c;">
+    <div class="part-num">References</div>
+    <h2>Foundational Papers &amp; Further Reading</h2>
+  </div>
+  <div class="part-body">
+
+    <h3>Knowledge Distillation</h3>
+    <ol>
+      <li>Hinton, G., Vinyals, O., &amp; Dean, J. (2015). <strong>Distilling the Knowledge in a Neural Network.</strong> <em>NeurIPS Deep Learning Workshop.</em> — The original paper introducing soft labels, temperature, and dark knowledge. <a href="https://arxiv.org/abs/1503.02531" target="_blank">arxiv.org/abs/1503.02531</a></li>
+      <li>Romero, A. et al. (2015). <strong>FitNets: Hints for Thin Deep Nets.</strong> <em>ICLR 2015.</em> — Extends distillation to intermediate layer "hints," not just final outputs. <a href="https://arxiv.org/abs/1412.6550" target="_blank">arxiv.org/abs/1412.6550</a></li>
+      <li>Sanh, V. et al. (2019). <strong>DistilBERT, a distilled version of BERT.</strong> <em>NeurIPS EMC² Workshop.</em> — Practical application of distillation to BERT, achieving 60% of its size with 97% of its performance. <a href="https://arxiv.org/abs/1910.01108" target="_blank">arxiv.org/abs/1910.01108</a></li>
+    </ol>
+
+    <h3>Neural Architecture Search (NAS)</h3>
+    <ol>
+      <li>Zoph, B. &amp; Le, Q. V. (2017). <strong>Neural Architecture Search with Reinforcement Learning.</strong> <em>ICLR 2017.</em> — The paper that started the modern NAS era; used RL to search architectures for image classification. <a href="https://arxiv.org/abs/1611.01578" target="_blank">arxiv.org/abs/1611.01578</a></li>
+      <li>Liu, H., Simonyan, K., &amp; Yang, Y. (2019). <strong>DARTS: Differentiable Architecture Search.</strong> <em>ICLR 2019.</em> — Made NAS orders of magnitude cheaper by making architecture choices differentiable. <a href="https://arxiv.org/abs/1806.09055" target="_blank">arxiv.org/abs/1806.09055</a></li>
+      <li>Tan, M. et al. (2019). <strong>MnasNet: Platform-Aware Neural Architecture Search for Mobile.</strong> <em>CVPR 2019.</em> — Google's evolutionary NAS optimizing for real mobile latency, not FLOPs. <a href="https://arxiv.org/abs/1807.11626" target="_blank">arxiv.org/abs/1807.11626</a></li>
+      <li>Cai, H. et al. (2020). <strong>Once-for-All: Train One Network and Specialize it for Efficient Deployment.</strong> <em>ICLR 2020.</em> — Train one supernet, extract free sub-networks for any device. <a href="https://arxiv.org/abs/1908.09791" target="_blank">arxiv.org/abs/1908.09791</a></li>
+      <li>Cai, H., Zhu, L., &amp; Han, S. (2019). <strong>ProxylessNAS: Direct Neural Architecture Search on Target Task and Hardware.</strong> <em>ICLR 2019.</em> — Measures real hardware latency during search rather than using FLOPs as a proxy. <a href="https://arxiv.org/abs/1812.00332" target="_blank">arxiv.org/abs/1812.00332</a></li>
+    </ol>
+
+    <h3>Pruning</h3>
+    <ol>
+      <li>Han, S. et al. (2015). <strong>Learning both Weights and Connections for Efficient Neural Networks.</strong> <em>NeurIPS 2015.</em> — Introduced magnitude-based pruning; showed 9× compression on AlexNet. <a href="https://arxiv.org/abs/1506.02626" target="_blank">arxiv.org/abs/1506.02626</a></li>
+      <li>Frankle, J. &amp; Carbin, M. (2019). <strong>The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks.</strong> <em>ICLR 2019.</em> — Showed that every large network contains a small "winning" sub-network. <a href="https://arxiv.org/abs/1803.03635" target="_blank">arxiv.org/abs/1803.03635</a></li>
+      <li>Molchanov, P. et al. (2017). <strong>Pruning Convolutional Neural Networks for Resource Efficient Inference.</strong> <em>ICLR 2017.</em> — Introduced Taylor expansion-based pruning criterion (gradient × weight). <a href="https://arxiv.org/abs/1611.06440" target="_blank">arxiv.org/abs/1611.06440</a></li>
+    </ol>
+
+    <h3>Quantization</h3>
+    <ol>
+      <li>Jacob, B. et al. (2018). <strong>Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference.</strong> <em>CVPR 2018.</em> — Google's foundational paper on quantization-aware training (QAT). <a href="https://arxiv.org/abs/1712.05877" target="_blank">arxiv.org/abs/1712.05877</a></li>
+      <li>Frantar, E. et al. (2022). <strong>GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers.</strong> — Layer-wise quantization with error compensation for LLMs. <a href="https://arxiv.org/abs/2210.17323" target="_blank">arxiv.org/abs/2210.17323</a></li>
+      <li>Lin, J. et al. (2023). <strong>AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration.</strong> — Identifies and protects the 1% of salient weights via activation statistics. <a href="https://arxiv.org/abs/2306.00978" target="_blank">arxiv.org/abs/2306.00978</a></li>
+      <li>Gerganov, G. et al. (2023). <strong>llama.cpp &amp; GGUF format.</strong> <em>GitHub.</em> — Open-source runtime enabling 4-bit quantized LLMs on consumer hardware. <a href="https://github.com/ggerganov/llama.cpp" target="_blank">github.com/ggerganov/llama.cpp</a></li>
+    </ol>
+
+    <h3>Low-Rank Factorization &amp; LoRA</h3>
+    <ol>
+      <li>Hu, E. et al. (2022). <strong>LoRA: Low-Rank Adaptation of Large Language Models.</strong> <em>ICLR 2022.</em> — Introduced trainable low-rank adapter matrices; enabled fine-tuning on a single GPU. <a href="https://arxiv.org/abs/2106.09685" target="_blank">arxiv.org/abs/2106.09685</a></li>
+      <li>Dettmers, T. et al. (2023). <strong>QLoRA: Efficient Finetuning of Quantized LLMs.</strong> <em>NeurIPS 2023.</em> — Combined 4-bit quantization with LoRA; fine-tune a 65B model on a single 48 GB GPU. <a href="https://arxiv.org/abs/2305.14314" target="_blank">arxiv.org/abs/2305.14314</a></li>
+    </ol>
+
+    <h3>Weight Sharing</h3>
+    <ol>
+      <li>Han, S., Mao, H., &amp; Dally, W. J. (2016). <strong>Deep Compression: Compressing Deep Neural Networks with Pruning, Trained Quantization and Huffman Coding.</strong> <em>ICLR 2016 Best Paper.</em> — Combined pruning + weight sharing + Huffman coding for 35× compression. <a href="https://arxiv.org/abs/1510.00149" target="_blank">arxiv.org/abs/1510.00149</a></li>
+    </ol>
+
+    <h3>Early Exit</h3>
+    <ol>
+      <li>Teerapittayanon, S., McDanel, B., &amp; Kung, H. T. (2016). <strong>BranchyNet: Fast Inference via Early Exiting from Deep Neural Networks.</strong> <em>ICPR 2016.</em> — Introduced multi-exit networks with confidence-based early stopping. <a href="https://arxiv.org/abs/1709.01686" target="_blank">arxiv.org/abs/1709.01686</a></li>
+      <li>Xin, J. et al. (2020). <strong>DeeBERT: Dynamic Early Exiting for Accelerating BERT Inference.</strong> <em>ACL 2020.</em> — Applied early exit to BERT for NLP, achieving 40% speedup. <a href="https://arxiv.org/abs/2004.12993" target="_blank">arxiv.org/abs/2004.12993</a></li>
+    </ol>
+
+    <h3>Surveys &amp; Broader Reading</h3>
+    <ol>
+      <li>Tan, M. &amp; Le, Q. V. (2019). <strong>EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks.</strong> <em>ICML 2019.</em> — NAS-found architecture that became a widely used baseline for mobile and server models. <a href="https://arxiv.org/abs/1905.11946" target="_blank">arxiv.org/abs/1905.11946</a></li>
+      <li>Gou, J. et al. (2021). <strong>Knowledge Distillation: A Survey.</strong> <em>IJCV 2021.</em> — Comprehensive survey covering 40+ distillation variants. <a href="https://arxiv.org/abs/2006.05525" target="_blank">arxiv.org/abs/2006.05525</a></li>
+      <li>Hoefler, T. et al. (2021). <strong>Sparsity in Deep Learning: Pruning and Growth for Efficient Inference and Training in Neural Networks.</strong> <em>JMLR 2021.</em> — Definitive survey of pruning methods. <a href="https://arxiv.org/abs/2102.00554" target="_blank">arxiv.org/abs/2102.00554</a></li>
+    </ol>
+
+  </div>
+</div>
+
+<div class="footer">
+  <div style="margin-bottom: 6px;">Compiled by Han Wook Cho &nbsp;·&nbsp; June 2026</div>
+  <div style="margin-bottom: 6px;">Companion primer to <a href="https://github.com/hanwook-cho/multi-agent-vlm-optimization-system" style="color:#2E5496;">Multi-Agent System for VLM Optimization</a> — an autonomous system that applies these techniques to produce edge vision-language models.</div>
+  <div style="margin-bottom: 6px;">Study guide complete. All topics covered: Distillation · NAS · Pruning · Quantization · Low-Rank Factorization &amp; LoRA · Weight Sharing · Early Exit · Combining Methods.</div>
+  <div style="font-size:0.8rem; color:#bbb;">Drafted with AI assistance (Claude); reviewed, fact-checked, and edited by the author.</div>
+</div>
+
+</div><!-- .page -->
+</body>
+</html>
