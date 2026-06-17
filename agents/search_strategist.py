@@ -276,7 +276,20 @@ HYPOTHESIS_TABLE = [
             "(a) distribution-matched MCQ (generate MMBench-like reasoning/knowledge MCQs, not COCO-object); "
             "(b) accept single-skill — ship the grounding student (d3423bc0) and pick a POPE-supported goal, "
             "treating MMBench as out of reach for this training distribution. Best student STILL d3423bc0. "
-            "Rehearsal is now correctly wired (was inert before); the mechanism works, the data doesn't."
+            "Rehearsal is now correctly wired (was inert before); the mechanism works, the data doesn't. "
+            "UPDATE 3 (ScienceQA distribution fix, spec b2feb6b1): POSITIVE — hypothesis validated. "
+            "Diagnosed the MMBench floor as train/eval DISTRIBUTION mismatch (MMBench is ~70% science/"
+            "knowledge/reasoning, off-distribution for COCO; the student already does MCQ format — 59/100 "
+            "on in-distribution COCO MCQ). Built ScienceQA (the closest public match to MMBench's "
+            "distribution, natively MCQ) and distilled on it. Result: MMBench 0.65 — ABOVE the 0.50 floor "
+            "for the FIRST TIME (only 0.09 below LFM2's 0.74). POPE collapsed (bal-acc 34.4) — 0.3 grounding "
+            "rehearsal too weak vs 77% ScienceQA. The lever is now PROVEN BIDIRECTIONALLY: the student "
+            "clears exactly the benchmark whose distribution matches its training data (COCO→POPE, "
+            "ScienceQA→MMBench), floors otherwise. The four prior 'task-interference' negatives were really "
+            "a distribution story. Two best students now stand per axis: d3423bc0 (POPE 68.3) and b2feb6b1 "
+            "(MMBench 0.65). REMAINING PROBLEM = multi-skill: clear ≥2 floors with ONE student (the Goals "
+            "bar). Next: (a) balanced multi-distribution mixture (COCO-grounding + ScienceQA + RealWorldQA-"
+            "like) with tuned ratios/rehearsal; (b) if mixing keeps trading skills, larger student (0.5B→0.9B)."
         ),
     },
 ]

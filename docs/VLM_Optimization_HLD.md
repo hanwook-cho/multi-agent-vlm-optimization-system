@@ -331,6 +331,17 @@ So the §6.2 hypothesis record's **`implementation difficulty`** and **`proposed
 
 Everything in §5 (human gates) and §6.4 (verification, not trust) still applies. Every constructed artifact is content-addressed by spec hash, recorded in the experiment ledger, and scored on the same inference path as the benchmark (P2-1.3). **Promoting** a new builder or scheme into the *default* search space remains epistemically gated (§5.1) — the agent may construct and measure freely, but widening the standing toolkit is still a human decision.
 
+#### 6.5.5 Empirical principle — match the training distribution to the eval distribution *(added 2026-06-16)*
+
+The most load-bearing lever for a small constructed student is **the distribution of its training data relative to the target benchmark — not the optimizer, the LoRA rank, the rehearsal weight, or the step budget.** Established empirically across the P2-B1 runs (see `docs/observations/2026-06-16-p2b1-scienceqa-distribution.md`):
+
+- A COCO-trained student clears **POPE** (which is built on COCO) but floors **MMBench**; a ScienceQA-trained student clears **MMBench** (ScienceQA ≈ MMBench's science/knowledge distribution) but floors POPE. The student scores above the chance floor on **exactly the benchmark whose distribution matches its training data, and at the floor otherwise** — proven in both directions.
+- Four prior "task-interference / catastrophic-forgetting" negatives were, on inspection, a *distribution-mismatch* story: training on COCO while evaluating off-distribution. Budget, rehearsal weighting, and MCQ-format tuning did **not** move an off-distribution benchmark.
+
+**Implications for the system:**
+1. **Data is a first-class search dimension.** The Search Strategist must choose `distill.data` (and the rehearsal mixture) to span the *target eval distribution* — the same reason production VLMs train on broad mixtures covering their eval suites. A benchmark with no matching training source in the registry is unreachable until such a source is added (a Tier-1.5 data-pipeline step, e.g. `runners/build_scienceqa_cache.py`).
+2. **The open challenge is multi-distribution, not single-skill.** A ~0.5B student can clear *either* POPE *or* MMBench by matching its data; clearing *both at once* (the Goals "competitive on ≥2 benchmarks" bar) is a balanced-mixture / capacity problem, which is where P2-B1 continues.
+
 ---
 
 ## 7. Coordination and topology

@@ -1,0 +1,69 @@
+{
+  "experiment_id": "b2feb6b16d7ff20b3750c32050df30644249f2a9f9d3709ceefc317c435dd70d",
+  "kind": "student_construction",
+  "hypothesis_id": "P2-B1",
+  "rationale": "Distribution fix for MMBench. Verified the student floors on MMBench because it trains on COCO (POPE's distribution) while MMBench is ~70% science/knowledge/reasoning/OCR \u2014 and the rehearsal student scores 59/100 on in-distribution COCO MCQ (chance 25%) yet floors MMBench, so it CAN do MCQ format; the gap is DATA DISTRIBUTION, not format/capacity. ScienceQA is the closest public match to MMBench's dominant distribution and is natively MCQ. Pilot: distill on scienceqa_mcq (2500 gold MCQ) as primary, with qa_balanced_5k grounding replayed at frac 0.3 to test whether MMBench lifts off the 0.50 floor WHILE retaining POPE. Tests the system's own meta-lesson: match training data to the eval distribution.",
+  "spec": {
+    "lm": "Qwen/Qwen2.5-0.5B-Instruct",
+    "vision": "google/siglip-base-patch16-224",
+    "projector": {
+      "type": "mlp",
+      "depth": 2,
+      "hidden": 2048
+    },
+    "init": "scratch",
+    "align": {
+      "data": "coco_caption_5k",
+      "steps": 3000
+    },
+    "distill": {
+      "teacher": "Qwen2.5-VL-3B",
+      "data": "scienceqa_mcq",
+      "lora_r": 16,
+      "epochs": 2,
+      "rehearse_data": "qa_balanced_5k",
+      "rehearse_frac": 0.3
+    },
+    "eval": {
+      "benchmarks": [
+        "POPE",
+        "RealWorldQA",
+        "MMBench_DEV_EN"
+      ],
+      "n": 100
+    },
+    "target_device_id": "mac_mini_m4_16gb",
+    "notes": "P2-B1: Distribution fix for MMBench. Verified the student floors on MMBench because it "
+  },
+  "report": {
+    "experiment_id": "b2feb6b16d7ff20b3750c32050df30644249f2a9f9d3709ceefc317c435dd70d",
+    "status": "built",
+    "device_id": "mac_mini_m4_16gb",
+    "started_at": "2026-06-16T23:05:22.979736+00:00",
+    "completed_at": "2026-06-17T00:12:24.641835+00:00",
+    "align_final_loss": 1.7855298519134521,
+    "distill_final_loss": 0.31082749366760254,
+    "quality_scores": [
+      {
+        "benchmark": "POPE",
+        "metric": "Overall",
+        "value": 5.714285714285714,
+        "delta_vs_benchmark": -81.9857142857143
+      },
+      {
+        "benchmark": "RealWorldQA",
+        "metric": "Overall",
+        "value": 0.42,
+        "delta_vs_benchmark": 0.0
+      },
+      {
+        "benchmark": "MMBench_DEV_EN",
+        "metric": "Overall",
+        "value": 0.65,
+        "delta_vs_benchmark": -0.08999999999999997
+      }
+    ],
+    "note": "built; run runners/eval_student.py for same-path scores."
+  },
+  "recorded_at": "2026-06-17T00:13:40.491990+00:00"
+}
