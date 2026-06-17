@@ -106,7 +106,9 @@ Runs tee their output to `artifacts/logs/`, and the operator console auto-points
 
 ## Documentation
 
-- **New to model optimization?** Start with the **[visual primer](https://hanwook-cho.github.io/multi-agent-vlm-optimization-system/guide/)** — a companion study guide to the techniques this system applies (distillation, NAS, pruning, quantization, LoRA, weight sharing, early exit) with diagrams and references. ([source](docs/guide/index.html))
+- **New to model optimization?** Visual study guides (diagrams + references) on the techniques behind this system:
+  - **[Model Optimization primer](https://hanwook-cho.github.io/multi-agent-vlm-optimization-system/guide/)** — distillation, NAS, pruning, quantization, LoRA, weight sharing, early exit. ([source](docs/guide/index.html))
+  - **[KV Cache Optimization primer](https://hanwook-cho.github.io/multi-agent-vlm-optimization-system/guide-kv-cache/)** — MQA/GQA/MLA, KV quantization (KIVI, QJL, TurboQuant), token eviction, PagedAttention. ([source](docs/guide-kv-cache/index.html))
 - [`docs/VLM_Optimization_Goals.md`](docs/VLM_Optimization_Goals.md) — ultimate goal, success criteria, phase structure, conduct rules.
 - [`docs/VLM_Optimization_HLD.md`](docs/VLM_Optimization_HLD.md) — architecture (agents + services, Mode A / Mode B); §6 Figure 1 is the system diagram; §6.5 Amendment A is system-driven construction.
 - [`docs/VLM_Optimization_PriorArt.md`](docs/VLM_Optimization_PriorArt.md) — position relative to AutoML/NAS, LLM-driven AutoML, AI-Scientist, and production edge inference.

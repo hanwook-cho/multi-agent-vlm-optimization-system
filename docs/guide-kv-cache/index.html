@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KV Cache Optimization — A Study Guide</title>
+<style>
+  :root {
+    --blue:    #2E5496;
+    --navy:    #1F3864;
+    --purple:  #534AB7;
+    --teal:    #0F6E56;
+    --amber:   #BA7517;
+    --coral:   #A32D2D;
+    --green:   #1a6e2e;
+    --gray:    #555;
+    --bg:      #f9f9f9;
+    --white:   #ffffff;
+    --border:  #dde3ed;
+    --code-bg: #f3f4f8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 15px; color: #222; background: var(--bg); line-height: 1.7; }
+  .page { max-width: 900px; margin: 0 auto; padding: 40px 32px 80px; background: var(--white); }
+
+  .title-block { text-align: center; padding: 48px 0 32px; border-bottom: 4px solid var(--navy); margin-bottom: 40px; }
+  .title-block h1 { font-size: 2.6rem; color: var(--navy); margin-bottom: 8px; }
+  .title-block .subtitle { font-size: 1.2rem; color: var(--blue); margin-bottom: 10px; }
+  .title-block .topics { font-size: 0.9rem; color: #888; font-style: italic; }
+
+  .toc { background: #f0f4fa; border-left: 4px solid var(--blue); padding: 20px 28px; border-radius: 6px; margin-bottom: 48px; }
+  .toc h2 { color: var(--navy); font-size: 1rem; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 5px 0; }
+  .toc a { color: var(--blue); text-decoration: none; font-size: 0.95rem; }
+  .toc a:hover { text-decoration: underline; }
+
+  .part { margin-top: 60px; }
+  .part-header { background: var(--navy); color: white; padding: 16px 24px; border-radius: 8px 8px 0 0; }
+  .part-header .part-num { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+  .part-header h2 { font-size: 1.5rem; margin-top: 4px; }
+  .part-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; padding: 28px 28px 32px; }
+
+  h3 { font-size: 1.1rem; color: var(--blue); margin: 28px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+  h4 { font-size: 1rem; color: var(--gray); margin: 20px 0 6px; }
+  p  { margin: 10px 0; }
+  ul, ol { padding-left: 22px; margin: 10px 0; }
+  li { margin: 6px 0; }
+  strong { color: #111; }
+
+  .keybox { display: flex; margin: 14px 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; font-size: 0.9rem; }
+  .keybox .kb-label { background: #e8eef7; color: var(--blue); font-weight: bold; padding: 10px 14px; min-width: 160px; display: flex; align-items: center; }
+  .keybox .kb-value { padding: 10px 14px; }
+
+  .formula { background: #f3f4f8; border-left: 4px solid var(--purple); padding: 14px 18px; border-radius: 0 6px 6px 0; font-family: 'Courier New', monospace; font-size: 0.95rem; margin: 14px 0; color: #333; }
+
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.88rem; }
+  thead tr { background: var(--navy); color: white; }
+  thead th { padding: 10px 14px; text-align: left; }
+  tbody tr:nth-child(even) { background: #f0f4fa; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+
+  .diagram-wrap { margin: 28px 0; }
+  .diagram-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 8px; }
+  .diagram-wrap svg { width: 100%; height: auto; display: block; border: 1px solid var(--border); border-radius: 8px; background: white; padding: 12px; }
+
+  .th { font: bold 13px Arial; fill: #222; }
+  .ts { font: 11px Arial; fill: #555; }
+  .c-purple rect { fill: #EEEDFE; stroke: #534AB7; }
+  .c-blue   rect { fill: #E6F1FB; stroke: #185FA5; }
+  .c-teal   rect { fill: #D4F0EA; stroke: #0F6E56; }
+  .c-amber  rect { fill: #FEF3D8; stroke: #BA7517; }
+  .c-coral  rect { fill: #FDECEA; stroke: #A32D2D; }
+  .c-gray   rect { fill: #F3F3F0; stroke: #888; }
+
+  .footer { text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.85rem; color: #aaa; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="title-block">
+  <h1>KV Cache Optimization</h1>
+  <div class="subtitle">A Study Guide</div>
+  <div class="topics">Why the Cache Grows &nbsp;•&nbsp; MQA / GQA / MLA &nbsp;•&nbsp; Quantization (KIVI · KVQuant · QJL · TurboQuant) &nbsp;•&nbsp; Token Eviction &nbsp;•&nbsp; Cross-Layer Sharing &nbsp;•&nbsp; PagedAttention</div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#part1">Why the KV Cache Is the Bottleneck</a></li>
+    <li><a href="#part2">Fewer KV Heads — MQA, GQA, MLA</a></li>
+    <li><a href="#part3">Quantization — Fewer Bits per Entry</a></li>
+    <li><a href="#part4">Token Eviction &amp; Sparsity</a></li>
+    <li><a href="#part5">Cross-Layer Sharing</a></li>
+    <li><a href="#part6">Systems &amp; Memory Management</a></li>
+    <li><a href="#part7">Spotlight: TurboQuant</a></li>
+    <li><a href="#part8">Combining Methods</a></li>
+    <li><a href="#references">References</a></li>
+  </ol>
+</div>
+
+<!-- ───────────────────────────── PART 1 -->
+<div class="part" id="part1">
+  <div class="part-header"><div class="part-num">Part 1</div><h2>Why the KV Cache Is the Bottleneck</h2></div>
+  <div class="part-body">
+
+    <h3>What is the KV cache?</h3>
+    <p>A transformer generates text one token at a time. At each step, every layer's attention needs the <strong>keys (K)</strong> and <strong>values (V)</strong> of <em>all previous tokens</em>. Rather than recompute them every step, they are computed once and stored — the <strong>KV cache</strong>. This makes generation fast, but the cache must be held in memory for the entire sequence.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 1.1 — Prefill builds the cache; decode reuses and extends it</div>
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <text class="th" x="170" y="22" text-anchor="middle" fill="#888">Prefill (process the prompt once)</text>
+        <g class="c-blue"><rect x="40" y="38" width="260" height="44" rx="8" stroke-width="0.5"/><text class="ts" x="170" y="55" text-anchor="middle" dominant-baseline="central">Prompt: 4 tokens processed in parallel</text><text class="ts" x="170" y="71" text-anchor="middle" dominant-baseline="central">→ compute K,V for each, store in cache</text></g>
+        <rect x="40" y="92" width="60" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="70" y="105" text-anchor="middle" dominant-baseline="central">K,V t1</text>
+        <rect x="105" y="92" width="60" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="135" y="105" text-anchor="middle" dominant-baseline="central">K,V t2</text>
+        <rect x="170" y="92" width="60" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="200" y="105" text-anchor="middle" dominant-baseline="central">K,V t3</text>
+        <rect x="235" y="92" width="60" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="265" y="105" text-anchor="middle" dominant-baseline="central">K,V t4</text>
+        <line x1="320" y1="100" x2="360" y2="100" stroke="#444" stroke-width="1.5" marker-end="url(#a1)"/>
+        <text class="th" x="510" y="22" text-anchor="middle" fill="#888">Decode (one new token at a time)</text>
+        <g class="c-teal"><rect x="380" y="38" width="260" height="44" rx="8" stroke-width="0.5"/><text class="ts" x="510" y="55" text-anchor="middle" dominant-baseline="central">New token attends to ALL cached K,V</text><text class="ts" x="510" y="71" text-anchor="middle" dominant-baseline="central">then appends its own K,V to the cache</text></g>
+        <rect x="380" y="92" width="46" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="403" y="105" text-anchor="middle" dominant-baseline="central">t1</text>
+        <rect x="430" y="92" width="46" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="453" y="105" text-anchor="middle" dominant-baseline="central">t2</text>
+        <rect x="480" y="92" width="46" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="503" y="105" text-anchor="middle" dominant-baseline="central">t3</text>
+        <rect x="530" y="92" width="46" height="26" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.8"/><text class="ts" x="553" y="105" text-anchor="middle" dominant-baseline="central">t4</text>
+        <rect x="580" y="92" width="46" height="26" rx="4" fill="#D4F0EA" stroke="#0F6E56" stroke-width="1.2"/><text class="ts" x="603" y="105" text-anchor="middle" dominant-baseline="central">t5 ✚</text>
+        <rect x="40" y="146" width="600" height="44" rx="8" fill="#FDECEA" stroke="#A32D2D" stroke-width="0.5"/>
+        <text class="th" x="340" y="164" text-anchor="middle" dominant-baseline="central" fill="#A32D2D">The cache grows by one K,V entry per generated token — forever, until the sequence ends.</text>
+        <text class="ts" x="340" y="182" text-anchor="middle" dominant-baseline="central">Every decode step must read the entire cache from memory → bandwidth, not compute, is the limiter.</text>
+        <rect x="40" y="204" width="600" height="56" rx="8" fill="#f0f4fa" stroke="#dde" stroke-width="0.5"/>
+        <text class="ts" x="340" y="224" text-anchor="middle" dominant-baseline="central">Two costs: (1) MEMORY — the cache must fit in RAM/VRAM alongside the weights.</text>
+        <text class="ts" x="340" y="244" text-anchor="middle" dominant-baseline="central">(2) BANDWIDTH — it is re-read every single step; for long context this dominates latency.</text>
+      </svg>
+    </div>
+
+    <h3>The size formula</h3>
+    <div class="formula">KV bytes = 2 (K&amp;V) × layers × kv_heads × head_dim × seq_len × batch × bytes_per_value</div>
+    <p>The cache scales <strong>linearly with sequence length and batch size</strong>. A worked example for a 7B-class model (32 layers, 32 KV heads, head_dim 128, FP16):</p>
+    <div class="formula">2 × 32 × 32 × 128 × 4096 × 1 × 2 bytes ≈ 2.1 GB  (at 4k context, batch 1)</div>
+    <p>At 32k context that is ~17 GB — often <em>larger than the model weights themselves</em>. This is why every term in the formula is a lever, and the optimization families below each attack a different one.</p>
+
+    <table>
+      <thead><tr><th>Family</th><th>Term it shrinks</th><th>Lossy?</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Fewer KV heads</strong></td><td>kv_heads</td><td>Designed-in (trained)</td><td>MQA, GQA, MLA</td></tr>
+        <tr><td><strong>Quantization</strong></td><td>bytes_per_value</td><td>Mildly lossy</td><td>KIVI, KVQuant, QJL, TurboQuant</td></tr>
+        <tr><td><strong>Token eviction</strong></td><td>seq_len (kept)</td><td>Lossy</td><td>StreamingLLM, H2O, SnapKV</td></tr>
+        <tr><td><strong>Cross-layer sharing</strong></td><td>layers</td><td>Designed-in</td><td>CLA, YOCO</td></tr>
+        <tr><td><strong>Memory management</strong></td><td>waste / fragmentation</td><td>Lossless</td><td>PagedAttention, offloading</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- ───────────────────────────── PART 2 -->
+<div class="part" id="part2">
+  <div class="part-header"><div class="part-num">Part 2</div><h2>Fewer KV Heads — MQA, GQA, MLA</h2></div>
+  <div class="part-body">
+    <h3>The idea</h3>
+    <p>Standard multi-head attention (MHA) stores a separate K and V for every attention head. But many query heads can <strong>share</strong> the same keys and values with little quality loss. Sharing fewer K/V heads shrinks the cache directly — and because it is baked into the architecture, it is free at inference time.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 2.1 — MHA → GQA → MQA: how many query heads share each K/V</div>
+      <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+        <!-- MHA -->
+        <text class="th" x="113" y="22" text-anchor="middle">MHA</text><text class="ts" x="113" y="38" text-anchor="middle" fill="#888">1 K/V per query head</text>
+        <g><rect x="40" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="78" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="116" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="154" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/></g>
+        <text class="ts" x="113" y="86" text-anchor="middle" fill="#185FA5">4 query heads</text>
+        <g><rect x="40" y="100" width="28" height="22" rx="3" fill="#EEEDFE" stroke="#534AB7"/><rect x="78" y="100" width="28" height="22" rx="3" fill="#EEEDFE" stroke="#534AB7"/><rect x="116" y="100" width="28" height="22" rx="3" fill="#EEEDFE" stroke="#534AB7"/><rect x="154" y="100" width="28" height="22" rx="3" fill="#EEEDFE" stroke="#534AB7"/></g>
+        <text class="ts" x="113" y="136" text-anchor="middle" fill="#534AB7">4 K/V heads</text>
+        <text class="th" x="113" y="160" text-anchor="middle" fill="#A32D2D">cache ×4</text>
+        <!-- GQA -->
+        <text class="th" x="340" y="22" text-anchor="middle">GQA</text><text class="ts" x="340" y="38" text-anchor="middle" fill="#888">groups share K/V</text>
+        <g><rect x="267" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="305" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="343" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="381" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/></g>
+        <text class="ts" x="340" y="86" text-anchor="middle" fill="#185FA5">4 query heads</text>
+        <g><rect x="286" y="100" width="28" height="22" rx="3" fill="#EEEDFE" stroke="#534AB7"/><rect x="362" y="100" width="28" height="22" rx="3" fill="#EEEDFE" stroke="#534AB7"/></g>
+        <line x1="281" y1="72" x2="295" y2="100" stroke="#bbb"/><line x1="319" y1="72" x2="305" y2="100" stroke="#bbb"/><line x1="357" y1="72" x2="371" y2="100" stroke="#bbb"/><line x1="395" y1="72" x2="381" y2="100" stroke="#bbb"/>
+        <text class="ts" x="340" y="136" text-anchor="middle" fill="#534AB7">2 K/V heads</text>
+        <text class="th" x="340" y="160" text-anchor="middle" fill="#BA7517">cache ×2</text>
+        <!-- MQA -->
+        <text class="th" x="567" y="22" text-anchor="middle">MQA</text><text class="ts" x="567" y="38" text-anchor="middle" fill="#888">all share one K/V</text>
+        <g><rect x="494" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="532" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="570" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/><rect x="608" y="50" width="28" height="22" rx="3" fill="#E6F1FB" stroke="#185FA5"/></g>
+        <text class="ts" x="567" y="86" text-anchor="middle" fill="#185FA5">4 query heads</text>
+        <g><rect x="553" y="100" width="28" height="22" rx="3" fill="#EEEDFE" stroke="#534AB7"/></g>
+        <line x1="508" y1="72" x2="567" y2="100" stroke="#bbb"/><line x1="546" y1="72" x2="567" y2="100" stroke="#bbb"/><line x1="584" y1="72" x2="567" y2="100" stroke="#bbb"/><line x1="622" y1="72" x2="567" y2="100" stroke="#bbb"/>
+        <text class="ts" x="567" y="136" text-anchor="middle" fill="#534AB7">1 K/V head</text>
+        <text class="th" x="567" y="160" text-anchor="middle" fill="#0F6E56">cache ×1</text>
+        <rect x="40" y="186" width="600" height="44" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="th" x="340" y="204" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">GQA is the modern default — near-MHA quality at a fraction of the cache. Used in Llama-2/3, Mistral, Qwen.</text>
+        <text class="ts" x="340" y="222" text-anchor="middle" dominant-baseline="central">MQA is the most aggressive (one K/V), but can lose a little quality and stability.</text>
+        <rect x="40" y="244" width="600" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+        <text class="th" x="340" y="262" text-anchor="middle" dominant-baseline="central" fill="#534AB7">MLA (Multi-head Latent Attention, DeepSeek-V2/V3) goes further</text>
+        <text class="ts" x="340" y="280" text-anchor="middle" dominant-baseline="central">It compresses K/V into a small shared low-rank latent vector, cached instead of full K/V — a large reduction.</text>
+      </svg>
+    </div>
+
+    <table>
+      <thead><tr><th>Method</th><th>K/V heads</th><th>Cache vs MHA</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>MHA</strong></td><td>= query heads</td><td>1× (baseline)</td><td>Best quality, biggest cache</td></tr>
+        <tr><td><strong>GQA</strong></td><td>a few groups</td><td>~2–8× smaller</td><td>The standard trade-off</td></tr>
+        <tr><td><strong>MQA</strong></td><td>1</td><td>up to ~#heads smaller</td><td>Most aggressive; small quality risk</td></tr>
+        <tr><td><strong>MLA</strong></td><td>low-rank latent</td><td>large reduction</td><td>Cache a compressed latent, not raw K/V</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ───────────────────────────── PART 3 -->
+<div class="part" id="part3">
+  <div class="part-header"><div class="part-num">Part 3</div><h2>Quantization — Fewer Bits per Entry</h2></div>
+  <div class="part-body">
+    <h3>The idea</h3>
+    <p>Instead of storing each cached number in 16-bit float, store it in 8, 4, 3, or even 2 bits. This is the same principle as weight quantization, but applied to the <em>cache</em> — and it has a twist: <strong>keys and values behave differently</strong>, so the best methods treat them separately.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 3.1 — The key insight: per-channel for keys, per-token for values</div>
+      <svg viewBox="0 0 680 250" xmlns="http://www.w3.org/2000/svg">
+        <g class="c-purple"><rect x="40" y="30" width="280" height="180" rx="10" stroke-width="0.5"/></g>
+        <text class="th" x="180" y="52" text-anchor="middle" dominant-baseline="central" fill="#534AB7">KEYS — quantize per channel</text>
+        <text class="ts" x="180" y="72" text-anchor="middle" dominant-baseline="central">Some channels have large outliers</text>
+        <text class="ts" x="180" y="88" text-anchor="middle" dominant-baseline="central">→ scale each channel (column) on its own</text>
+        <line x1="70" y1="108" x2="70" y2="190" stroke="#534AB7" stroke-width="6" opacity="0.8"/>
+        <line x1="95" y1="108" x2="95" y2="190" stroke="#534AB7" stroke-width="6" opacity="0.4"/>
+        <line x1="120" y1="108" x2="120" y2="190" stroke="#534AB7" stroke-width="6" opacity="0.9"/>
+        <line x1="145" y1="108" x2="145" y2="190" stroke="#534AB7" stroke-width="6" opacity="0.5"/>
+        <text class="ts" x="230" y="150" text-anchor="middle" fill="#888">each column</text>
+        <text class="ts" x="230" y="166" text-anchor="middle" fill="#888">its own scale</text>
+        <g class="c-teal"><rect x="360" y="30" width="280" height="180" rx="10" stroke-width="0.5"/></g>
+        <text class="th" x="500" y="52" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">VALUES — quantize per token</text>
+        <text class="ts" x="500" y="72" text-anchor="middle" dominant-baseline="central">Values are smoother across channels</text>
+        <text class="ts" x="500" y="88" text-anchor="middle" dominant-baseline="central">→ scale each token (row) on its own</text>
+        <line x1="400" y1="120" x2="600" y2="120" stroke="#0F6E56" stroke-width="6" opacity="0.8"/>
+        <line x1="400" y1="145" x2="600" y2="145" stroke="#0F6E56" stroke-width="6" opacity="0.5"/>
+        <line x1="400" y1="170" x2="600" y2="170" stroke="#0F6E56" stroke-width="6" opacity="0.9"/>
+        <text class="ts" x="500" y="196" text-anchor="middle" fill="#888">each row its own scale</text>
+      </svg>
+    </div>
+
+    <p>This <strong>asymmetric</strong> treatment (the core of KIVI) lets keys go to 2 bits without the outlier channels wrecking accuracy. Other methods add tricks: quantizing keys <em>before</em> rotary position encoding (KVQuant), or using a random projection so no calibration data is needed (QJL).</p>
+
+    <table>
+      <thead><tr><th>Method</th><th>Bits</th><th>Key trick</th><th>Calibration?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>KIVI</strong></td><td>2-bit</td><td>Per-channel keys, per-token values (asymmetric)</td><td>Tuning-free</td></tr>
+        <tr><td><strong>KVQuant</strong></td><td>2–4 bit</td><td>Pre-RoPE + per-channel keys + non-uniform + outlier sparsity</td><td>Light calibration</td></tr>
+        <tr><td><strong>QJL</strong></td><td>~1–4 bit</td><td>Quantized Johnson–Lindenstrauss random projection on keys</td><td>None (data-free)</td></tr>
+        <tr><td><strong>TurboQuant</strong></td><td>~3-bit K / 2-bit V</td><td>Polar rotation + 1-bit residual correction (see Part 7)</td><td>None (random rotations)</td></tr>
+      </tbody>
+    </table>
+    <div class="keybox"><div class="kb-label">Why "asymmetric"?</div><div class="kb-value">Keys have a few extreme outlier <em>channels</em>; values are smoother. Quantizing each along its sensitive axis is the single biggest reason 2-bit KV works at all.</div></div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── PART 4 -->
+<div class="part" id="part4">
+  <div class="part-header"><div class="part-num">Part 4</div><h2>Token Eviction &amp; Sparsity</h2></div>
+  <div class="part-body">
+    <h3>The idea</h3>
+    <p>Not every past token matters for the next one. <strong>Eviction</strong> methods keep only the K/V of "important" tokens and drop the rest, so the cache stops growing without bound. The trick is deciding <em>which</em> tokens to keep.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 4.1 — What each eviction policy keeps (green) vs drops (gray)</div>
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- StreamingLLM -->
+        <text class="th" x="40" y="30" fill="#185FA5">StreamingLLM — attention sinks + recent window</text>
+        <g>
+          <rect x="40"  y="40" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="66" y="40" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/>
+          <rect x="100" y="40" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="126" y="40" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="152" y="40" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="178" y="40" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="204" y="40" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="230" y="40" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/>
+          <rect x="264" y="40" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="290" y="40" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="316" y="40" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/>
+        </g>
+        <text class="ts" x="52" y="78" fill="#0F6E56">first few</text><text class="ts" x="540" y="52" fill="#888">keep the first tokens ("sinks") + a sliding recent window; drop the middle.</text>
+        <text class="ts" x="290" y="78" fill="#0F6E56">recent</text>
+        <!-- H2O -->
+        <text class="th" x="40" y="118" fill="#BA7517">H2O — keep the "heavy hitters" (highest attention)</text>
+        <g>
+          <rect x="40"  y="128" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="66" y="128" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/>
+          <rect x="100" y="128" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="126" y="128" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="152" y="128" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="178" y="128" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="204" y="128" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="230" y="128" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/>
+          <rect x="264" y="128" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="290" y="128" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="316" y="128" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/>
+        </g>
+        <text class="ts" x="540" y="140" fill="#888">score tokens by accumulated attention; keep the top scorers wherever they are.</text>
+        <!-- SnapKV -->
+        <text class="th" x="40" y="186" fill="#534AB7">SnapKV — compress the prompt at prefill using attention patterns</text>
+        <g>
+          <rect x="40"  y="196" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="66" y="196" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/>
+          <rect x="100" y="196" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="126" y="196" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="152" y="196" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="178" y="196" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="204" y="196" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="230" y="196" width="24" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/>
+          <rect x="264" y="196" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="290" y="196" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/><rect x="316" y="196" width="24" height="22" rx="3" fill="#D4F0EA" stroke="#0F6E56"/>
+        </g>
+        <text class="ts" x="540" y="208" fill="#888">a recent "observation window" votes for which prompt tokens to keep — one-shot at prefill.</text>
+        <rect x="40" y="238" width="600" height="34" rx="8" fill="#FFF3CD" stroke="#BA7517" stroke-width="0.5"/>
+        <text class="ts" x="340" y="255" text-anchor="middle" dominant-baseline="central" fill="#856404">Trade-off: eviction is lossy — a dropped token is gone. Safe when attention is naturally sparse (most long-context tasks).</text>
+      </svg>
+    </div>
+
+    <table>
+      <thead><tr><th>Method</th><th>Policy</th><th>When it decides</th></tr></thead>
+      <tbody>
+        <tr><td><strong>StreamingLLM</strong></td><td>Keep first ("sink") tokens + recent window</td><td>Streaming, fixed rule</td></tr>
+        <tr><td><strong>H2O</strong></td><td>Keep high cumulative-attention "heavy hitters"</td><td>During decode</td></tr>
+        <tr><td><strong>SnapKV</strong></td><td>Cluster + select important prompt tokens</td><td>Once, at prefill</td></tr>
+        <tr><td><strong>PyramidKV</strong></td><td>Smaller budgets in deeper layers (info funnels)</td><td>Per-layer budget</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ───────────────────────────── PART 5 -->
+<div class="part" id="part5">
+  <div class="part-header"><div class="part-num">Part 5</div><h2>Cross-Layer Sharing</h2></div>
+  <div class="part-body">
+    <h3>The idea</h3>
+    <p>The size formula has a <em>layers</em> term. Adjacent layers often produce similar keys and values — so why store a separate cache for each? <strong>Cross-layer sharing</strong> caches K/V once and reuses it across several layers, cutting the cache by the sharing factor.</p>
+    <ul>
+      <li><strong>CLA (Cross-Layer Attention):</strong> groups of layers share one K/V cache. A 2× sharing factor roughly halves the cache with minimal quality change.</li>
+      <li><strong>YOCO (You Only Cache Once):</strong> a decoder-decoder design where the entire model caches K/V <em>one time</em> in a global module and every later layer reads it — a large reduction, especially for very long context.</li>
+    </ul>
+    <div class="keybox"><div class="kb-label">Relation to MLA</div><div class="kb-value">MLA shrinks the <em>per-layer</em> cache (low-rank latent); cross-layer sharing shrinks the <em>number of</em> caches. They are orthogonal and can stack.</div></div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── PART 6 -->
+<div class="part" id="part6">
+  <div class="part-header"><div class="part-num">Part 6</div><h2>Systems &amp; Memory Management</h2></div>
+  <div class="part-body">
+    <h3>The idea</h3>
+    <p>These methods don't make the cache smaller — they stop you from <strong>wasting</strong> the memory you have. Classic serving pre-allocates a big contiguous block per request for the maximum possible length; most of it sits empty. That waste limits how many requests fit on a GPU.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 6.1 — PagedAttention: KV cache in small pages, like OS virtual memory</div>
+      <svg viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg">
+        <text class="th" x="170" y="22" text-anchor="middle" fill="#888">Naïve: one big contiguous block per request</text>
+        <rect x="40" y="36" width="260" height="40" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.8"/>
+        <rect x="40" y="36" width="90" height="40" rx="6" fill="#185FA5" opacity="0.5"/>
+        <text class="ts" x="85" y="56" text-anchor="middle" dominant-baseline="central" fill="#fff">used</text>
+        <text class="ts" x="215" y="56" text-anchor="middle" dominant-baseline="central" fill="#888">reserved but empty (wasted)</text>
+        <text class="ts" x="170" y="92" text-anchor="middle" fill="#A32D2D">internal fragmentation → fewer requests fit</text>
+        <text class="th" x="510" y="22" text-anchor="middle" fill="#888">PagedAttention: many small pages, allocated on demand</text>
+        <g>
+          <rect x="372" y="36" width="40" height="22" rx="3" fill="#0F6E56" opacity="0.5"/><rect x="416" y="36" width="40" height="22" rx="3" fill="#0F6E56" opacity="0.5"/><rect x="460" y="36" width="40" height="22" rx="3" fill="#0F6E56" opacity="0.5"/>
+          <rect x="504" y="36" width="40" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="548" y="36" width="40" height="22" rx="3" fill="#0F6E56" opacity="0.5"/><rect x="592" y="36" width="40" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/>
+          <rect x="372" y="62" width="40" height="22" rx="3" fill="#0F6E56" opacity="0.5"/><rect x="416" y="62" width="40" height="22" rx="3" fill="#f1f1f1" stroke="#ccc"/><rect x="460" y="62" width="40" height="22" rx="3" fill="#0F6E56" opacity="0.5"/>
+        </g>
+        <text class="ts" x="510" y="100" text-anchor="middle" fill="#0F6E56">a page table maps logical positions → physical pages; near-zero waste</text>
+        <rect x="40" y="120" width="600" height="44" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="th" x="340" y="138" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Result (vLLM): much higher batch size / throughput — and pages can be SHARED across requests</text>
+        <text class="ts" x="340" y="156" text-anchor="middle" dominant-baseline="central">e.g. a shared system prompt is stored once and pointed to by many sequences (prefix sharing).</text>
+        <rect x="40" y="176" width="600" height="44" rx="8" fill="#f0f4fa" stroke="#dde" stroke-width="0.5"/>
+        <text class="th" x="340" y="194" text-anchor="middle" dominant-baseline="central">Offloading (FlexGen)</text>
+        <text class="ts" x="340" y="212" text-anchor="middle" dominant-baseline="central">When the cache still won't fit, move cold K/V to CPU RAM or disk and stream it back as needed.</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── PART 7 -->
+<div class="part" id="part7">
+  <div class="part-header" style="background: var(--teal);"><div class="part-num">Part 7 — Spotlight</div><h2>TurboQuant</h2></div>
+  <div class="part-body">
+    <p><strong>TurboQuant</strong> (Google Research, ICLR 2026) is a recent KV-cache <em>quantization</em> method that pushes to ~3-bit keys / 2-bit values — about <strong>6× compression</strong> — with near-zero accuracy loss and, notably, <strong>no calibration</strong>. It is a strong example of the quantization family from Part 3.</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 7.1 — TurboQuant pipeline: rotate, quantize, correct</div>
+      <svg viewBox="0 0 680 210" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="t1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <g class="c-gray"><rect x="30" y="60" width="110" height="64" rx="8" stroke-width="0.5"/><text class="th" x="85" y="84" text-anchor="middle" dominant-baseline="central">K / V vector</text><text class="ts" x="85" y="104" text-anchor="middle" dominant-baseline="central">FP16</text></g>
+        <line x1="140" y1="92" x2="158" y2="92" stroke="#444" stroke-width="1.5" marker-end="url(#t1)"/>
+        <g class="c-purple"><rect x="160" y="60" width="130" height="64" rx="8" stroke-width="0.5"/><text class="th" x="225" y="80" text-anchor="middle" dominant-baseline="central" fill="#534AB7">① Polar rotation</text><text class="ts" x="225" y="100" text-anchor="middle" dominant-baseline="central">random rotation →</text><text class="ts" x="225" y="114" text-anchor="middle" dominant-baseline="central">evens out the values</text></g>
+        <line x1="290" y1="92" x2="308" y2="92" stroke="#444" stroke-width="1.5" marker-end="url(#t1)"/>
+        <g class="c-amber"><rect x="310" y="60" width="130" height="64" rx="8" stroke-width="0.5"/><text class="th" x="375" y="80" text-anchor="middle" dominant-baseline="central" fill="#BA7517">② Quantize</text><text class="ts" x="375" y="100" text-anchor="middle" dominant-baseline="central">to ~3-bit (keys)</text><text class="ts" x="375" y="114" text-anchor="middle" dominant-baseline="central">/ 2-bit (values)</text></g>
+        <line x1="440" y1="92" x2="458" y2="92" stroke="#444" stroke-width="1.5" marker-end="url(#t1)"/>
+        <g class="c-teal"><rect x="460" y="60" width="190" height="64" rx="8" stroke-width="0.5"/><text class="th" x="555" y="80" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">③ 1-bit residual fix</text><text class="ts" x="555" y="100" text-anchor="middle" dominant-baseline="central">a tiny QJL correction term</text><text class="ts" x="555" y="114" text-anchor="middle" dominant-baseline="central">recovers the rounding error</text></g>
+        <rect x="30" y="146" width="620" height="50" rx="8" fill="#D4F0EA" stroke="#0F6E56" stroke-width="0.5"/>
+        <text class="th" x="340" y="164" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Random (not learned) rotations → calibration-free, drop-in on any model, at any time.</text>
+        <text class="ts" x="340" y="184" text-anchor="middle" dominant-baseline="central">~6× memory reduction · up to ~8× faster attention on H100 · within ~2.7× of the theoretical (Shannon) optimum.</text>
+      </svg>
+    </div>
+
+    <h3>Why it stands out</h3>
+    <ul>
+      <li><strong>Calibration-free.</strong> Because the rotations are random rather than fitted to data, there is no calibration pass — you can apply it to any model immediately. (QJL shares this property; many older methods need calibration data.)</li>
+      <li><strong>Provably near-optimal.</strong> The paper derives a Shannon lower bound on the best possible distortion for <em>any</em> quantizer at a given bit budget, and shows TurboQuant sits within a small constant factor (~2.7×) of it — so there is limited headroom left for a better method at the same bits.</li>
+      <li><strong>Practical.</strong> It ships with GPU (Triton) kernels and a vLLM integration path, so the compression turns into real speedups, not just smaller memory.</li>
+    </ul>
+    <div class="keybox"><div class="kb-label">Where it fits</div><div class="kb-value">TurboQuant is one method in the <em>quantization</em> family (Part 3) — it does not replace GQA, eviction, or PagedAttention. In practice you would stack it on top of them.</div></div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── PART 8 -->
+<div class="part" id="part8">
+  <div class="part-header"><div class="part-num">Part 8 — Capstone</div><h2>Combining Methods</h2></div>
+  <div class="part-body">
+    <h3>They stack — each attacks a different term</h3>
+    <p>Just like general model compression, KV-cache methods are orthogonal and multiply when combined. A long-context serving stack typically layers all four families:</p>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Figure 8.1 — A production long-context stack</div>
+      <svg viewBox="0 0 680 150" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="c1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+        <g class="c-purple"><rect x="20" y="40" width="140" height="60" rx="8" stroke-width="0.5"/><text class="th" x="90" y="62" text-anchor="middle" dominant-baseline="central" fill="#534AB7">Architecture</text><text class="ts" x="90" y="82" text-anchor="middle" dominant-baseline="central">GQA / MLA</text></g>
+        <line x1="160" y1="70" x2="178" y2="70" stroke="#444" stroke-width="1.5" marker-end="url(#c1)"/>
+        <g class="c-amber"><rect x="180" y="40" width="140" height="60" rx="8" stroke-width="0.5"/><text class="th" x="250" y="62" text-anchor="middle" dominant-baseline="central" fill="#BA7517">Quantize</text><text class="ts" x="250" y="82" text-anchor="middle" dominant-baseline="central">TurboQuant / KIVI</text></g>
+        <line x1="320" y1="70" x2="338" y2="70" stroke="#444" stroke-width="1.5" marker-end="url(#c1)"/>
+        <g class="c-blue"><rect x="340" y="40" width="140" height="60" rx="8" stroke-width="0.5"/><text class="th" x="410" y="62" text-anchor="middle" dominant-baseline="central" fill="#185FA5">Evict</text><text class="ts" x="410" y="82" text-anchor="middle" dominant-baseline="central">SnapKV / H2O</text></g>
+        <line x1="480" y1="70" x2="498" y2="70" stroke="#444" stroke-width="1.5" marker-end="url(#c1)"/>
+        <g class="c-teal"><rect x="500" y="40" width="160" height="60" rx="8" stroke-width="0.5"/><text class="th" x="580" y="62" text-anchor="middle" dominant-baseline="central" fill="#0F6E56">Serve</text><text class="ts" x="580" y="82" text-anchor="middle" dominant-baseline="central">PagedAttention (vLLM)</text></g>
+        <text class="ts" x="340" y="128" text-anchor="middle" fill="#888">Fewer heads × fewer bits × fewer tokens × zero waste = order-of-magnitude smaller cache, longer context, higher batch.</text>
+      </svg>
+    </div>
+
+    <table>
+      <thead><tr><th>Your situation</th><th>Reach for</th></tr></thead>
+      <tbody>
+        <tr><td>Designing/choosing a model</td><td><strong>GQA</strong> (or MLA) — biggest win, free at inference</td></tr>
+        <tr><td>Memory-bound, can't retrain</td><td><strong>KV quantization</strong> — KIVI / QJL / TurboQuant (drop-in)</td></tr>
+        <tr><td>Very long prompts, sparse attention</td><td><strong>Eviction</strong> — SnapKV / H2O / StreamingLLM</td></tr>
+        <tr><td>Serving many concurrent requests</td><td><strong>PagedAttention</strong> (vLLM) + prefix sharing</td></tr>
+        <tr><td>Cache still won't fit</td><td><strong>Offloading</strong> (FlexGen) — to CPU/disk</td></tr>
+      </tbody>
+    </table>
+
+    <div class="keybox"><div class="kb-label">On-device / edge note</div><div class="kb-value">For edge inference (and vision-language models, whose image tokens make sequences long before any text), the cache often rivals the weights. Calibration-free quantization (TurboQuant/QJL) plus GQA is the highest-leverage, lowest-friction combination.</div></div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── REFERENCES -->
+<div class="part" id="references">
+  <div class="part-header" style="background: #2c2c2c;"><div class="part-num">References</div><h2>Foundational Papers &amp; Further Reading</h2></div>
+  <div class="part-body">
+
+    <h3>Fewer KV Heads</h3>
+    <ol>
+      <li>Shazeer, N. (2019). <strong>Fast Transformer Decoding: One Write-Head is All You Need (MQA).</strong> <a href="https://arxiv.org/abs/1911.02150" target="_blank">arxiv.org/abs/1911.02150</a></li>
+      <li>Ainslie, J. et al. (2023). <strong>GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints.</strong> <em>EMNLP 2023.</em> <a href="https://arxiv.org/abs/2305.13245" target="_blank">arxiv.org/abs/2305.13245</a></li>
+      <li>DeepSeek-AI (2024). <strong>DeepSeek-V2 (introduces Multi-head Latent Attention, MLA).</strong> <a href="https://arxiv.org/abs/2405.04434" target="_blank">arxiv.org/abs/2405.04434</a></li>
+    </ol>
+
+    <h3>Quantization</h3>
+    <ol>
+      <li>Liu, Z. et al. (2024). <strong>KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache.</strong> <em>ICML 2024.</em> <a href="https://arxiv.org/abs/2402.02750" target="_blank">arxiv.org/abs/2402.02750</a></li>
+      <li>Hooper, C. et al. (2024). <strong>KVQuant: Towards 10 Million Context Length LLM Inference with KV Cache Quantization.</strong> <em>NeurIPS 2024.</em> <a href="https://arxiv.org/abs/2401.18079" target="_blank">arxiv.org/abs/2401.18079</a></li>
+      <li>Zandieh, A. et al. (2024). <strong>QJL: 1-Bit Quantized JL Transform for KV Cache Quantization with Zero Overhead.</strong> <a href="https://arxiv.org/abs/2406.03482" target="_blank">arxiv.org/abs/2406.03482</a></li>
+      <li>Google Research (2026). <strong>TurboQuant: Near-Optimal Vector Quantization for KV Cache Compression.</strong> <em>ICLR 2026.</em> <a href="https://arxiv.org/abs/2504.19874" target="_blank">arxiv.org/abs/2504.19874</a></li>
+    </ol>
+
+    <h3>Token Eviction &amp; Sparsity</h3>
+    <ol>
+      <li>Xiao, G. et al. (2023). <strong>Efficient Streaming Language Models with Attention Sinks (StreamingLLM).</strong> <em>ICLR 2024.</em> <a href="https://arxiv.org/abs/2309.17453" target="_blank">arxiv.org/abs/2309.17453</a></li>
+      <li>Zhang, Z. et al. (2023). <strong>H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models.</strong> <em>NeurIPS 2023.</em> <a href="https://arxiv.org/abs/2306.14048" target="_blank">arxiv.org/abs/2306.14048</a></li>
+      <li>Li, Y. et al. (2024). <strong>SnapKV: LLM Knows What You are Looking for Before Generation.</strong> <em>NeurIPS 2024.</em> <a href="https://arxiv.org/abs/2404.14469" target="_blank">arxiv.org/abs/2404.14469</a></li>
+      <li>Cai, Z. et al. (2024). <strong>PyramidKV: Dynamic KV Cache Compression based on Pyramidal Information Funneling.</strong> <a href="https://arxiv.org/abs/2406.02069" target="_blank">arxiv.org/abs/2406.02069</a></li>
+    </ol>
+
+    <h3>Cross-Layer Sharing</h3>
+    <ol>
+      <li>Brandon, W. et al. (2024). <strong>Reducing Transformer Key-Value Cache Size with Cross-Layer Attention (CLA).</strong> <a href="https://arxiv.org/abs/2405.12981" target="_blank">arxiv.org/abs/2405.12981</a></li>
+      <li>Sun, Y. et al. (2024). <strong>You Only Cache Once: Decoder-Decoder Architectures for Language Models (YOCO).</strong> <em>NeurIPS 2024.</em> <a href="https://arxiv.org/abs/2405.05254" target="_blank">arxiv.org/abs/2405.05254</a></li>
+    </ol>
+
+    <h3>Systems &amp; Memory Management</h3>
+    <ol>
+      <li>Kwon, W. et al. (2023). <strong>Efficient Memory Management for Large Language Model Serving with PagedAttention (vLLM).</strong> <em>SOSP 2023.</em> <a href="https://arxiv.org/abs/2309.06180" target="_blank">arxiv.org/abs/2309.06180</a></li>
+      <li>Sheng, Y. et al. (2023). <strong>FlexGen: High-Throughput Generative Inference of Large Language Models with a Single GPU.</strong> <em>ICML 2023.</em> <a href="https://arxiv.org/abs/2303.06865" target="_blank">arxiv.org/abs/2303.06865</a></li>
+    </ol>
+
+  </div>
+</div>
+
+<div class="footer">
+  <div style="margin-bottom: 6px;">Compiled by Han Wook Cho &nbsp;·&nbsp; June 2026</div>
+  <div style="margin-bottom: 6px;">Companion primer to <a href="https://github.com/hanwook-cho/multi-agent-vlm-optimization-system" style="color:#2E5496;">Multi-Agent System for VLM Optimization</a> — an autonomous system that optimizes vision-language models for edge devices.</div>
+  <div style="margin-bottom: 6px;">Part of a series with the <a href="../guide/" style="color:#2E5496;">AI Model Optimization</a> study guide.</div>
+  <div style="font-size:0.8rem; color:#bbb;">Drafted with AI assistance (Claude); references web-verified and reviewed by the author.</div>
+</div>
+
+</div><!-- .page -->
+</body>
+</html>
