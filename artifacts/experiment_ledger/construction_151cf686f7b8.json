@@ -1,0 +1,69 @@
+{
+  "experiment_id": "151cf686f7b83b167dc110248ffff4d4faa78db564356250da847ba7646a33e0",
+  "kind": "student_construction",
+  "hypothesis_id": "P2-B1",
+  "rationale": "Multi-distribution mixture \u2014 the direct path to the Goals bar (competitive on \u22652 of POPE/MMBench/RealWorldQA with ONE student). Proven bidirectionally that the student clears exactly the benchmark matching its training distribution (COCO\u2192POPE 68.3, ScienceQA\u2192MMBench 0.65). The ScienceQA pilot collapsed POPE because ScienceQA dominated (77%) with weak 0.3 rehearsal. Fix: BALANCED 50/50 mix \u2014 grounding primary (qa_balanced_5k, 1386) + scienceqa_mcq replayed at frac 1.0 (adds 1386) = 2772 rows, 50/50, 3 epochs so each skill gets ~3 passes. LoRA rank held at 16 to isolate the mixture variable vs the single-skill bests. Hypothesis: one student clears BOTH POPE and MMBench floors. If it trades skills, the next lever is capacity (rank/model size), not data.",
+  "spec": {
+    "lm": "Qwen/Qwen2.5-0.5B-Instruct",
+    "vision": "google/siglip-base-patch16-224",
+    "projector": {
+      "type": "mlp",
+      "depth": 2,
+      "hidden": 2048
+    },
+    "init": "scratch",
+    "align": {
+      "data": "coco_caption_5k",
+      "steps": 3000
+    },
+    "distill": {
+      "teacher": "Qwen2.5-VL-3B",
+      "data": "qa_balanced_5k",
+      "lora_r": 16,
+      "epochs": 3,
+      "rehearse_data": "scienceqa_mcq",
+      "rehearse_frac": 1.0
+    },
+    "eval": {
+      "benchmarks": [
+        "POPE",
+        "RealWorldQA",
+        "MMBench_DEV_EN"
+      ],
+      "n": 100
+    },
+    "target_device_id": "mac_mini_m4_16gb",
+    "notes": "P2-B1: Multi-distribution mixture \u2014 the direct path to the Goals bar (competitive on \u22652"
+  },
+  "report": {
+    "experiment_id": "151cf686f7b83b167dc110248ffff4d4faa78db564356250da847ba7646a33e0",
+    "status": "built",
+    "device_id": "mac_mini_m4_16gb",
+    "started_at": "2026-06-17T00:21:11.720184+00:00",
+    "completed_at": "2026-06-17T01:35:11.429214+00:00",
+    "align_final_loss": 1.9583375453948975,
+    "distill_final_loss": 0.876337468624115,
+    "quality_scores": [
+      {
+        "benchmark": "POPE",
+        "metric": "Overall",
+        "value": 66.66666666666667,
+        "delta_vs_benchmark": -21.03333333333333
+      },
+      {
+        "benchmark": "RealWorldQA",
+        "metric": "Overall",
+        "value": 0.5,
+        "delta_vs_benchmark": 0.08000000000000002
+      },
+      {
+        "benchmark": "MMBench_DEV_EN",
+        "metric": "Overall",
+        "value": 0.62,
+        "delta_vs_benchmark": -0.12
+      }
+    ],
+    "note": "built; run runners/eval_student.py for same-path scores."
+  },
+  "recorded_at": "2026-06-17T01:36:25.218291+00:00"
+}

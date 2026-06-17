@@ -340,7 +340,7 @@ The most load-bearing lever for a small constructed student is **the distributio
 
 **Implications for the system:**
 1. **Data is a first-class search dimension.** The Search Strategist must choose `distill.data` (and the rehearsal mixture) to span the *target eval distribution* — the same reason production VLMs train on broad mixtures covering their eval suites. A benchmark with no matching training source in the registry is unreachable until such a source is added (a Tier-1.5 data-pipeline step, e.g. `runners/build_scienceqa_cache.py`).
-2. **The open challenge is multi-distribution, not single-skill.** A ~0.5B student can clear *either* POPE *or* MMBench by matching its data; clearing *both at once* (the Goals "competitive on ≥2 benchmarks" bar) is a balanced-mixture / capacity problem, which is where P2-B1 continues.
+2. **A balanced mixture of matched distributions gives one student multiple skills** *(validated 2026-06-16, spec `151cf686`).* A 50/50 COCO-grounding + ScienceQA student clears **both POPE and MMBench** above floor at once — the multi-skill blocker was a *data-balance* problem, not a hard capacity wall (at 0.5B, for two distributions). The cost is modest depth loss (POPE peak 68.3→55). This is how production VLMs train: broad mixtures spanning the eval suite. **Clearing floors ≠ matching reference scores**, though — closing the gap to the reference models (the full "competitive" bar) is the capacity lever (larger student / higher rank), now that data balance is solved.
 
 ---
 

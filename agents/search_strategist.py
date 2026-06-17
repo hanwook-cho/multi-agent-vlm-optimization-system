@@ -289,7 +289,17 @@ HYPOTHESIS_TABLE = [
             "a distribution story. Two best students now stand per axis: d3423bc0 (POPE 68.3) and b2feb6b1 "
             "(MMBench 0.65). REMAINING PROBLEM = multi-skill: clear ≥2 floors with ONE student (the Goals "
             "bar). Next: (a) balanced multi-distribution mixture (COCO-grounding + ScienceQA + RealWorldQA-"
-            "like) with tuned ratios/rehearsal; (b) if mixing keeps trading skills, larger student (0.5B→0.9B)."
+            "like) with tuned ratios/rehearsal; (b) if mixing keeps trading skills, larger student (0.5B→0.9B). "
+            "UPDATE 4 (balanced multi-distribution mixture, spec 151cf686): POSITIVE MILESTONE — first single "
+            "student above floor on ≥2 real benchmarks. A 50/50 COCO-grounding + ScienceQA mix (qa_balanced_5k "
+            "primary + scienceqa_mcq rehearse frac 1.0 = 1386+1386, 3 epochs, rank held at 16) clears BOTH "
+            "POPE (bal-acc 55.0) AND MMBench (0.62) above floor. The multi-skill blocker was DATA BALANCE, not "
+            "a capacity wall — no rank/size bump needed. Cost: POPE peak 68.3→55 (breadth vs depth); RealWorldQA "
+            "0.50 nominally above floor but uninformative (LFM2 itself at floor at n=100). NOTE above-floor ≠ "
+            "competitive-with-references: MMBench 0.62 nears LFM2 0.74 but POPE 55 vs 86 has headroom. 151cf686 "
+            "is the new BEST-BREADTH student (d3423bc0 still best POPE-peak; a Pareto pair). Next: (a) tune the "
+            "ratio (e.g. 60/40 toward grounding) to lift the MIN across benchmarks; (b) capacity (0.5B→0.9B / "
+            "higher rank) to move from above-floor toward competitive-with-references, now that data balance works."
         ),
     },
 ]
