@@ -97,3 +97,22 @@ def test_extract_stamps_citation_from_paper_and_strips_extras():
 
 def test_extract_returns_none_on_unparseable():
     assert ra.extract_record({"id": "x", "abstract": ""}, "p", lambda s, u: "no json here") is None
+
+
+def test_clean_arxiv_id_strips_version():
+    assert ra.clean_arxiv_id("2504.01690v2") == "2504.01690"
+    assert ra.clean_arxiv_id("arXiv:2504.01690") == "2504.01690"
+    assert ra.clean_arxiv_id("2504.01690") == "2504.01690"
+    assert ra.clean_arxiv_id(None) is None
+    assert ra.clean_arxiv_id("not-an-id") is None
+
+
+def test_extract_cleans_versioned_id_for_schema():
+    # a versioned arXiv id would fail the schema's arxiv_id pattern if not cleaned
+    paper = {"id": "2501.01234v3", "title": "T", "authors": ["A"], "year": 2025,
+             "abstract": ABSTRACT, "url": "https://arxiv.org/abs/2501.01234"}
+    rec = _valid_record()
+    del rec["source_citation"]
+    rec = ra._stamp_citation(rec, paper)
+    assert rec["source_citation"]["arxiv_id"] == "2501.01234"     # version stripped
+    assert not ra.schema_errors(rec)                              # validates

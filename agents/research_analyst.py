@@ -46,6 +46,18 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s or "").strip().lower()
 
 
+_ARXIV_RE = re.compile(r"(\d{4}\.\d{4,7})")
+
+
+def clean_arxiv_id(s: str | None) -> str | None:
+    """Strip the version suffix (e.g. '2504.01690v2' → '2504.01690') so the id matches
+    the schema's arxiv_id pattern and the registry consistently."""
+    if not s:
+        return None
+    m = _ARXIV_RE.search(s)
+    return m.group(1) if m else None
+
+
 def excerpt_in_abstract(excerpt_text: str, abstract: str) -> bool:
     """An excerpt is real iff it appears verbatim (whitespace/case-normalized) in the abstract."""
     return bool(excerpt_text.strip()) and _norm(excerpt_text) in _norm(abstract)
@@ -122,8 +134,8 @@ def _stamp_citation(record: dict, paper: dict) -> dict:
         "title": paper.get("title", "untitled"),
         "authors": authors if authors else ["unknown"],
         "year": int(paper.get("year") or datetime.now().year),
-        "arxiv_id": paper.get("id"),
-        "url": paper.get("url") or (f"https://arxiv.org/abs/{paper.get('id')}" if paper.get("id") else None),
+        "arxiv_id": clean_arxiv_id(paper.get("id")),
+        "url": paper.get("url") or (f"https://arxiv.org/abs/{clean_arxiv_id(paper.get('id'))}" if paper.get("id") else None),
         "venue": None, "github_url": None,
     }
     return {k: v for k, v in record.items() if k in _ALLOWED_KEYS}
@@ -176,9 +188,10 @@ def analyze(problem: str, query: str, max_papers: int = 5,
     from tools.fetch_papers import arxiv_search, load_registry, save_registry, existing_ids
 
     reg = load_registry()
-    have = existing_ids(reg)
+    have = {clean_arxiv_id(i) for i in existing_ids(reg)} - {None}
     papers = arxiv_search(query, max_results=max_papers)
     for p in papers:                       # add retrieved papers to the registry (ADR-0009)
+        p["id"] = clean_arxiv_id(p.get("id"))   # normalize version suffix
         if p.get("id") and p["id"] not in have:
             reg.setdefault("papers", []).append(p)
             have.add(p["id"])
