@@ -12,8 +12,9 @@
 |---|---|
 | **1. LM half** (merge LoRA → Qwen2.5-0.5B → MLX) | ✅ converts + generates coherent text |
 | **2. Vision + projector** (faithful MLX SigLIP + `projector.pt`) | ✅ `last_hidden_state` vs transformers **max\|Δ\| = 2.0e-04** |
-| **3. Parity gate** (assembled MLX vs PyTorch `StudentVLM`, same image+prompt) | ✅ **identical greedy output** (`'No'`) — gate PASS |
-| **3.5. Mac (Apple-Silicon) perf** | **TTFT 118 ms** (incl. vision), **80.9 tok/s** decode, **peak ≈1.6 GB** |
+| **3. Parity gate** (assembled MLX vs PyTorch `StudentVLM`) | ✅ **5/5 images: identical multi-token captions** — gate PASS (strengthened from an initial single yes/no; a coincidental multi-image match is effectively impossible) |
+| **3.5. Mac (Apple-Silicon) perf** | **TTFT ~115–118 ms** (incl. vision), **~80 tok/s** decode, **peak ≈1.6 GB** (representative; small run-to-run jitter) |
+| **4. On-device bundle / iPhone Swift** | bundle ✅ (~1.14 GB self-contained MLX); iPhone Swift port ⏸️ **deferred** — `mlx-swift` `Qwen2Model` has no public `inputsEmbeds` path, so it needs a vendored custom decoder; the verified Mac-MLX number makes it non-load-bearing (ADR-0014) |
 
 ## Reading
 

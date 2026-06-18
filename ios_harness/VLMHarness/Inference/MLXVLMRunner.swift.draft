@@ -1,0 +1,200 @@
+//
+//  MLXVLMRunner.swift
+//  VLMHarness
+//
+//  ADR-0014 — on-device runner for the *constructed* student (SigLIP + fresh MLP
+//  projector + Qwen2.5-0.5B + LoRA), which llama.cpp/GGUF can't run cleanly.
+//
+//  This is a faithful Swift/MLX port of the parity-verified Python forward in
+//  runners/export_student_mlx.py (SigLIP encode → projector → prepend image embeds
+//  → Qwen greedy decode). It loads the bundle produced by
+//      python runners/export_student_mlx.py --student <build_dir> --step bundle
+//  i.e. a folder containing:  lm_mlx/  vision.safetensors  projector.safetensors
+//                             student_config.json
+//
+//  It produces the SAME `VLMInferenceResult` as LlamaVLMRunner, so the measurement
+//  layer (MeasurementSession/ReportExporter) is reused unchanged — MeasurementSession
+//  just picks this runner for the constructed student.
+//
+//  ⚠️ FIRST DRAFT — needs Xcode compile-iteration against the pinned mlx-swift /
+//  mlx-swift-examples versions. Spots most likely to need adjustment are marked
+//  `// VERIFY:` (chiefly the MLXLLM internals for embed injection + the safetensors
+//  load API). The SigLIP/projector/image math mirrors the verified Python exactly.
+//
+//  Add via SPM: mlx-swift (MLX, MLXNN) and mlx-swift-examples (MLXLLM, MLXLMCommon).
+//
+
+import Foundation
+import MLX
+import MLXNN
+import MLXLLM
+import MLXLMCommon
+import UIKit
+
+// MARK: - Bundle config (student_config.json)
+
+private struct StudentConfig: Codable {
+    let lm_dir: String
+    let vision_dim: Int       // 768
+    let n_layers: Int         // 12
+    let n_heads: Int          // 12
+    let patch: Int            // 16
+    let image_size: Int       // 224
+    let eps: Float            // 1e-6
+    let hidden: Int           // 896 (LM hidden = projector out)
+    let mcq_suffix: String
+    let pope_suffix: String
+}
+
+// MARK: - Runner
+
+@objc final class MLXVLMRunner: NSObject {
+
+    private let cfg: StudentConfig
+    private let vw: [String: MLXArray]      // SigLIP weights (flat keys, see Python)
+    private let pw: [String: MLXArray]      // projector weights ('0.weight' etc.)
+    private let lm: LanguageModel           // VERIFY: concrete MLXLLM model type
+    private let tokenizer: any Tokenizer    // from MLXLMCommon load
+
+    /// bundleDir = the folder with lm_mlx/, vision.safetensors, projector.safetensors, config.
+    @objc init(bundleDir: String) throws {
+        let dir = URL(fileURLWithPath: bundleDir)
+        cfg = try JSONDecoder().decode(StudentConfig.self,
+                  from: Data(contentsOf: dir.appendingPathComponent("student_config.json")))
+        // VERIFY: MLX.loadArrays(url:) -> [String: MLXArray] for a .safetensors file.
+        vw = try MLX.loadArrays(url: dir.appendingPathComponent("vision.safetensors"))
+        pw = try MLX.loadArrays(url: dir.appendingPathComponent("projector.safetensors"))
+        // VERIFY: load the MLX LM (mlx-lm format) + tokenizer from lm_mlx/.
+        let loaded = try MLXVLMRunner.loadLM(dir.appendingPathComponent(cfg.lm_dir))
+        lm = loaded.model
+        tokenizer = loaded.tokenizer
+        super.init()
+    }
+
+    // MARK: SigLIP (mirrors siglip_mlx_forward in Python)
+
+    private func ln(_ x: MLXArray, _ w: MLXArray, _ b: MLXArray) -> MLXArray {
+        let mu = x.mean(axis: -1, keepDims: true)
+        let v = ((x - mu) * (x - mu)).mean(axis: -1, keepDims: true)
+        return (x - mu) / sqrt(v + cfg.eps) * w + b
+    }
+
+    /// pixels: [1, H, W, 3] (MLX layout). Returns last_hidden_state [1, P, 768].
+    private func siglipForward(_ pixels: MLXArray) -> MLXArray {
+        let dim = cfg.vision_dim, heads = cfg.n_heads, hd = dim / heads
+        // patch embed (conv) + bias
+        var x = conv2d(pixels, vw["patch_w"]!, stride: IntOrPair(cfg.patch)) + vw["patch_b"]!
+        let B = x.dim(0)
+        x = x.reshaped([B, -1, dim]) + vw["pos"]!            // [B, 196, 768]
+        let P = x.dim(1)
+        for i in 0..<cfg.n_layers {
+            var h = ln(x, vw["layer_norm1_w_\(i)"]!, vw["layer_norm1_b_\(i)"]!)
+            let q = matmul(h, vw["q_proj_w_\(i)"]!.T) + vw["q_proj_b_\(i)"]!
+            let k = matmul(h, vw["k_proj_w_\(i)"]!.T) + vw["k_proj_b_\(i)"]!
+            let v = matmul(h, vw["v_proj_w_\(i)"]!.T) + vw["v_proj_b_\(i)"]!
+            func split(_ t: MLXArray) -> MLXArray { t.reshaped([B, P, heads, hd]).transposed(0, 2, 1, 3) }
+            let qh = split(q), kh = split(k), vh = split(v)
+            let scores = matmul(qh, kh.transposed(0, 1, 3, 2)) * (1.0 / Float(hd).squareRoot())
+            var attn = matmul(softmax(scores, axis: -1), vh)        // [B, heads, P, hd]
+            attn = attn.transposed(0, 2, 1, 3).reshaped([B, P, dim])
+            x = x + (matmul(attn, vw["out_proj_w_\(i)"]!.T) + vw["out_proj_b_\(i)"]!)
+            h = ln(x, vw["layer_norm2_w_\(i)"]!, vw["layer_norm2_b_\(i)"]!)
+            h = geluApproximate(matmul(h, vw["fc1_w_\(i)"]!.T) + vw["fc1_b_\(i)"]!)  // gelu_pytorch_tanh
+            x = x + (matmul(h, vw["fc2_w_\(i)"]!.T) + vw["fc2_b_\(i)"]!)
+        }
+        return ln(x, vw["post_w"]!, vw["post_b"]!)
+    }
+
+    /// projector: Linear → gelu(exact) → Linear  →  [1, P, hidden]
+    private func project(_ feats: MLXArray) -> MLXArray {
+        let h = gelu(matmul(feats, pw["0.weight"]!.T) + pw["0.bias"]!)
+        return matmul(h, pw["2.weight"]!.T) + pw["2.bias"]!
+    }
+
+    // MARK: Image preprocessing (SigLIP: resize to 224², scale to [-1,1])
+
+    private func pixelValues(_ image: UIImage) -> MLXArray {
+        let n = cfg.image_size
+        let rect = CGRect(x: 0, y: 0, width: n, height: n)
+        UIGraphicsBeginImageContextWithOptions(rect.size, true, 1.0)
+        image.draw(in: rect)
+        let resized = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        guard let cg = resized.cgImage else { return MLXArray.zeros([1, n, n, 3]) }
+        var rgba = [UInt8](repeating: 0, count: n * n * 4)
+        let ctx = CGContext(data: &rgba, width: n, height: n, bitsPerComponent: 8,
+                            bytesPerRow: n * 4, space: CGColorSpaceCreateDeviceRGB(),
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.draw(cg, in: rect)
+        var floats = [Float](repeating: 0, count: n * n * 3)
+        for i in 0..<(n * n) {
+            for c in 0..<3 { floats[i * 3 + c] = (Float(rgba[i * 4 + c]) / 255.0 - 0.5) / 0.5 }  // SigLIP norm
+        }
+        return MLXArray(floats, [1, n, n, 3])
+    }
+
+    // MARK: Inference (greedy decode; mirrors StudentVLM.generate + parity_check)
+
+    @objc func infer(imagePath: String?, prompt: String, maxTokens: Int) throws -> VLMInferenceResult {
+        let t0 = Date()
+        // image embeds (skip if text-only)
+        var imgEmbeds: MLXArray? = nil
+        if let p = imagePath, let img = UIImage(contentsOfFile: p) {
+            imgEmbeds = project(siglipForward(pixelValues(img)))         // [1, 196, hidden]
+        }
+        // text embeds — prepend the image, LLaVA-style (no placeholder token)
+        let ids = MLXArray(tokenizer.encode(text: prompt)).reshaped([1, -1])
+        var stepIn = embedTokens(ids)                                    // VERIFY: LM input embedding
+        if let ie = imgEmbeds { stepIn = concatenated([ie.asType(stepIn.dtype), stepIn], axis: 1) }
+
+        // VERIFY: KV cache + per-step forward that accepts inputs_embeds.
+        var cache = lm.newCache()
+        var out: [Int] = []
+        let eos = tokenizer.eosTokenId ?? -1
+        var ttftMs = 0.0
+        var decodeStart = Date()
+        for step in 0..<maxTokens {
+            let logits = lmForward(stepIn, cache: &cache)                // [1, T, vocab] → take last
+            let next = argMax(logits[0, -1, 0...], axis: -1).item(Int.self)
+            if step == 0 { ttftMs = Date().timeIntervalSince(t0) * 1000; decodeStart = Date() }
+            if next == eos { break }
+            out.append(next)
+            stepIn = embedTokens(MLXArray([next]).reshaped([1, 1]))
+        }
+        let decodeSec = max(Date().timeIntervalSince(decodeStart), 1e-6)
+
+        let result = VLMInferenceResult()
+        result.text = tokenizer.decode(tokens: out)
+        result.ttftMs = ttftMs
+        result.decodeTokensPerSec = Double(out.count) / decodeSec
+        result.totalTokens = UInt(out.count)
+        result.peakMemoryMB = MLXVLMRunner.peakMemoryMB()
+        return result
+    }
+
+    // MARK: - MLXLLM glue (the version-sensitive surface; isolate here)
+
+    /// VERIFY: load the mlx-lm-format model dir → (model, tokenizer).
+    private static func loadLM(_ dir: URL) throws -> (model: LanguageModel, tokenizer: any Tokenizer) {
+        fatalError("WIRE: load via MLXLLM (e.g. LLMModelFactory / ModelContainer) from \(dir.path)")
+    }
+    /// VERIFY: the LM's input embedding layer applied to token ids → [1, T, hidden].
+    private func embedTokens(_ ids: MLXArray) -> MLXArray {
+        fatalError("WIRE: lm.model.embedTokens(ids)")
+    }
+    /// VERIFY: run the transformer body on precomputed embeds with a KV cache → logits.
+    private func lmForward(_ embeds: MLXArray, cache: inout [KVCache]) -> MLXArray {
+        fatalError("WIRE: lm inner layers on inputs_embeds + final norm + lm_head")
+    }
+
+    private static func peakMemoryMB() -> Double {
+        // VERIFY: MLX.GPU.peakMemory or task_info; mirror LlamaVLMRunner's footprint metric.
+        Double(MLX.GPU.peakMemory) / 1e6
+    }
+}
+
+// Placeholder typealias so the file parses before MLXLLM types are wired.
+// VERIFY: replace with the real MLXLLM model + cache types.
+private typealias LanguageModel = AnyObject
+private protocol KVCache {}
+private extension AnyObject { func newCache() -> [KVCache] { [] } }

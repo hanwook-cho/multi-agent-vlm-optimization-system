@@ -220,57 +220,74 @@ def _find_sample_image() -> str:
     raise SystemExit("no sample image found (datasets/coco_train2017)")
 
 
-def parity_check(student_dir: Path, out_dir: Path) -> None:
-    """Greedy-decode the same image+prompt through PyTorch StudentVLM and the MLX
-    student; assert the generated token strings match (the go/no-go gate)."""
+def _sample_images(n: int) -> list[str]:
+    d = PROJECT_ROOT / "datasets" / "coco_train2017"
+    imgs = sorted(str(f) for f in d.iterdir() if f.suffix.lower() in (".jpg", ".png")) if d.exists() else []
+    if not imgs:
+        raise SystemExit("no sample images (datasets/coco_train2017)")
+    return imgs[:n]
+
+
+def _mlx_generate(lm, tok, W, P, image_path, prompt, max_new=24):
+    """MLX assembled greedy decode: SigLIP → projector → prepend image embeds → Qwen.
+    Uses the mlx_lm model's `input_embeddings` path so the image is genuinely injected."""
     import mlx.core as mx
-    import mlx.nn as nn
+    from mlx_lm.models.cache import make_prompt_cache
+    pv_mlx, _ = _pixel_values_mlx(image_path)
+    img_embeds = projector_mlx_forward(P, siglip_mlx_forward(W, pv_mlx))
+    embed_layer = lm.model.embed_tokens
+    ids = mx.array(tok.encode(prompt))[None]
+    step_in = mx.concatenate([img_embeds.astype(embed_layer(ids).dtype), embed_layer(ids)], axis=1)
+    out_ids, eos, cache = [], tok.eos_token_id, make_prompt_cache(lm)
+    dummy = mx.zeros((1, 1), dtype=mx.int32)   # `inputs` unused when input_embeddings is set
+    for _ in range(max_new):
+        nxt = int(mx.argmax(lm(dummy, cache=cache, input_embeddings=step_in)[:, -1, :], axis=-1).item())
+        if nxt == eos:
+            break
+        out_ids.append(nxt)
+        step_in = embed_layer(mx.array([[nxt]]))
+    return tok.decode(out_ids).strip()
+
+
+def parity_check(student_dir: Path, out_dir: Path, n_images: int = 5) -> bool:
+    """Strengthened go/no-go gate: greedy-decode a DESCRIPTIVE prompt (longer,
+    image-dependent output) through PyTorch StudentVLM and the MLX student on
+    SEVERAL images; require the strings to match on every one. A coincidental
+    multi-token match across diverse images is essentially impossible, so an
+    all-match is strong evidence that the MLX student == the evaluated model."""
     import torch
+    from PIL import Image
     from mlx_lm import load as mlx_load
     from runners.build_student import load_student
 
-    img = _find_sample_image()
-    prompt = "Is there a person in the image? Please answer yes or no."
-    print(f"  parity image: {img}\n  prompt: {prompt!r}")
+    prompt = "Describe the image briefly."
+    imgs = _sample_images(n_images)
+    print(f"  prompt: {prompt!r}  ·  {len(imgs)} images")
 
-    # --- PyTorch student reference ---
     student = load_student(student_dir)
     proc = student._proc
-    pv = proc.image(images=__import__("PIL").Image.open(img).convert("RGB"),
-                    return_tensors="pt").pixel_values.to(next(student.lm.parameters()).device)
-    enc = proc.tok(prompt, return_tensors="pt").to(pv.device)
-    with torch.no_grad():
-        gen = student.generate(input_ids=enc.input_ids, attention_mask=enc.attention_mask,
-                               pixel_values=pv, max_new_tokens=16)
-    torch_out = proc.tok.decode(gen[0], skip_special_tokens=True).strip()
-    print(f"  [PyTorch] → {torch_out!r}")
-
-    # --- MLX student ---
-    W = _load_siglip_weights()
-    P = _load_projector_mlx(student_dir)
-    pv_mlx, _ = _pixel_values_mlx(img)
-    img_embeds = projector_mlx_forward(P, siglip_mlx_forward(W, pv_mlx))   # [1,196,896]
+    dev = next(student.lm.parameters()).device
     lm, tok = mlx_load(str(out_dir / "lm_mlx"))
-    embed_layer = lm.model.embed_tokens
-    ids = mx.array(tok.encode(prompt))[None]
-    txt_embeds = embed_layer(ids)
-    step_in = mx.concatenate([img_embeds.astype(txt_embeds.dtype), txt_embeds], axis=1)
-    out_ids, eos = [], tok.eos_token_id
-    from mlx_lm.models.cache import make_prompt_cache
-    cache = make_prompt_cache(lm)
-    dummy = mx.zeros((1, 1), dtype=mx.int32)   # `inputs` is unused when input_embeddings is set
-    for _ in range(16):
-        logits = lm(dummy, cache=cache, input_embeddings=step_in)[:, -1, :]
-        nxt = int(mx.argmax(logits, axis=-1).item())
-        if nxt == eos: break
-        out_ids.append(nxt)
-        step_in = embed_layer(mx.array([[nxt]]))
-    mlx_out = tok.decode(out_ids).strip()
-    print(f"  [MLX]     → {mlx_out!r}")
+    W, P = _load_siglip_weights(), _load_projector_mlx(student_dir)
 
-    match = mlx_out == torch_out
-    print(f"  {'✅ PARITY MATCH' if match else '⚠️ MISMATCH'} (gate: {'PASS' if match else 'investigate'})")
-    return match
+    matches = 0
+    for i, img in enumerate(imgs):
+        pv = proc.image(images=Image.open(img).convert("RGB"), return_tensors="pt").pixel_values.to(dev)
+        enc = proc.tok(prompt, return_tensors="pt").to(dev)
+        with torch.no_grad():
+            gen = student.generate(input_ids=enc.input_ids, attention_mask=enc.attention_mask,
+                                   pixel_values=pv, max_new_tokens=24)
+        t_out = proc.tok.decode(gen[0], skip_special_tokens=True).strip()
+        m_out = _mlx_generate(lm, tok, W, P, img, prompt)
+        ok = (t_out == m_out)
+        matches += ok
+        print(f"  [{i+1}/{len(imgs)}] {'✅' if ok else '⚠️'}  torch={t_out[:44]!r}")
+        if not ok:
+            print(f"            mlx  ={m_out[:44]!r}")
+
+    allok = matches == len(imgs)
+    print(f"  → {matches}/{len(imgs)} match  ·  gate: {'PASS' if allok else 'INVESTIGATE'}")
+    return allok
 
 
 def measure_mac_perf(student_dir: Path, out_dir: Path) -> None:
@@ -313,10 +330,46 @@ def measure_mac_perf(student_dir: Path, out_dir: Path) -> None:
     print(f"  [Mac MLX perf]  TTFT(+vision)={ttft:.0f} ms  decode={tps:.1f} tok/s  peak≈{peak:.0f} MB")
 
 
+def export_bundle(student_dir: Path, out_dir: Path) -> None:
+    """Step 4 — write a self-contained on-device bundle the Swift MLXVLMRunner loads.
+
+    Layout (all MLX-native, no HF/torch needed at runtime):
+      lm_mlx/                 the converted Qwen2.5-0.5B (mlx-lm format; weights + tokenizer)
+      vision.safetensors      SigLIP-base vision weights, flat keys (see _load_siglip_weights)
+      projector.safetensors   the fresh MLP projector ('0.weight','0.bias','2.weight','2.bias')
+      student_config.json      dims + key scheme so the Swift side stays in lockstep
+    """
+    import mlx.core as mx
+
+    lm_dir = out_dir / "lm_mlx"
+    if not lm_dir.exists():
+        merged = merge_lora_lm(student_dir, out_dir)
+        convert_lm_to_mlx(merged, out_dir)
+
+    # fp16 for deployment (matches the fp16 LM; halves the vision/projector size).
+    W = {k: v.astype(mx.float16) for k, v in _load_siglip_weights().items()}
+    mx.save_safetensors(str(out_dir / "vision.safetensors"), W)
+    P = {k: v.astype(mx.float16) for k, v in _load_projector_mlx(student_dir).items()}
+    mx.save_safetensors(str(out_dir / "projector.safetensors"), P)
+
+    cfg = {
+        "lm_dir": "lm_mlx",
+        "vision_id": _SIGLIP_ID, "vision_dim": _DIM, "n_layers": _N_LAYERS,
+        "n_heads": _N_HEADS, "patch": 16, "image_size": 224, "eps": _EPS,
+        "hidden": int(P["2.weight"].shape[0]),       # LM hidden = projector out
+        "projector_keys": list(P.keys()),
+        "mcq_suffix": " Answer with only the letter A, B, C, or D.",
+        "pope_suffix": "",   # POPE prompts already carry their own instruction
+    }
+    (out_dir / "student_config.json").write_text(json.dumps(cfg, indent=2))
+    print(f"  ✅ bundle → {out_dir}")
+    print("     files: lm_mlx/  vision.safetensors  projector.safetensors  student_config.json")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Export a constructed student to MLX (ADR-0014)")
     ap.add_argument("--student", required=True, help="build dir, e.g. artifacts/students/build_d3423bc0155b")
-    ap.add_argument("--step", default="lm", choices=["lm", "vision", "parity", "perf", "all"])
+    ap.add_argument("--step", default="lm", choices=["lm", "vision", "parity", "perf", "bundle", "all"])
     ap.add_argument("--out", default=None, help="output dir (default: <student>/mlx_export)")
     args = ap.parse_args()
 
@@ -338,6 +391,9 @@ def main():
     if args.step in ("perf", "all"):
         print("▶ Step 3.5 — Mac (Apple-Silicon MLX) perf")
         measure_mac_perf(student_dir, out_dir)
+    if args.step in ("bundle", "all"):
+        print("▶ Step 4 — on-device bundle (for the Swift MLXVLMRunner)")
+        export_bundle(student_dir, out_dir)
 
 
 if __name__ == "__main__":

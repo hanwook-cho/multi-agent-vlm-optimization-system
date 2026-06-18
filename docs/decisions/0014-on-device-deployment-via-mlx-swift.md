@@ -54,21 +54,34 @@ floor-adjusted scores**. Only proceed to the Swift integration once parity holds
    MLX MLP; implement SigLIP-encode → project → prepend. **✅ DONE (2026-06-18)** —
    faithful functional MLX SigLIP; `last_hidden_state` matches transformers to
    **max|Δ| = 2.0e-04**.
-3. **Assembled-forward parity (the gate):** run the same image+prompt through the
-   PyTorch `StudentVLM` and the MLX student; confirm matching outputs.
-   **✅ DONE / GATE PASSED (2026-06-18)** — both emit identical greedy output
-   (`'No'`) on the test image+prompt; combined with the 2e-04 vision parity, the MLX
-   student faithfully reproduces the evaluated PyTorch student.
+3. **Assembled-forward parity (the gate):** greedy-decode a descriptive prompt
+   through the PyTorch `StudentVLM` and the MLX student on several images; require
+   identical output on each. **✅ DONE / GATE PASSED (2026-06-18)** — **5/5 images
+   produce identical multi-token captions** (strengthened from an initial single
+   yes/no example; a coincidental multi-image multi-token match is effectively
+   impossible). Combined with the 2e-04 vision parity, the MLX student **faithfully
+   reproduces the evaluated PyTorch student.** (The parity relies on the Python
+   `mlx_lm` model's `input_embeddings` path — see step 4.)
 3.5. **Mac (Apple-Silicon MLX) perf:** measure the assembled student on the M4 — a
    real on-device-class number with no Swift. **✅ DONE (2026-06-18)** —
    **TTFT 118 ms (incl. vision), 80.9 tok/s decode, peak ≈1.6 GB.** The 1.6 GB peak
    fits the iPhone 16 Pro budget comfortably (vs. Qwen2.5-VL-3B's 6.5 GB non-viable),
    so the student is forecast to run on-device.
-4. **Swift integration (now OPTIONAL):** given step 3.5 already provides a credible
-   Apple-Silicon edge result and a 1.6 GB footprint that clears the iPhone budget,
-   the `MLXVLMRunner` + on-device run is a *confirmation* step, not a blocker — do it
-   only if an iPhone-specific number is required. `ios_harness` already has the
-   optional photo-library source for ad-hoc testing once wired.
+3.6. **On-device bundle.** **✅ DONE (2026-06-18)** — `--step bundle` writes a
+   self-contained MLX bundle (`lm_mlx/` + `vision.safetensors` + `projector.safetensors`,
+   both fp16, + `student_config.json`), ~1.14 GB, that a Swift runner would load.
+4. **Swift / iPhone — ⏸️ DEFERRED (2026-06-18).** A real blocker surfaced while
+   wiring `MLXVLMRunner`: the student is **LLaVA-style** (it *prepends* image embeds),
+   but `mlx-swift-examples`' `Qwen2Model` only accepts **token ids** — its inner
+   `layers` are `fileprivate` and there is **no public `inputsEmbeds` path** (unlike
+   the Python `mlx_lm` model, which has one; the parity in step 3 depends on it). So
+   the runner can't be a thin port of `LlamaVLMRunner` — it needs a **vendored custom
+   Qwen2 forward** (or a patched MLXLLM fork). Since step 3.5 already gives a
+   **verified Apple-Silicon edge number**, the literal iPhone run is a *nice-to-have*,
+   not load-bearing — **deferred** rather than worth the custom-decoder effort now. A
+   WIP runner (SigLIP/projector/image faithfully ported; LM glue blocked) is preserved
+   at `ios_harness/VLMHarness/Inference/MLXVLMRunner.swift.draft` (kept out of the
+   Xcode build). Reopen if an iPhone-specific number is required.
 5. **Record** the result to the ledger / observations — done via the
    2026-06-18 on-device-validation observation.
 
