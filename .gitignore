@@ -102,3 +102,6 @@ artifacts/construction_queue.json
 artifacts/run_control.json
 artifacts/approval_log.json
 artifacts/dossiers/
+
+# MLX export venv (ADR-0014, large)
+.venv-mlx/

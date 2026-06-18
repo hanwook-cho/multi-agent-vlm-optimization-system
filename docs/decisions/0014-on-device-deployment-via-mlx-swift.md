@@ -47,8 +47,9 @@ floor-adjusted scores**. Only proceed to the Swift integration once parity holds
 ## Plan (incremental, each step verifiable)
 
 1. **LM half (foundational):** merge the LoRA into Qwen2.5-0.5B, convert to MLX,
-   verify the MLX LM loads and generates coherent text. *(started — see
-   `runners/export_student_mlx.py`)*
+   verify the MLX LM loads and generates coherent text. **✅ DONE (2026-06-18)** —
+   verified in an isolated `.venv-mlx` (mlx 0.31.2 + mlx-lm 0.31.3 + mlx-vlm 0.6.3 +
+   torch); the MLX LM generates coherent text. See `runners/export_student_mlx.py`.
 2. **Vision + projector:** convert SigLIP-base to MLX; load `projector.pt` into an
    MLX MLP; implement SigLIP-encode → project → prepend.
 3. **Assembled-forward parity (the gate):** run the same image+prompt through the
