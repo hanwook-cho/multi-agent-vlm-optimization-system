@@ -1,0 +1,70 @@
+{
+  "experiment_id": "151cf686f7b83b167dc110248ffff4d4faa78db564356250da847ba7646a33e0",
+  "kind": "student_construction",
+  "hypothesis_id": "P2-B1",
+  "rationale": "",
+  "spec": {
+    "lm": "Qwen/Qwen2.5-0.5B-Instruct",
+    "vision": "google/siglip-base-patch16-224",
+    "projector": {
+      "type": "mlp",
+      "depth": 2,
+      "hidden": 2048
+    },
+    "init": "scratch",
+    "align": {
+      "data": "coco_caption_5k",
+      "steps": 3000
+    },
+    "distill": {
+      "teacher": "Qwen2.5-VL-3B",
+      "data": "qa_balanced_5k",
+      "lora_r": 16,
+      "epochs": 3,
+      "rehearse_data": "scienceqa_mcq",
+      "rehearse_frac": 1.0
+    },
+    "eval": {
+      "benchmarks": [
+        "POPE",
+        "RealWorldQA",
+        "MMBench_DEV_EN"
+      ],
+      "n": 100
+    },
+    "target_device_id": "mac_mini_m4_16gb",
+    "notes": "P2-B1 50/50 variance test"
+  },
+  "report": {
+    "experiment_id": "151cf686f7b83b167dc110248ffff4d4faa78db564356250da847ba7646a33e0",
+    "status": "built",
+    "device_id": "mac_mini_m4_16gb",
+    "started_at": "2026-06-18T00:20:43.194073+00:00",
+    "completed_at": "2026-06-18T01:40:22.445697+00:00",
+    "align_final_loss": 1.7529007196426392,
+    "distill_final_loss": 0.4373968243598938,
+    "quality_scores": [
+      {
+        "benchmark": "POPE",
+        "metric": "Overall",
+        "value": null,
+        "delta_vs_benchmark": null
+      },
+      {
+        "benchmark": "RealWorldQA",
+        "metric": "Overall",
+        "value": 0.42,
+        "delta_vs_benchmark": 0.0
+      },
+      {
+        "benchmark": "MMBench_DEV_EN",
+        "metric": "Overall",
+        "value": 0.59,
+        "delta_vs_benchmark": -0.15000000000000002
+      }
+    ],
+    "note": "built; run runners/eval_student.py for same-path scores."
+  },
+  "recorded_at": "2026-06-18T01:41:40.722380+00:00",
+  "seed": 3
+}
