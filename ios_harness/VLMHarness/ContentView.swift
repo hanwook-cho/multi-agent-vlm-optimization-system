@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 // ---------------------------------------------------------------------------
 // Model registry
@@ -85,6 +86,14 @@ private var sampleImagePaths: [String] {
     (1...5).compactMap { Bundle.main.path(forResource: "sample\($0)", ofType: "jpg") }
 }
 
+// Image source: the fixed bundled set (reproducible cross-run benchmark) or
+// user-picked photos from the device library (qualitative / ad-hoc testing).
+enum ImageSource: String, CaseIterable, Identifiable {
+    case bundled = "Bundled (5)"
+    case library = "Photo library"
+    var id: String { rawValue }
+}
+
 // ---------------------------------------------------------------------------
 // ContentView
 // ---------------------------------------------------------------------------
@@ -95,12 +104,24 @@ struct ContentView: View {
     @State private var reportURL: URL?
     @State private var showShareSheet = false
 
+    // Image source (A): bundled set vs. photo-library picks
+    @State private var imageSource: ImageSource = .bundled
+    @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var libraryImagePaths: [String] = []
+    @State private var isLoadingPhotos = false
+
     private var selectedModel: ModelEntry { kModels[selectedModelIndex] }
+
+    /// Images the next run will use, given the selected source.
+    private var activeImagePaths: [String] {
+        (imageSource == .library && !libraryImagePaths.isEmpty) ? libraryImagePaths : sampleImagePaths
+    }
 
     var body: some View {
         NavigationView {
             VStack(spacing: 16) {
                 modelPickerSection
+                imageSourceSection
                 headerSection
                 if !session.log.isEmpty { logSection }
                 if let stats = session.lastStats { statsSection(stats) }
@@ -135,6 +156,61 @@ struct ContentView: View {
             session.log = []
             reportURL = nil
         }
+    }
+
+    private var imageSourceSection: some View {
+        VStack(spacing: 8) {
+            Picker("Images", selection: $imageSource) {
+                ForEach(ImageSource.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+
+            if imageSource == .library {
+                PhotosPicker(selection: $pickerItems, maxSelectionCount: 10, matching: .images) {
+                    Label(libraryImagePaths.isEmpty
+                            ? "Select photos…"
+                            : "\(libraryImagePaths.count) photo(s) selected — change",
+                          systemImage: "photo.on.rectangle")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(session.isRunning)
+                .onChange(of: pickerItems) { _, items in
+                    Task { await loadPickedPhotos(items) }
+                }
+                if isLoadingPhotos {
+                    Text("Loading photos…").font(.caption2).foregroundStyle(.secondary)
+                } else if !libraryImagePaths.isEmpty {
+                    Text("Latency/memory are valid on any image; outputs are qualitative (no fixed reference set).")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+        }
+    }
+
+    /// Materialize picked PhotosPickerItems to temp JPEGs and collect their paths.
+    /// Normalizes via UIImage so HEIC/other formats become runner-readable JPEGs.
+    private func loadPickedPhotos(_ items: [PhotosPickerItem]) async {
+        isLoadingPhotos = true
+        defer { isLoadingPhotos = false }
+        var paths: [String] = []
+        let tmp = FileManager.default.temporaryDirectory
+        for (i, item) in items.enumerated() {
+            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+            let url = tmp.appendingPathComponent("vlmh_lib_\(i).jpg")
+            if let img = UIImage(data: data), let jpeg = img.jpegData(compressionQuality: 0.95) {
+                try? jpeg.write(to: url)
+            } else {
+                try? data.write(to: url)   // fallback: write raw bytes
+            }
+            paths.append(url.path)
+        }
+        libraryImagePaths = paths
+        // switching the image set invalidates prior results
+        session.lastStats = nil
+        session.lastOutputSample = ""
+        reportURL = nil
     }
 
     private var headerSection: some View {
@@ -225,7 +301,8 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(session.isRunning || !selectedModel.isAvailable)
+            .disabled(session.isRunning || !selectedModel.isAvailable
+                      || (imageSource == .library && libraryImagePaths.isEmpty))
 
             if let url = reportURL {
                 Button(action: { showShareSheet = true }) {
@@ -244,6 +321,10 @@ struct ContentView: View {
 
     private func startMeasurement() {
         let model = selectedModel
+        let images = activeImagePaths
+        // Bundled: 5 fixed runs. Library: one measured run per picked photo.
+        let measureCount = (imageSource == .library && !libraryImagePaths.isEmpty)
+            ? libraryImagePaths.count : 5
         let config = RunConfig(
             modelKey:        model.id,
             modelPath:       model.modelPath,
@@ -251,11 +332,11 @@ struct ContentView: View {
             chatTemplate:    model.chatTemplate,
             hfId:            model.hfId,
             quantization:    model.quantization,
-            imagePaths:      sampleImagePaths,
+            imagePaths:      images,
             prompt:          "Describe this image briefly.",
             maxTokens:       64,
             nWarmup:         1,
-            nMeasure:        5,
+            nMeasure:        measureCount,
             inputResolution: model.inputResolution
         )
         reportURL = nil
