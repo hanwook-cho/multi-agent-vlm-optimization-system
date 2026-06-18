@@ -241,7 +241,7 @@ HYPOTHESIS_TABLE = [
         "model": "assembled ~450–600M VLM",
         "expected_gain": "edge-size model matching the LFM2 benchmark; right-sized architecture from the start",
         "gain_axis": "size+quality",
-        "status": "IN_PROGRESS",
+        "status": "CONFIRMED",
         "phase": 2,
         "tier": "code",
         "result_summary": (
@@ -308,6 +308,15 @@ HYPOTHESIS_TABLE = [
             "floors across seeds. Fork: (a) push ratio (data-only, limited, costs MMBench); (b) attack variance "
             "— bigger LM (breaks ≤450M edge budget; Phase-3), or projector warm-start / converged align / "
             "batch>1; (c) ship per-axis single-skill students. See observation 2026-06-18-p2b1-6040-multiseed. "
+            "CONSOLIDATED 2026-06-18 (status→CONFIRMED, P2-B1 paused). What's CONFIRMED: the system-driven "
+            "construction approach works end-to-end (agent proposes spec → assemble → align → distill → "
+            "same-path eval → ledger), and the KEY FINDING is that train/eval DISTRIBUTION MATCHING is the "
+            "dominant lever (COCO→POPE, ScienceQA→MMBench; MMBench reproduces across seeds). Deliverables: "
+            "per-axis single-skill students d3423bc0 (POPE grounding) and b2feb6b1 (MMBench, ~0.65). What's "
+            "DEFERRED to capacity/Phase-3: a single student ROBUSTLY clearing ≥2 floors — variance-limited at "
+            "0.5B (POPE yes/no calibration is init-unstable; data ratio shifts the mean not the variance). The "
+            "Goals multi-skill bar is gated on capacity, not data. Methodology locked in: floor-adjusted eval + "
+            "multi-seed reporting. Reopen with a larger LM (Phase-3) or a training-stability fix."
             "UPDATE 4 (balanced multi-distribution mixture, spec 151cf686): POSITIVE MILESTONE — first single "
             "student above floor on ≥2 real benchmarks. A 50/50 COCO-grounding + ScienceQA mix (qa_balanced_5k "
             "primary + scienceqa_mcq rehearse frac 1.0 = 1386+1386, 3 epochs, rank held at 16) clears BOTH "
