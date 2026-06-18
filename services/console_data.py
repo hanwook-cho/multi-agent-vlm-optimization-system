@@ -19,6 +19,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 LEDGER_DIR = PROJECT_ROOT / "artifacts" / "experiment_ledger"
 CONSTRUCTION_QUEUE = PROJECT_ROOT / "artifacts" / "construction_queue.json"
 EXPERIMENT_QUEUE = PROJECT_ROOT / "artifacts" / "experiment_queue.json"
+HYPOTHESIS_QUEUE = PROJECT_ROOT / "artifacts" / "hypothesis_queue.json"  # Mode B (ADR-0015)
 APPROVAL_LOG = PROJECT_ROOT / "artifacts" / "approval_log.json"  # H3 — may not exist
 RUN_YAML = PROJECT_ROOT / "run.yaml"
 RUN_LOG_DIR = PROJECT_ROOT / "artifacts" / "logs"          # standard run logs (services.runlog)
@@ -185,6 +186,53 @@ def build_construction_cmd(*, smoke: bool = False, eval_after: bool = True,
         cmd.append("--require-approval")
     cmd += ["--seed", str(int(seed))]
     return cmd
+
+
+def recent_hypotheses(n: int = 6) -> list[dict]:
+    """Verified Mode-B hypothesis records (artifacts/hypothesis_queue.json) → compact rows."""
+    if not HYPOTHESIS_QUEUE.exists():
+        return []
+    try:
+        items = json.loads(HYPOTHESIS_QUEUE.read_text())
+    except Exception:
+        return []
+    rows = []
+    for it in (items if isinstance(items, list) else [])[-n:][::-1]:
+        r = it.get("record", {}) or {}
+        sc = r.get("source_citation", {}) or {}
+        ac = r.get("applicability_check", {}) or {}
+        rows.append({
+            "technique": it.get("title") or r.get("title", ""),
+            "arxiv": sc.get("arxiv_id", ""),
+            "applies": ac.get("verdict", ""),
+            "claimed_effect": (r.get("claimed_effect", "") or "")[:110],
+            "found_at": (it.get("proposed_at", "") or "")[:19],
+        })
+    return rows
+
+
+def build_research_cmd(*, query: str, problem: str | None = None, max_papers: int = 5,
+                       backend: str = "auto", python: str | None = None) -> list[str]:
+    """Pure: assemble the research_analyst command (kept separate for testing)."""
+    import sys
+    py = python or sys.executable
+    cmd = [py, str(PROJECT_ROOT / "agents" / "research_analyst.py"),
+           "--query", query, "--max-papers", str(int(max_papers)), "--backend", backend]
+    if problem:
+        cmd += ["--problem", problem]
+    return cmd
+
+
+def launch_research(*, query: str, problem: str | None = None, max_papers: int = 5,
+                    backend: str = "auto") -> dict:
+    """Spawn the Research Analyst (Mode B) as a detached subprocess. Survivors land in
+    the hypothesis queue (shown by recent_hypotheses) + the escalation gate."""
+    import subprocess
+    cmd = build_research_cmd(query=query, problem=problem, max_papers=max_papers, backend=backend)
+    proc = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT),
+                            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+                            start_new_session=True)
+    return {"pid": proc.pid, "cmd": " ".join(cmd)}
 
 
 def launch_construction(*, smoke: bool = False, eval_after: bool = True,

@@ -258,3 +258,28 @@ with tab_appr:
     if hrows:
         with st.expander("hypothesis table"):
             st.dataframe(hrows, width="stretch", hide_index=True)
+
+    # ── Research Analyst (Mode B) — read the literature → verified records → the gate ──
+    st.markdown("#### Research Analyst (Mode B)")
+    st.caption("Searches arXiv for the open problem, extracts hypothesis records, and "
+               "verifies them (citation + verbatim quote) before routing to the gate above. "
+               "Needs the local LLM server (or the API backend selected in the sidebar).")
+    rb = st.columns([2.4, 1, 1.2])
+    ra_query = rb[0].text_input("arXiv query", value="efficient small vision-language model token reduction",
+                                key="ra_query", label_visibility="collapsed",
+                                placeholder="arXiv query…")
+    ra_n = rb[1].number_input("papers", value=5, min_value=1, max_value=20, key="ra_n")
+    if rb[2].button("🔍 Run Analyst", width="stretch"):
+        try:
+            info = cd.launch_research(query=ra_query, max_papers=int(ra_n),
+                                      backend=("api" if sel == "api" else "local"))
+            st.success(f"launched pid {info['pid']} — verified records appear below + at the gate")
+            st.rerun()
+        except Exception as exc:
+            st.error(f"launch failed: {exc}")
+    hyps = cd.recent_hypotheses()
+    if hyps:
+        st.dataframe(hyps, width="stretch", hide_index=True)
+    else:
+        st.info("No verified hypothesis records yet — run the analyst (one record per "
+                "paper survives only if its citation + every quote check out).")

@@ -136,3 +136,30 @@ def test_build_construction_cmd_flags():
     assert "--smoke" in cmd and "--eval" not in cmd
     assert "--require-approval" in cmd
     assert cmd[-2:] == ["--seed", "3"]
+
+
+def test_build_research_cmd():
+    cmd = cd.build_research_cmd(query="small vlm tokens", python="python3")
+    assert cmd[0] == "python3" and cmd[1].endswith("agents/research_analyst.py")
+    assert "--query" in cmd and "small vlm tokens" in cmd
+    assert cmd[cmd.index("--max-papers") + 1] == "5"
+    assert "--problem" not in cmd                       # only when given
+    cmd2 = cd.build_research_cmd(query="q", problem="P", max_papers=3, backend="api", python="py")
+    assert "--problem" in cmd2 and "P" in cmd2 and "api" in cmd2
+    assert cmd2[cmd2.index("--max-papers") + 1] == "3"
+
+
+def test_recent_hypotheses(tmp_path, monkeypatch):
+    q = tmp_path / "hyp.json"
+    q.write_text(json.dumps([{
+        "proposed_at": "2026-06-18T00:00:00+00:00", "title": "Token Merging",
+        "record": {"title": "Token Merging", "claimed_effect": "merges vision tokens",
+                   "source_citation": {"arxiv_id": "2501.01234"},
+                   "applicability_check": {"verdict": "applicable"}}}]))
+    monkeypatch.setattr(cd, "HYPOTHESIS_QUEUE", q)
+    rows = cd.recent_hypotheses()
+    assert len(rows) == 1
+    assert rows[0]["technique"] == "Token Merging" and rows[0]["arxiv"] == "2501.01234"
+    assert rows[0]["applies"] == "applicable" and rows[0]["claimed_effect"] == "merges vision tokens"
+    monkeypatch.setattr(cd, "HYPOTHESIS_QUEUE", tmp_path / "missing.json")
+    assert cd.recent_hypotheses() == []
