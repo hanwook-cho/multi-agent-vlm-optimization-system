@@ -105,3 +105,4 @@ artifacts/dossiers/
 
 # MLX export venv (ADR-0014, large)
 .venv-mlx/
+artifacts/hypothesis_queue.json
