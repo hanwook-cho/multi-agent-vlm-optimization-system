@@ -108,6 +108,8 @@
     <h3>What is the KV cache?</h3>
     <p>A transformer generates text one token at a time. At each step, every layer's attention needs the <strong>keys (K)</strong> and <strong>values (V)</strong> of <em>all previous tokens</em>. Rather than recompute them every step, they are computed once and stored — the <strong>KV cache</strong>. This makes generation fast, but the cache must be held in memory for the entire sequence.</p>
 
+    <div class="keybox"><div class="kb-label">Inference only?</div><div class="kb-value"><strong>Yes — the KV cache exists only during autoregressive generation (inference).</strong> Training processes the whole sequence in parallel (one forward pass, causal mask), so there are no sequential steps to cache across. Two caveats: the <em>architectural</em> methods below (GQA/MQA/MLA, cross-layer) are baked into the model and so are present during training; and training loops that <em>generate</em> (e.g. RLHF rollouts) use the cache during their generation phase.</div></div>
+
     <div class="diagram-wrap">
       <div class="diagram-title">Figure 1.1 — Prefill builds the cache; decode reuses and extends it</div>
       <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
