@@ -106,7 +106,7 @@ Runs tee their output to `artifacts/logs/`, and the operator console auto-points
 
 ## Documentation
 
-- **[`docs/PHASE2_WRITEUP.md`](docs/PHASE2_WRITEUP.md) — the consolidated Phase-2 narrative.** The system, the distribution-matching finding, the honest negatives, and the edge-viable student, in one read. **Start here for the story.**
+- **The story:** read it as a **[blog post](https://hanwook-cho.github.io/multi-agent-vlm-optimization-system/writeup/)** (public, narrative) or the in-repo **[`docs/PHASE2_WRITEUP.md`](docs/PHASE2_WRITEUP.md)** (consolidated Phase-2 narrative). The system, the distribution-matching finding, the honest negatives, and the edge-viable student. **Start here.**
 - **New to model optimization?** Visual study guides (diagrams + references) on the techniques behind this system:
   - **[Model Optimization primer](https://hanwook-cho.github.io/multi-agent-vlm-optimization-system/guide/)** — distillation, NAS, pruning, quantization, LoRA, weight sharing, early exit. ([source](docs/guide/index.html))
   - **[KV Cache Optimization primer](https://hanwook-cho.github.io/multi-agent-vlm-optimization-system/guide-kv-cache/)** — MQA/GQA/MLA, KV quantization (KIVI, QJL, TurboQuant), token eviction, PagedAttention. ([source](docs/guide-kv-cache/index.html))

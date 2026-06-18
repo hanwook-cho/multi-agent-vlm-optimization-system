@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building a Multi-Agent System That Optimizes VLMs for the Edge</title>
+<style>
+  :root { --blue:#2E5496; --navy:#1F3864; --purple:#534AB7; --teal:#0F6E56; --amber:#BA7517; --coral:#A32D2D; --border:#dde3ed; --bg:#f9f9f9; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:Georgia,'Times New Roman',serif; font-size:17px; color:#222; background:var(--bg); line-height:1.75; }
+  .page { max-width:760px; margin:0 auto; padding:48px 28px 80px; background:#fff; }
+  .title-block { border-bottom:4px solid var(--navy); padding-bottom:24px; margin-bottom:36px; }
+  h1 { font-size:2.2rem; color:var(--navy); line-height:1.25; margin-bottom:12px; }
+  .subtitle { font-size:1.05rem; color:var(--blue); font-style:italic; }
+  .meta { font-size:0.85rem; color:#999; margin-top:10px; font-family:Arial,sans-serif; }
+  h2 { font-size:1.5rem; color:var(--navy); margin:40px 0 12px; }
+  h3 { font-size:1.15rem; color:var(--blue); margin:28px 0 8px; }
+  p { margin:14px 0; }
+  ul,ol { margin:14px 0; padding-left:26px; }
+  li { margin:7px 0; }
+  strong { color:#111; }
+  a { color:var(--blue); }
+  blockquote { border-left:4px solid var(--purple); background:#f3f4f8; padding:14px 20px; margin:20px 0; font-style:italic; color:#333; border-radius:0 6px 6px 0; }
+  .tldr { background:#f0f4fa; border:1px solid var(--border); border-radius:8px; padding:18px 22px; margin:24px 0; font-family:Arial,sans-serif; font-size:0.95rem; }
+  .tldr h3 { margin-top:0; font-family:Arial,sans-serif; text-transform:uppercase; letter-spacing:0.06em; font-size:0.85rem; }
+  table { width:100%; border-collapse:collapse; margin:20px 0; font-size:0.9rem; font-family:Arial,sans-serif; }
+  thead tr { background:var(--navy); color:#fff; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  tbody tr:nth-child(even) { background:#f0f4fa; }
+  .note { background:#FFF7E6; border:1px solid #f0d9a8; border-radius:8px; padding:14px 18px; margin:20px 0; font-family:Arial,sans-serif; font-size:0.9rem; }
+  .footer { margin-top:56px; padding-top:20px; border-top:1px solid var(--border); font-size:0.85rem; color:#888; font-family:Arial,sans-serif; }
+  .footer a { color:var(--blue); }
+  code { background:#f3f4f8; padding:1px 5px; border-radius:4px; font-size:0.85em; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="title-block">
+  <h1>Building a Multi-Agent System That Optimizes Vision-Language Models for the Edge</h1>
+  <div class="subtitle">The system is the deliverable. A competitive edge model is just the proof-of-work — and the most useful results were the failures.</div>
+  <div class="meta">Han Wook Cho · June 2026 · <a href="https://github.com/hanwook-cho/multi-agent-vlm-optimization-system">source on GitHub</a></div>
+</div>
+
+<div class="tldr">
+  <h3>TL;DR</h3>
+  I built an autonomous multi-agent loop that takes a general 3B vision-language model
+  and constructs a right-sized <em>edge</em> student from it — proposing a model spec,
+  assembling it, distilling it from a teacher, evaluating it on the same path as the
+  benchmark, and re-routing the next attempt from the result. Along the way it surfaced
+  a clean, transferable finding: <strong>for a small constructed VLM, the dominant lever
+  is matching the training-data distribution to the target benchmark</strong> — not the
+  optimizer, the rank, or the budget. The resulting student is edge-viable (runs at
+  ~80 tok/s in ~1.6 GB on Apple Silicon). It is <strong>not</strong> state-of-the-art,
+  and I'll be precise about why. All benchmark numbers here are internal-only.
+</div>
+
+<h2>Why a system, not a model</h2>
+<p>
+  Small edge VLMs like LFM2-VL, SmolVLM, MiniCPM-V, and FastVLM are the output of
+  team-months of expert optimization. The bet behind this project is that the
+  <em>process</em> of producing such a model can be automated and compressed — that an
+  agent loop, with a human gating only consequential decisions, can navigate the
+  optimization journey. So the deliverable is the <strong>system</strong>; a competitive
+  model is how you prove the system works, not the point in itself.
+</p>
+
+<h2>How the loop works</h2>
+<p>
+  After an early wrong turn — distilling <em>into</em> an already-optimized edge model,
+  which only moved it off its tuned optimum and regressed — the approach became
+  <strong>construction</strong>: assemble a new, right-sized student from parts
+  (a SigLIP vision encoder + a fresh projector + a small Qwen2.5-0.5B language model)
+  and distill it from a 3B teacher. Crucially, this was made a <em>system capability</em>:
+</p>
+<blockquote>
+  The agent proposes a content-addressed model spec → a deterministic builder assembles,
+  aligns, distills, and evaluates it on the same inference path as the benchmark → the
+  result is recorded to a ledger → the agent reads it and proposes the next spec.
+  The human writes the generic builder once; the agent drives every instance.
+</blockquote>
+
+<h2>The finding: distribution matching is the lever</h2>
+<p>
+  The student kept failing to learn a second skill. Four times. Adding captions hurt
+  grounding; adding multiple-choice data made the model forget its yes/no grounding
+  while never actually learning multiple-choice. Each looked like "catastrophic
+  forgetting," and the instinct was to fight it with rehearsal and more training.
+</p>
+<p>
+  That instinct was wrong, and the system's own evaluation said so: more training and
+  rehearsal didn't help. The real diagnosis — <em>verified before spending more
+  compute</em> — was a <strong>distribution mismatch</strong>. The benchmark it floored
+  on (MMBench) is ~70% science/knowledge/reasoning questions; the student only ever
+  trained on everyday-photo (COCO) data. A quick probe confirmed the student
+  <em>could</em> answer multiple-choice questions on in-distribution data — it just
+  couldn't answer <em>MMBench's</em> kind. So I built training data from the matching
+  distribution (ScienceQA), and the benchmark cleared its floor for the first time.
+</p>
+<p>
+  Together with the original result, the lever is proven in both directions: a small
+  student acquires <strong>exactly the skill whose data distribution it trains on</strong>
+  (everyday photos → object grounding; science MCQ → MMBench) and stays at chance on the
+  rest. The "interference" failures were, underneath, a distribution story all along —
+  the same reason production VLMs train on broad mixtures spanning their eval suites.
+</p>
+
+<h2>The honest boundary — and a methodology catch</h2>
+<p>
+  Could one student hold both skills? A balanced mix cleared both benchmarks at once —
+  <em>once</em>. Then I discovered the construction runs had no fixed random seed, re-ran
+  the same configuration three times, and the truth came out: one benchmark was robust
+  across seeds, but the other swung wildly (a near-coin-flip). The "one student, two
+  skills" milestone had been a lucky draw. The lesson stuck: <strong>single-run results
+  aren't trustworthy; claims have to be multi-seed.</strong> Pushing more grounding data
+  shifted the average up but not the variance — which points at model <em>capacity</em>,
+  not data, as the remaining wall at this size.
+</p>
+<div class="note">
+  This is the part I'm most glad I caught. It's easy to ship a shiny single-run number.
+  The variance test turned an over-claimed "milestone" into an honest, sharper result —
+  and that honesty is the whole point of building a system you can trust to steer itself.
+</div>
+
+<h2>Does it actually run on the edge?</h2>
+<p>
+  The student had only been scored on a Mac. To check the <em>edge</em> half, I ported it
+  to MLX (Apple's on-device runtime) and — before any device-specific work —
+  <strong>verified the ported model reproduces the original exactly</strong> (the vision
+  tower matched to 1 part in 5,000; the assembled model produced identical output). Only
+  then did I measure performance:
+</p>
+<table>
+  <thead><tr><th>Metric (Apple Silicon, M4, MLX)</th><th>Constructed student</th></tr></thead>
+  <tbody>
+    <tr><td>Time to first token (incl. vision encode)</td><td>118 ms</td></tr>
+    <tr><td>Decode speed</td><td>~80 tokens/sec</td></tr>
+    <tr><td>Peak memory</td><td>~1.6 GB</td></tr>
+    <tr><td>Size</td><td>590 M params (fp16)</td></tr>
+  </tbody>
+</table>
+<p>
+  1.6 GB fits an iPhone 16 Pro comfortably — the exact budget that made the 3B teacher
+  (6.5 GB) non-viable on-device. The model the system built is genuinely edge-deployable.
+</p>
+
+<h2>What this is — and what it isn't</h2>
+<p><strong>It is:</strong> a working autonomous construction system; a clean, transferable
+  principle; a disciplined evaluation methodology (floor-adjusted, multi-seed,
+  verify-before-building); an edge-viable, faithfully-reproduced student; and a documented
+  trail of honest negative results that drove every pivot.</p>
+<p><strong>It is not:</strong> a state-of-the-art model. The student is below the reference
+  models on quality, is per-axis (different students clear different benchmarks), and is
+  variance-limited at this size. A single competitive multi-skill model is gated on
+  capacity — a deliberate next phase, not a method failure.</p>
+
+<div class="note">
+  <strong>On the numbers:</strong> every benchmark figure here is <strong>internal-only</strong>
+  — 100-sample slices on a non-official protocol, used to steer experiments on a
+  held-constant path. They are internally consistent and honest, but not externally
+  citable, and I make no leaderboard claim. That's a deliberate boundary, not an oversight.
+</div>
+
+<h2>What I'd tell someone starting this</h2>
+<ul>
+  <li><strong>Build the measurement before the model.</strong> A decode bug once made every
+    score read as zero; floor-adjusted evaluation against a known-good reference caught it.</li>
+  <li><strong>Verify before you build.</strong> The distribution diagnosis and the MLX
+    port were both confirmed cheaply before committing real compute.</li>
+  <li><strong>Distrust single runs.</strong> Seed everything; report medians across seeds.</li>
+  <li><strong>Write the negatives down.</strong> The failures, diagnosed, were more
+    valuable than any single positive — they're what moved the project forward.</li>
+</ul>
+
+<div class="footer">
+  <p>Full project, code, and detailed results: <a href="https://github.com/hanwook-cho/multi-agent-vlm-optimization-system">github.com/hanwook-cho/multi-agent-vlm-optimization-system</a>
+  — including the dated experiment observations (positives and negatives), the
+  architecture decisions, and the consolidated Phase-2 writeup.</p>
+  <p>Companion primers: <a href="../guide/">Model Optimization</a> · <a href="../guide-kv-cache/">KV Cache Optimization</a>.</p>
+  <p style="color:#bbb; font-size:0.8rem;">Drafted with AI assistance (Claude); the project, results, and conclusions are the author's, reviewed and edited for accuracy.</p>
+</div>
+
+</div>
+</body>
+</html>
