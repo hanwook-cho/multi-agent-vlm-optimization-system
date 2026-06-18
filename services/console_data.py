@@ -162,3 +162,44 @@ def pending_approvals(path: Path = APPROVAL_LOG) -> list[dict]:
         return [a for a in items if a.get("status", "pending") == "pending"]
     except Exception:
         return []
+
+
+# ── Launch (the one action, not a read) ──────────────────────────────────────
+# The console is otherwise a pure reader; this lets the operator START the next
+# queued construction from the UI. It shells out to the SAME entry point used on
+# the CLI (services/construction_loop.py) — no separate code path — so a run
+# launched here is identical to one launched by hand.
+
+def build_construction_cmd(*, smoke: bool = False, eval_after: bool = True,
+                           seed: int = 0, require_approval: bool = False,
+                           python: str | None = None) -> list[str]:
+    """Pure: assemble the construction_loop command (kept separate for testing)."""
+    import sys
+    py = python or sys.executable
+    cmd = [py, str(PROJECT_ROOT / "services" / "construction_loop.py")]
+    if smoke:
+        cmd.append("--smoke")
+    if eval_after:
+        cmd.append("--eval")
+    if require_approval:
+        cmd.append("--require-approval")
+    cmd += ["--seed", str(int(seed))]
+    return cmd
+
+
+def launch_construction(*, smoke: bool = False, eval_after: bool = True,
+                        seed: int = 0, require_approval: bool = False) -> dict:
+    """Spawn construction_loop as a detached subprocess (survives Streamlit reruns).
+
+    The loop tees its output to artifacts/logs/ via services.runlog, so the Monitor
+    (which auto-points at the newest log) shows progress without extra wiring.
+    Returns {pid, cmd}. It builds the most recent queued spec (or the default if the
+    queue is empty), exactly as the CLI does.
+    """
+    import subprocess
+    cmd = build_construction_cmd(smoke=smoke, eval_after=eval_after,
+                                 seed=seed, require_approval=require_approval)
+    proc = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT),
+                            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+                            start_new_session=True)   # detach from the Streamlit process
+    return {"pid": proc.pid, "cmd": " ".join(cmd)}

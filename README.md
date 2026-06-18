@@ -94,15 +94,43 @@ The Search Strategist proposes a `StudentSpec`; the construction loop assembles 
 
 ```bash
 # the construction loop consumes the agent's queued spec, builds, evaluates, records to the ledger
-python services/construction_loop.py --eval --align-steps 200 --distill-steps 1000
+# --seed fixes the RNG (projector init + training) for reproducibility; vary it to measure variance
+python services/construction_loop.py --eval --seed 0
 
 # the generic builder directly (with a spec), for one-off runs
 python runners/build_student.py --spec tests/fixtures/student_spec_p2b1_qwen05b_siglip.json --smoke
 ```
 
-Runs tee their output to `artifacts/logs/`, and the operator console auto-points at the newest one (with an optional auto-refresh) — so progress shows up on the Monitor tab without wiring a log path.
+Or launch it from the **operator console**: the Monitor tab's **▶ Run next queued spec** button shells out to the *same* `construction_loop` entry point (with `smoke` / `eval` / `seed` / `require-approval` options), so a UI-launched run is identical to a CLI one. Runs tee their output to `artifacts/logs/`, and the console auto-points at the newest one — progress shows on the Monitor tab without wiring a log path.
 
 `run.yaml` (see [`configs/run.example.yaml`](configs/run.example.yaml)) declares the authorized goal, success criteria, eval set, allowed hypotheses, and the agent/chat backend (`local` by default, `api` opt-in).
+
+### Reproducing a result
+
+Construction is **seeded** (`--seed`), so a run is reproducible given the same inputs. The inputs that aren't in the repo (large / generated — see `.gitignore`) must be regenerated first:
+
+```bash
+# 1. images — COCO train2017 into datasets/coco_train2017/  (from cocodataset.org)
+# 2. teacher-distilled caches (coco_caption_5k, qa_balanced_5k, mcq) — generated from the
+#    Qwen2.5-VL-3B teacher; compute-heavy. See services/distillation_pipeline.py --mode {qa_balanced,mcq}
+# 3. ScienceQA cache (MMBench-distribution training data, ADR-0014 / distribution finding)
+python runners/build_scienceqa_cache.py --limit 2500          # → datasets/caption_cache/scienceqa_mcq.jsonl
+
+# then reproduce a constructed student (example: the grounding student), multi-seed
+python services/construction_loop.py --spec <spec.json> --eval --seed 1
+```
+
+Results land in `artifacts/experiment_ledger/construction_*.json` and are written up in [`docs/observations/`](docs/observations/). **Honest determinism caveats:** (a) the teacher-distilled caches are regenerated from the 3B teacher, so they may differ slightly across teacher versions; (b) Apple-Silicon MPS float ops are not bit-exact; (c) all benchmark numbers are **internal-only** 100-sample slices (see [`docs/PHASE2_WRITEUP.md`](docs/PHASE2_WRITEUP.md)). So you should reproduce the **findings and ballpark numbers**, and — per the multi-seed methodology — the *distribution* across seeds, not necessarily identical floats from a single run.
+
+### On-device (Apple Silicon / iPhone) — MLX export
+
+Convert a constructed student to MLX and verify it reproduces the PyTorch model, then measure Apple-Silicon perf (ADR-0014). Run in an isolated venv (the brew `mlx` conflicts with current `mlx-lm`):
+
+```bash
+python3 -m venv .venv-mlx && . .venv-mlx/bin/activate
+pip install mlx mlx-lm mlx-vlm torch transformers peft torchvision pillow
+python runners/export_student_mlx.py --student artifacts/students/build_<hash> --step all
+```
 
 ## Documentation
 

@@ -118,3 +118,21 @@ def test_save_and_load_run_config_roundtrip(tmp_path):
     back = load_run_config(p)
     assert back.goal == "match the benchmark" and back.success_criteria["POPE"] == 86.0
     assert back.allowed_hypotheses == ["P2-B1"] and back.chat_backend == "local"
+
+
+def test_build_construction_cmd_defaults():
+    cmd = cd.build_construction_cmd(python="python3")
+    assert cmd[0] == "python3"
+    assert cmd[1].endswith("services/construction_loop.py")
+    assert "--eval" in cmd               # eval_after defaults True
+    assert "--smoke" not in cmd
+    assert "--require-approval" not in cmd
+    assert cmd[-2:] == ["--seed", "0"]
+
+
+def test_build_construction_cmd_flags():
+    cmd = cd.build_construction_cmd(smoke=True, eval_after=False, seed=3,
+                                    require_approval=True, python="py")
+    assert "--smoke" in cmd and "--eval" not in cmd
+    assert "--require-approval" in cmd
+    assert cmd[-2:] == ["--seed", "3"]

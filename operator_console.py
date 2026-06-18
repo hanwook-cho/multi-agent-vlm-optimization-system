@@ -114,6 +114,28 @@ with tab_mon:
         st.warning(f"Run control is **{state}** — the loops will react at their next checkpoint. "
                    "Use resume/clear to return to running.")
 
+    st.markdown("#### Launch a run")
+    st.caption("Builds the most recent queued spec (or the default) via the same "
+               "`construction_loop` entry point as the CLI — results are identical.")
+    lc = st.columns([2, 1, 1, 1.4, 1.4])
+    lc_smoke = lc[1].checkbox("smoke", value=False, help="Tiny end-to-end build (proves the loop)")
+    lc_eval = lc[2].checkbox("eval", value=True, help="Run the same-path floor-adjusted eval after building")
+    lc_seed = lc[3].number_input("seed", value=0, step=1, help="Fix for reproducibility; vary to measure variance")
+    lc_gate = lc[4].checkbox("require approval", value=False,
+                             help="Block the run on the approval queue (appears in the bell / Approvals tab)")
+    if lc[0].button("▶ Run next queued spec", width="stretch", disabled=state in ("stop", "kill")):
+        try:
+            info = cd.launch_construction(smoke=lc_smoke, eval_after=lc_eval,
+                                          seed=int(lc_seed), require_approval=lc_gate)
+            st.session_state["last_launch"] = info
+            st.success(f"launched pid {info['pid']} — progress streams below")
+            st.rerun()
+        except Exception as exc:
+            st.error(f"launch failed: {exc}")
+    if "last_launch" in st.session_state:
+        st.caption(f"last launch · pid {st.session_state['last_launch']['pid']} · "
+                   f"`{st.session_state['last_launch']['cmd']}`")
+
     _pending = ap.list_pending()
     if _pending:
         top = _pending[0]
