@@ -28,6 +28,7 @@ The numbering diverged from the original Phase-0 plan. Authoritative current lis
 | 0011 | Phase-2 strategy correction | ✅ written |
 | 0012 | System-driven student construction | ✅ written |
 | 0013 | Human interface / operator console | ✅ written |
+| 0014 | On-device deployment via MLX-Swift | ✅ written |
 
 Per the policy above, ADRs are written *as decisions are made*, not retroactively — so the
 unwritten 0005–0008 are left as-is. References to them elsewhere now point to where the

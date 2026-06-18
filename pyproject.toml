@@ -39,6 +39,13 @@ agent = [
     "openai>=1.0",           # OpenAI-compatible client for the local backend
     "anthropic>=0.30",       # Anthropic client for the opt-in API backend
 ]
+# On-device deployment path (ADR-0014): convert constructed students to MLX for
+# Apple-Silicon/iOS inference, and validate parity in Python before the Swift port.
+mlx = [
+    "mlx>=0.20",
+    "mlx-lm>=0.20",          # LM conversion (Qwen2.5 → MLX) + generation
+    "mlx-vlm>=0.1",          # SigLIP / VLM building blocks for the assembled forward
+]
 # Everything including train, eval, console, and agent backends.
 all = [
     "vlm-opt[train,eval,console,agent]",
