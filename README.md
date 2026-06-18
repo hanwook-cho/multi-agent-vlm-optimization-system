@@ -24,7 +24,7 @@ The system, given a vision-language task and a target edge device (primarily iPh
 
 A live browser UI (ADR-0013) to run, watch, steer, and gate the system: a **▶ Run next queued spec** launcher (smoke/eval/seed/approval options; shells out to the same `construction_loop` as the CLI, so results are identical), pause/stop/kill controls, current-run status and live logs, recent constructed-student scores, a docked chat with the Search Strategist (local by default), and an approvals queue for gated decisions.
 
-![Operator console](docs/assets/operator_console.svg)
+![Operator console](docs/assets/operator_console.svg?v=2)
 
 ```bash
 streamlit run operator_console.py     # → http://localhost:8501
