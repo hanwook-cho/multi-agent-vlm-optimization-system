@@ -43,7 +43,14 @@ _ALLOWED_KEYS = {
 # ── Verification (pure; the trust boundary) ──────────────────────────────────
 
 def _norm(s: str) -> str:
-    return re.sub(r"\s+", " ", s or "").strip().lower()
+    """Punctuation-insensitive normalizer for excerpt matching: lowercase, fold smart
+    quotes/dashes and LaTeX artifacts, drop punctuation, collapse whitespace. The
+    word SEQUENCE must still match (a strong anti-hallucination guard), but quote-style
+    differences (parens, ', em-dashes, arXiv \\textemdash) don't cause false rejects."""
+    s = (s or "").lower().replace("\\textemdash", " ").replace("\\textendash", " ")
+    s = re.sub(r"[‘’“”]", "'", s)      # smart quotes → '
+    s = re.sub(r"[^a-z0-9' ]+", " ", s)                    # drop other punctuation
+    return re.sub(r"\s+", " ", s).strip()
 
 
 _ARXIV_RE = re.compile(r"(\d{4}\.\d{4,7})")
@@ -58,9 +65,25 @@ def clean_arxiv_id(s: str | None) -> str | None:
     return m.group(1) if m else None
 
 
+_MIN_RUN = 8   # words — a quote is "grounded" if it shares a verbatim run this long
+
+
 def excerpt_in_abstract(excerpt_text: str, abstract: str) -> bool:
-    """An excerpt is real iff it appears verbatim (whitespace/case-normalized) in the abstract."""
-    return bool(excerpt_text.strip()) and _norm(excerpt_text) in _norm(abstract)
+    """Grounded iff the excerpt appears (normalized) in the abstract, OR contains a run
+    of ≥_MIN_RUN consecutive words that does. The long-run rule tolerates the LLM adding
+    a stray word (e.g. a trailing 'etc.') while still making wholesale fabrication fail —
+    an invented quote won't contain 8 consecutive real words from the paper. Short quotes
+    (< _MIN_RUN words) must match in full."""
+    if not excerpt_text.strip():
+        return False
+    na, ne = _norm(abstract), _norm(excerpt_text)
+    if ne and ne in na:
+        return True
+    words = ne.split()
+    if len(words) < _MIN_RUN:
+        return False
+    return any(" ".join(words[i:i + _MIN_RUN]) in na
+               for i in range(len(words) - _MIN_RUN + 1))
 
 
 def excerpts_verdict(record: dict, abstract: str) -> list[tuple[str, bool]]:
@@ -97,24 +120,54 @@ def verify_record(record: dict, abstract: str, registry_ids: set[str]) -> dict:
 # ── Extraction (LLM; injectable) ─────────────────────────────────────────────
 
 _SYSTEM = (
-    "You are the Research Analyst. Given an open engineering problem and a paper's "
-    "ABSTRACT, extract one HypothesisRecord describing the paper's technique. RULES: "
-    "(1) Only quote text that appears VERBATIM in the abstract — do not paraphrase in "
-    "verbatim_excerpts. (2) Do NOT invent the citation; omit source_citation, it is set "
-    "for you. (3) If the abstract is too thin to extract a technique, output {}. "
-    "Output a single JSON object only, no prose."
+    "You are a Research Analyst. Extract ONE HypothesisRecord (JSON) describing the "
+    "technique in the paper ABSTRACT provided. Extract a record whenever the abstract "
+    "describes a concrete method/technique. RULES: "
+    "(1) Every string in verbatim_excerpts MUST be copied EXACTLY, word-for-word, from "
+    "the text between <abstract> and </abstract> — never from these instructions or the "
+    "problem statement. (2) Omit source_citation; it is set for you. (3) Output a single "
+    "JSON object and NOTHING else (no prose, no markdown fences). Output {} ONLY if the "
+    "abstract describes no technique at all."
 )
 
 _FIELD_HINT = (
-    "Produce JSON with: title (str), claimed_effect (str, the paper's terms), "
-    "verbatim_excerpts (list of {text} — exact quotes from the abstract, ≥1), "
-    "reported_results (str), applicability_check {requirements: [str], "
-    "verdict: applicable|not_applicable|uncertain, notes: str}, "
-    "known_failure_modes ([str]), implementation_difficulty "
-    "(config_change|minor_code_change|new_module|major_refactor), "
-    "confidence_flags (obj: field→low|medium|high), and optionally "
-    "original_hyperparameters (str|null), proposed_codebase_insertion_point (str|null)."
+    "JSON shape (all string fields non-empty; use \"not reported\" if the abstract omits a value):\n"
+    "{\n"
+    '  "title": "<short technique name>",\n'
+    '  "claimed_effect": "<what it does, the paper\'s terms, 2-3 sentences>",\n'
+    '  "verbatim_excerpts": [{"text": "<EXACT quote from inside <abstract>…</abstract>>"}],\n'
+    '  "reported_results": "<claimed numbers + setup, or \\"not reported\\">",\n'
+    '  "applicability_check": {"requirements": ["<req>"], "verdict": "applicable|not_applicable|uncertain", "notes": "<why>"},\n'
+    '  "known_failure_modes": ["<limitation>"],\n'
+    '  "implementation_difficulty": "config_change|minor_code_change|new_module|major_refactor",\n'
+    '  "confidence_flags": {"claimed_effect": "low|medium|high"}\n'
+    "}"
 )
+
+
+def _norm_excerpt(e) -> dict | None:
+    """Accept either {'text': …} or a bare string; return {'text', 'location'} or None."""
+    if isinstance(e, str):
+        return {"text": e, "location": None}
+    if isinstance(e, dict) and isinstance(e.get("text"), str):
+        return {"text": e["text"], "location": e.get("location")}
+    return None
+
+
+def _ground(record: dict, abstract: str) -> dict | None:
+    """Keep only excerpts that are genuinely in the abstract (drop hallucinated ones);
+    require ≥1 to survive; coerce required string fields. None ⇒ no grounded technique."""
+    real = []
+    for e in record.get("verbatim_excerpts", []) or []:
+        ne = _norm_excerpt(e)
+        if ne and excerpt_in_abstract(ne["text"], abstract):
+            real.append(ne)
+    if not real:
+        return None
+    record["verbatim_excerpts"] = real
+    if not isinstance(record.get("reported_results"), str) or not record["reported_results"].strip():
+        record["reported_results"] = "Not reported in the abstract."
+    return record
 
 
 def _parse_json(text: str) -> dict | None:
@@ -142,11 +195,16 @@ def _stamp_citation(record: dict, paper: dict) -> dict:
 
 
 def extract_record(paper: dict, problem: str, chat_fn) -> dict | None:
-    """chat_fn(system, user) -> str. Returns a citation-stamped record, or None."""
-    user = (f"OPEN PROBLEM:\n{problem}\n\nPAPER TITLE: {paper.get('title','')}\n"
-            f"ABSTRACT:\n{paper.get('abstract','')}\n\n{_FIELD_HINT}")
+    """chat_fn(system, user) -> str. Returns a grounded, citation-stamped record, or None."""
+    abstract = paper.get("abstract", "")
+    user = (f"PROBLEM (context only — never quote this): {problem}\n\n"
+            f"PAPER TITLE: {paper.get('title','')}\n"
+            f"<abstract>\n{abstract}\n</abstract>\n\n{_FIELD_HINT}")
     rec = _parse_json(chat_fn(_SYSTEM, user))
     if not rec:
+        return None
+    rec = _ground(rec, abstract)           # drop hallucinated excerpts; keep if ≥1 real
+    if rec is None:
         return None
     return _stamp_citation(rec, paper)
 

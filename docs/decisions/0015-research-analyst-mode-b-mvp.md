@@ -27,11 +27,14 @@ Build a **one-shot, human-gated Research Analyst MVP** (`agents/research_analyst
 > **Citations and quotes are verified deterministically; the LLM is never trusted for
 > them.** The `source_citation` is set by *us* from the real retrieved paper (the LLM
 > doesn't get to name the paper). A record is routed to the human gate only if (a) its
-> `arxiv_id` is a real paper in the registry, (b) **every `verbatim_excerpt` is an exact
-> (whitespace/case-normalized) substring of the paper's abstract**, and (c) it
-> schema-validates. This makes the AI-Scientist failure mode (HLD §6.4 — hallucinated
-> citations/quotes) structurally impossible to pass the gate, by string-matching rather
-> than asking the model to self-certify.
+> `arxiv_id` is a real paper in the registry, (b) **every `verbatim_excerpt` is grounded
+> in the abstract** — it must share a verbatim run of ≥8 consecutive words with it
+> (punctuation/case-insensitive); hallucinated excerpts are *dropped*, and the record is
+> kept only if ≥1 grounded excerpt survives — and (c) it schema-validates. This makes the
+> AI-Scientist failure mode (HLD §6.4 — hallucinated citations/quotes) structurally hard
+> to pass the gate, by string-matching rather than asking the model to self-certify. The
+> ≥8-word run tolerates the LLM adding a stray word while still making wholesale
+> fabrication fail (an invented quote won't contain 8 consecutive real words from the paper).
 
 Extraction works from the **abstract only** in the MVP (keeps the excerpt check fully
 deterministic and the cost to a single LLM call per paper). The LLM call is injectable,

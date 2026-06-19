@@ -116,3 +116,32 @@ def test_extract_cleans_versioned_id_for_schema():
     rec = ra._stamp_citation(rec, paper)
     assert rec["source_citation"]["arxiv_id"] == "2501.01234"     # version stripped
     assert not ra.schema_errors(rec)                              # validates
+
+
+def test_excerpt_run_tolerates_added_words():
+    # an 8+ word verbatim run from the abstract with a stray trailing addition still grounds
+    assert ra.excerpt_in_abstract("which merges redundant vision tokens by attention similarity etc.", ABSTRACT)
+    # punctuation/case differences don't matter
+    assert ra.excerpt_in_abstract("Merges REDUNDANT, vision tokens (by) attention similarity!", ABSTRACT)
+
+
+def test_excerpt_run_rejects_fabrication():
+    # a fully invented quote shares no long verbatim run → rejected (guard holds)
+    assert not ra.excerpt_in_abstract("this technique uses a learned gating network to drop audio frames", ABSTRACT)
+
+
+def test_ground_normalizes_filters_and_coerces():
+    rec = {"verbatim_excerpts": [
+               "merges redundant vision tokens by attention similarity",   # bare string, real
+               {"text": "fabricated quote not present anywhere in text"}],  # dropped
+           "reported_results": None}                                        # coerced
+    out = ra._ground(rec, ABSTRACT)
+    assert out is not None
+    assert len(out["verbatim_excerpts"]) == 1                              # only the real one kept
+    assert isinstance(out["verbatim_excerpts"][0], dict)                   # normalized to {text,…}
+    assert out["reported_results"] == "Not reported in the abstract."      # coerced to a string
+
+
+def test_ground_declines_when_no_real_excerpt():
+    rec = {"verbatim_excerpts": [{"text": "entirely made up sentence here"}]}
+    assert ra._ground(rec, ABSTRACT) is None
