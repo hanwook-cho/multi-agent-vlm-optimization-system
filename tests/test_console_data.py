@@ -163,3 +163,24 @@ def test_recent_hypotheses(tmp_path, monkeypatch):
     assert rows[0]["applies"] == "applicable" and rows[0]["claimed_effect"] == "merges vision tokens"
     monkeypatch.setattr(cd, "HYPOTHESIS_QUEUE", tmp_path / "missing.json")
     assert cd.recent_hypotheses() == []
+
+
+def test_log_tail_contains_filter(tmp_path):
+    p = tmp_path / "run.log"
+    p.write_text("alpha line\nBETA matters\ngamma\nbeta again\n")
+    assert "alpha line" in cd.log_tail(p, n=10)
+    out = cd.log_tail(p, n=10, contains="beta")               # case-insensitive
+    assert "BETA matters" in out and "beta again" in out and "alpha line" not in out
+
+
+def test_recent_logs(tmp_path, monkeypatch):
+    import time
+    d = tmp_path / "logs"; d.mkdir()
+    (d / "construction_aaa.log").write_text("x"); time.sleep(0.02)
+    (d / "research_bbb.log").write_text("y")
+    monkeypatch.setattr(cd, "RUN_LOG_DIR", d)
+    rows = cd.recent_logs()
+    assert len(rows) == 2 and rows[0][0].startswith("research_bbb")   # newest first
+    assert all("ago" in lbl for lbl, _ in rows)
+    monkeypatch.setattr(cd, "RUN_LOG_DIR", tmp_path / "missing")
+    assert cd.recent_logs() == []

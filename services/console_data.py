@@ -78,13 +78,33 @@ def parse_progress(text: str) -> dict | None:
     return {"stage": stage, "step": int(step), "total": int(total), "loss": float(loss)}
 
 
-def log_tail(path: Path, n: int = 24) -> str:
-    """Last n lines of a log file (carriage-returns flattened for tqdm output)."""
+def log_tail(path: Path, n: int = 24, contains: str | None = None) -> str:
+    """Last n lines of a log file (carriage-returns flattened for tqdm output).
+    `contains` filters to lines containing that substring (case-insensitive) — so the
+    log view can hide unrelated lines (e.g. show only 'verified', 'distill', 'error')."""
     if not path or not Path(path).exists():
         return ""
     raw = Path(path).read_text(errors="replace").replace("\r", "\n")
     lines = [l for l in raw.splitlines() if l.strip()]
+    if contains:
+        c = contains.lower()
+        lines = [l for l in lines if c in l.lower()]
     return "\n".join(lines[-n:])
+
+
+def recent_logs(n: int = 12) -> list[tuple[str, str]]:
+    """Recent run logs → [(label, path)] newest first. Label is '<name> · <age> ago'
+    so the operator can pick a specific run (construction_… / research_… / eval_…)."""
+    if not RUN_LOG_DIR.exists():
+        return []
+    import time
+    now = time.time()
+    out = []
+    for p in sorted(RUN_LOG_DIR.glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)[:n]:
+        age = now - p.stat().st_mtime
+        a = f"{int(age)}s" if age < 60 else (f"{int(age // 60)}m" if age < 3600 else f"{int(age // 3600)}h")
+        out.append((f"{p.stem} · {a} ago", str(p)))
+    return out
 
 
 def recent_constructions(ledger_dir: Path = LEDGER_DIR, n: int = 8) -> list[dict]:

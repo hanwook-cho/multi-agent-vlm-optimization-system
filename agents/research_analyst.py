@@ -293,8 +293,13 @@ def main():
     ap.add_argument("--max-papers", type=int, default=5)
     ap.add_argument("--backend", default="auto", help="auto|local|api (default local; ADR-0013)")
     args = ap.parse_args()
-    print(f"▶ Research Analyst — query={args.query!r}")
-    analyze(args.problem, args.query, args.max_papers, backend=args.backend)
+    # Tee to artifacts/logs/research_<ts>.log so the operator console's log view can tail it.
+    from services.runlog import tee_stdout
+    tag = f"research_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    with tee_stdout(tag):
+        print(f"▶ Research Analyst (Mode B) — query={args.query!r}")
+        print(f"  problem: {args.problem[:90]}")
+        analyze(args.problem, args.query, args.max_papers, backend=args.backend)
 
 
 if __name__ == "__main__":

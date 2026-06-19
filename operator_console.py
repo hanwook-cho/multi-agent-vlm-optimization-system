@@ -86,8 +86,13 @@ with st.sidebar:
         st.rerun()
     st.caption("proposes & explains; gated actions need approval")
     st.divider()
-    log_path = st.text_input("run log", value=cd.default_log_path(),
-                             help="Auto-points at the newest run in artifacts/logs/.")
+    st.markdown("**Log view**")
+    _logs = cd.recent_logs()                       # [(label, path)] newest first
+    _src = st.selectbox("source", ["(newest run)"] + [lbl for lbl, _ in _logs],
+                        help="Pick a run log to tail — construction_… (Mode A), research_… (Mode B), eval_…")
+    log_path = cd.default_log_path() if _src == "(newest run)" else dict(_logs)[_src]
+    log_filter = st.text_input("filter", key="log_filter",
+                               placeholder="substring filter — e.g. verified · distill · error · gate")
     rc1, rc2 = st.columns([1, 1])
     auto = rc1.checkbox("auto", value=False, help="Auto-refresh the Monitor")
     every = rc2.selectbox("every", [2, 5, 10, 30], index=1, label_visibility="collapsed")
@@ -136,6 +141,40 @@ with tab_mon:
         st.caption(f"last launch · pid {st.session_state['last_launch']['pid']} · "
                    f"`{st.session_state['last_launch']['cmd']}`")
 
+    # ── Research Analyst (Mode B) — read the literature → verified records → gate ──
+    st.markdown("#### Research Analyst (Mode B)")
+    st.caption("Searches arXiv for the open problem, extracts hypothesis records, and "
+               "verifies them (citation + verbatim quote) before routing to the escalation "
+               "gate (which appears in the Approvals tab). Logs to a research_… run log.")
+    rb = st.columns([2.4, 1, 1.2])
+    ra_query = rb[0].text_input("arXiv query", value="efficient small vision-language model token reduction",
+                                key="ra_query", label_visibility="collapsed", placeholder="arXiv query…")
+    ra_n = rb[1].number_input("papers", value=5, min_value=1, max_value=20, key="ra_n")
+    ra_blocked = False
+    if sel == "local":
+        if cd.local_server_up():
+            st.caption("🟢 local · Qwen2.5-7B online — extraction will run")
+        else:
+            ra_blocked = True
+            st.caption("🔴 local server offline — run `scripts/start_strategist_llm.sh` first "
+                       "(a run now would fetch papers but extract nothing)")
+    else:
+        st.caption("🔵 api backend — the launched run reads **ANTHROPIC_API_KEY from the "
+                   "environment** (the sidebar key is session-only, not passed to the subprocess)")
+    if rb[2].button("🔍 Run Analyst", width="stretch", disabled=ra_blocked):
+        try:
+            info = cd.launch_research(query=ra_query, max_papers=int(ra_n),
+                                      backend=("api" if sel == "api" else "local"))
+            st.success(f"launched pid {info['pid']} — watch its `research_…` log below; "
+                       "verified records + the escalation appear when it finishes")
+            st.rerun()
+        except Exception as exc:
+            st.error(f"launch failed: {exc}")
+    hyps = cd.recent_hypotheses()
+    if hyps:
+        st.caption("verified hypothesis records (Mode B)")
+        st.dataframe(hyps, width="stretch", hide_index=True)
+
     _pending = ap.list_pending()
     if _pending:
         top = _pending[0]
@@ -165,8 +204,8 @@ with tab_mon:
         else:
             st.info("No constructed-student runs in the ledger yet.")
 
-        st.markdown("#### Live log")
-        tail = cd.log_tail(Path(log_path), n=24) if log_path else ""
+        st.markdown(f"#### Live log{' · filter: ' + log_filter if log_filter else ''}")
+        tail = cd.log_tail(Path(log_path), n=24, contains=log_filter or None) if log_path else ""
         st.code(tail or f"(no log at {log_path or 'artifacts/logs/'})", language="text")
 
     # Auto-refresh the live panel without blocking the controls above.
@@ -259,40 +298,5 @@ with tab_appr:
         with st.expander("hypothesis table"):
             st.dataframe(hrows, width="stretch", hide_index=True)
 
-    # ── Research Analyst (Mode B) — read the literature → verified records → the gate ──
-    st.markdown("#### Research Analyst (Mode B)")
-    st.caption("Searches arXiv for the open problem, extracts hypothesis records, and "
-               "verifies them (citation + verbatim quote) before routing to the gate above. "
-               "Needs the local LLM server (or the API backend selected in the sidebar).")
-    rb = st.columns([2.4, 1, 1.2])
-    ra_query = rb[0].text_input("arXiv query", value="efficient small vision-language model token reduction",
-                                key="ra_query", label_visibility="collapsed",
-                                placeholder="arXiv query…")
-    ra_n = rb[1].number_input("papers", value=5, min_value=1, max_value=20, key="ra_n")
-    # Backend readiness — a run with no reachable backend extracts nothing.
-    ra_local_ok = cd.local_server_up()
-    ra_blocked = False
-    if sel == "local":
-        if ra_local_ok:
-            st.caption("🟢 local · Qwen2.5-7B online — extraction will run")
-        else:
-            ra_blocked = True
-            st.caption("🔴 local server offline — run `scripts/start_strategist_llm.sh` first "
-                       "(a run now would fetch papers but extract nothing)")
-    else:
-        st.caption("🔵 api backend — the launched run reads **ANTHROPIC_API_KEY from the "
-                   "environment** (the sidebar key is session-only and isn't passed to the subprocess)")
-    if rb[2].button("🔍 Run Analyst", width="stretch", disabled=ra_blocked):
-        try:
-            info = cd.launch_research(query=ra_query, max_papers=int(ra_n),
-                                      backend=("api" if sel == "api" else "local"))
-            st.success(f"launched pid {info['pid']} — verified records appear below + at the gate")
-            st.rerun()
-        except Exception as exc:
-            st.error(f"launch failed: {exc}")
-    hyps = cd.recent_hypotheses()
-    if hyps:
-        st.dataframe(hyps, width="stretch", hide_index=True)
-    else:
-        st.info("No verified hypothesis records yet — run the analyst (one record per "
-                "paper survives only if its citation + every quote check out).")
+    st.caption("Launch the Research Analyst (Mode B) from the **Monitor** tab; verified "
+               "records appear there, and the escalation arrives here as a pending approval.")
