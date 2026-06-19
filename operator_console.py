@@ -269,7 +269,20 @@ with tab_appr:
                                 key="ra_query", label_visibility="collapsed",
                                 placeholder="arXiv query…")
     ra_n = rb[1].number_input("papers", value=5, min_value=1, max_value=20, key="ra_n")
-    if rb[2].button("🔍 Run Analyst", width="stretch"):
+    # Backend readiness — a run with no reachable backend extracts nothing.
+    ra_local_ok = cd.local_server_up()
+    ra_blocked = False
+    if sel == "local":
+        if ra_local_ok:
+            st.caption("🟢 local · Qwen2.5-7B online — extraction will run")
+        else:
+            ra_blocked = True
+            st.caption("🔴 local server offline — run `scripts/start_strategist_llm.sh` first "
+                       "(a run now would fetch papers but extract nothing)")
+    else:
+        st.caption("🔵 api backend — the launched run reads **ANTHROPIC_API_KEY from the "
+                   "environment** (the sidebar key is session-only and isn't passed to the subprocess)")
+    if rb[2].button("🔍 Run Analyst", width="stretch", disabled=ra_blocked):
         try:
             info = cd.launch_research(query=ra_query, max_papers=int(ra_n),
                                       backend=("api" if sel == "api" else "local"))
